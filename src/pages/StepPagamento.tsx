@@ -8,7 +8,7 @@ function fmt(v: number) {
 
 function calcCheckOut(checkIn: Date, type: 'period' | 'overnight'): Date {
   const out = new Date(checkIn)
-  out.setHours(out.getHours() + (type === 'period' ? 2 : 15))
+  out.setHours(out.getHours() + (type === 'period' ? 2 : 12))
   return out
 }
 

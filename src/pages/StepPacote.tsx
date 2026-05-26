@@ -76,7 +76,7 @@ const DETAIL: Record<PkgId, PackageDetail> = {
     suites: [
       { category: 'Suíte VIP', rooms: 'Quartos 14 ou 16', desc: 'Suíte exclusiva com estrutura VIP' },
     ],
-    dates: '9, 10, 11 e 12 de junho de 2026',
+    dates: '8 a 14 de junho de 2026',
     notes: [
       'A entrada (couvert) está inclusa somente ao escolher o jantar. Quem optar por sushi não terá entrada.',
       'Para pernoite: apenas 1 suíte de cada categoria disponível por dia da promoção.',
@@ -95,7 +95,7 @@ const DETAIL: Record<PkgId, PackageDetail> = {
     suites: [
       { category: 'Suíte Hidro', rooms: 'Quartos 15 ou 18', desc: 'Suíte com hidromassagem' },
     ],
-    dates: '9, 10, 11 e 12 de junho de 2026',
+    dates: '8 a 14 de junho de 2026',
     notes: [
       'Para pernoite: apenas 1 suíte de cada categoria disponível por dia da promoção.',
       'Reservas de período disponíveis apenas durante a semana dos namorados.',
@@ -114,7 +114,7 @@ const DETAIL: Record<PkgId, PackageDetail> = {
       { category: 'Suíte Hidro Light', rooms: 'Quartos 12 ou 13', desc: 'Suíte com hidromassagem compacta' },
       { category: 'Suíte Standard', rooms: 'Quartos 11, 17, 22, 23, 24, 25 ou 26', desc: 'Suítes confortáveis e aconchegantes' },
     ],
-    dates: '9, 10, 11 e 12 de junho de 2026',
+    dates: '8 a 14 de junho de 2026',
     notes: [
       'Para pernoite: apenas 1 suíte de cada categoria disponível por dia da promoção.',
       'Reservas de período disponíveis apenas durante a semana dos namorados.',

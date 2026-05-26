@@ -9,7 +9,7 @@ const TIPOS = [
     id: 'overnight' as const,
     label: 'PERNOITE',
     subtitle: 'Uma noite inteira para criar memórias inesquecíveis.',
-    detail: 'Check-in às 21h · Check-out às 12h do dia seguinte',
+    detail: 'Check-in às 00h · Check-out às 12h do dia seguinte',
     // Simula LED underglow no rodapé + teto âmbar quente — referência da foto enviada
     bg: [
       'radial-gradient(ellipse at 50% 110%, rgba(210,90,10,0.75) 0%, transparent 50%)',
@@ -32,7 +32,7 @@ const TIPOS = [
     id: 'period' as const,
     label: 'PERÍODO',
     subtitle: 'Aproveite algumas horas para vocês dois.',
-    detail: 'Horários: 14h · 16h · 18h · 20h',
+    detail: 'Horários: a cada 2h, das 00h às 22h',
     // Simula luz natural dourada lateral + velas — referência da foto enviada
     bg: [
       'radial-gradient(ellipse at 80% 25%, rgba(210,160,55,0.45) 0%, transparent 58%)',

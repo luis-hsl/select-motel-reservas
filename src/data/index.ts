@@ -68,9 +68,12 @@ export const SUITES: Suite[] = [
   { id: 'suite-26', name: 'Suíte 26', category: 'Standard', description: 'Suíte confortável e aconchegante', room_number: 26, size: 'small', cleaning_buffer_h: 1, packageIds: ['bronze'] },
 ]
 
-// Valentine's week — June 9 to June 12, 2026
-export const PROMO_START = new Date(2026, 5, 9)
-export const PROMO_END   = new Date(2026, 5, 12)
+// Valentine's week — June 8 to June 14, 2026
+export const PROMO_START = new Date(2026, 5, 8)
+export const PROMO_END   = new Date(2026, 5, 14)
 
-export const PERIOD_SLOTS  = ['14:00', '16:00', '18:00', '20:00']
-export const OVERNIGHT_CHECKIN = '21:00'
+export const PERIOD_SLOTS = [
+  '00:00', '02:00', '04:00', '06:00', '08:00', '10:00',
+  '12:00', '14:00', '16:00', '18:00', '20:00', '22:00',
+]
+export const OVERNIGHT_CHECKIN = '00:00'
