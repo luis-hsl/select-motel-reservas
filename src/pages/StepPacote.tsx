@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { PACKAGES } from '../data'
 import { useStore } from '../store/useStore'
 import type { Package } from '../types'
@@ -9,76 +10,147 @@ function fmt(v: number) {
 type PkgId = 'ouro' | 'prata' | 'bronze'
 
 const THEME: Record<PkgId, {
-  bg: string
-  border: string
-  ring: string
-  nameCss: string
-  accentColor: string
-  labelColor: string
-  iconColor: string
-  dividerColor: string
-  priceColor: string
+  bg: string; border: string; ring: string; nameCss: string
+  accentColor: string; labelColor: string; iconColor: string
+  dividerColor: string; priceColor: string; badgeBg: string
 }> = {
   ouro: {
     bg: [
       'radial-gradient(ellipse at 18% 88%, rgba(180,100,12,0.45) 0%, transparent 52%)',
       'radial-gradient(ellipse at 82% 72%, rgba(140,75,8,0.3) 0%, transparent 48%)',
       'radial-gradient(ellipse at 50% 108%, rgba(100,55,5,0.5) 0%, transparent 58%)',
-      'radial-gradient(ellipse at 50% -10%, rgba(80,40,5,0.2) 0%, transparent 45%)',
       '#060504',
     ].join(', '),
-    border: 'rgba(180,140,40,0.5)',
-    ring: 'rgba(200,160,50,0.35)',
-    nameCss: 'linear-gradient(180deg, #f5e0a0 0%, #d4a017 40%, #8b6010 100%)',
-    accentColor: '#c9a84c',
-    labelColor: 'rgba(201,168,76,0.5)',
-    iconColor: '#c9a84c',
-    dividerColor: '#a07820',
-    priceColor: '#d4a850',
+    border: 'rgba(180,140,40,0.5)', ring: 'rgba(200,160,50,0.35)',
+    nameCss: 'linear-gradient(180deg,#f5e0a0 0%,#d4a017 40%,#8b6010 100%)',
+    accentColor: '#c9a84c', labelColor: 'rgba(201,168,76,0.5)',
+    iconColor: '#c9a84c', dividerColor: '#a07820', priceColor: '#d4a850',
+    badgeBg: 'linear-gradient(135deg,#c9a84c,#f5d87a,#a07820)',
   },
   prata: {
     bg: [
       'radial-gradient(ellipse at 18% 88%, rgba(100,110,140,0.3) 0%, transparent 52%)',
       'radial-gradient(ellipse at 82% 72%, rgba(80,90,120,0.2) 0%, transparent 48%)',
       'radial-gradient(ellipse at 50% 108%, rgba(60,70,100,0.4) 0%, transparent 58%)',
-      'radial-gradient(ellipse at 50% -10%, rgba(50,55,80,0.15) 0%, transparent 45%)',
       '#050507',
     ].join(', '),
-    border: 'rgba(160,170,200,0.4)',
-    ring: 'rgba(180,190,220,0.25)',
-    nameCss: 'linear-gradient(180deg, #f0f2f8 0%, #b0b8cc 40%, #6a7090 100%)',
-    accentColor: '#a8b0c8',
-    labelColor: 'rgba(160,170,200,0.5)',
-    iconColor: '#a8b0c8',
-    dividerColor: '#7880a0',
-    priceColor: '#b8c0d8',
+    border: 'rgba(160,170,200,0.4)', ring: 'rgba(180,190,220,0.25)',
+    nameCss: 'linear-gradient(180deg,#f0f2f8 0%,#b0b8cc 40%,#6a7090 100%)',
+    accentColor: '#a8b0c8', labelColor: 'rgba(160,170,200,0.5)',
+    iconColor: '#a8b0c8', dividerColor: '#7880a0', priceColor: '#b8c0d8',
+    badgeBg: 'linear-gradient(135deg,#9098b0,#d0d8f0,#7880a0)',
   },
   bronze: {
     bg: [
       'radial-gradient(ellipse at 18% 88%, rgba(160,85,22,0.4) 0%, transparent 52%)',
       'radial-gradient(ellipse at 82% 72%, rgba(120,60,14,0.28) 0%, transparent 48%)',
       'radial-gradient(ellipse at 50% 108%, rgba(90,45,8,0.48) 0%, transparent 58%)',
-      'radial-gradient(ellipse at 50% -10%, rgba(70,35,5,0.18) 0%, transparent 45%)',
       '#060402',
     ].join(', '),
-    border: 'rgba(160,100,40,0.5)',
-    ring: 'rgba(180,120,50,0.3)',
-    nameCss: 'linear-gradient(180deg, #e8b880 0%, #c07830 40%, #7a4010 100%)',
-    accentColor: '#c07830',
-    labelColor: 'rgba(190,120,50,0.5)',
-    iconColor: '#c07830',
-    dividerColor: '#904820',
-    priceColor: '#d09040',
+    border: 'rgba(160,100,40,0.5)', ring: 'rgba(180,120,50,0.3)',
+    nameCss: 'linear-gradient(180deg,#e8b880 0%,#c07830 40%,#7a4010 100%)',
+    accentColor: '#c07830', labelColor: 'rgba(190,120,50,0.5)',
+    iconColor: '#c07830', dividerColor: '#904820', priceColor: '#d09040',
+    badgeBg: 'linear-gradient(135deg,#904820,#d09040,#6a3010)',
+  },
+}
+
+interface PackageDetail {
+  headline: string
+  includes: { item: string; note?: string }[]
+  suites: { category: string; rooms: string; desc?: string }[]
+  dates: string
+  notes: string[]
+}
+
+const DETAIL: Record<PkgId, PackageDetail> = {
+  ouro: {
+    headline: 'A experiência mais completa do Select Motel',
+    includes: [
+      { item: 'Decoração romântica completa do ambiente' },
+      { item: 'Jantar completo com entrada inclusa', note: 'A entrada está inclusa apenas ao escolher o jantar' },
+      { item: 'Sushi premium (alternativa ao jantar)', note: 'Ao optar por sushi, a entrada não está inclusa' },
+      { item: 'Fondue de chocolate' },
+      { item: 'Vinho ou Frisante — à escolha do casal' },
+    ],
+    suites: [
+      { category: 'Suíte VIP', rooms: 'Quartos 14 ou 16', desc: 'Suíte exclusiva com estrutura VIP' },
+    ],
+    dates: '9, 10, 11 e 12 de junho de 2026',
+    notes: [
+      'A entrada (couvert) está inclusa somente ao escolher o jantar. Quem optar por sushi não terá entrada.',
+      'Para pernoite: apenas 1 suíte de cada categoria disponível por dia da promoção.',
+      'Reservas de período disponíveis apenas durante a semana dos namorados.',
+      'Não haverá reservas online fora da promoção na semana dos namorados.',
+    ],
+  },
+  prata: {
+    headline: 'Requinte, sabor e romantismo',
+    includes: [
+      { item: 'Decoração romântica do ambiente' },
+      { item: 'Fondue de chocolate' },
+      { item: 'Vinho ou Frisante — à escolha do casal' },
+      { item: 'Pizza artesanal ou pratos — à escolha do casal' },
+    ],
+    suites: [
+      { category: 'Suíte Hidro', rooms: 'Quartos 15 ou 18', desc: 'Suíte com hidromassagem' },
+    ],
+    dates: '9, 10, 11 e 12 de junho de 2026',
+    notes: [
+      'Para pernoite: apenas 1 suíte de cada categoria disponível por dia da promoção.',
+      'Reservas de período disponíveis apenas durante a semana dos namorados.',
+      'Não haverá reservas online fora da promoção na semana dos namorados.',
+    ],
+  },
+  bronze: {
+    headline: 'Clássico, especial e acessível',
+    includes: [
+      { item: 'Decoração romântica do ambiente' },
+      { item: 'Fondue de chocolate' },
+      { item: 'Pizza' },
+      { item: 'Drink especial' },
+    ],
+    suites: [
+      { category: 'Suíte Hidro Light', rooms: 'Quartos 12 ou 13', desc: 'Suíte com hidromassagem compacta' },
+      { category: 'Suíte Standard', rooms: 'Quartos 11, 17, 22, 23, 24, 25 ou 26', desc: 'Suítes confortáveis e aconchegantes' },
+    ],
+    dates: '9, 10, 11 e 12 de junho de 2026',
+    notes: [
+      'Para pernoite: apenas 1 suíte de cada categoria disponível por dia da promoção.',
+      'Reservas de período disponíveis apenas durante a semana dos namorados.',
+      'Não haverá reservas online fora da promoção na semana dos namorados.',
+    ],
   },
 }
 
 export default function StepPacote() {
   const { package: selected, setPackage, nextStep } = useStore()
+  const [detailId, setDetailId] = useState<PkgId | null>(null)
+  const [visible, setVisible] = useState(false)
 
   function choose(pkg: Package) {
     setPackage(pkg)
     setTimeout(nextStep, 300)
   }
+
+  function openDetail(id: PkgId, e: React.MouseEvent) {
+    e.stopPropagation()
+    setDetailId(id)
+    requestAnimationFrame(() => setTimeout(() => setVisible(true), 10))
+  }
+
+  function closeDetail() {
+    setVisible(false)
+    setTimeout(() => setDetailId(null), 380)
+  }
+
+  useEffect(() => {
+    if (detailId) document.body.style.overflow = 'hidden'
+    else document.body.style.overflow = ''
+    return () => { document.body.style.overflow = '' }
+  }, [detailId])
+
+  const detailPkg = detailId ? PACKAGES.find(p => p.id === detailId) : null
 
   return (
     <div>
@@ -109,7 +181,6 @@ export default function StepPacote() {
                   : 'inset 0 0 40px rgba(0,0,0,0.5)',
               }}
             >
-              {/* Top badge */}
               {pkg.highlighted && (
                 <div className="absolute top-0 left-0 right-0 flex justify-center z-10">
                   <span
@@ -121,42 +192,24 @@ export default function StepPacote() {
                 </div>
               )}
 
-              {/* ── Visual hero area ── */}
+              {/* Visual hero */}
               <div className="pt-10 pb-5 px-5 text-center">
-                {/* "PACOTE" label */}
-                <p
-                  className="text-[9px] tracking-[0.6em] uppercase mb-4 font-medium"
-                  style={{ color: t.labelColor }}
-                >
+                <p className="text-[9px] tracking-[0.6em] uppercase mb-4 font-medium" style={{ color: t.labelColor }}>
                   Pacote
                 </p>
-
-                {/* Decorative divider */}
                 <GlowDivider color={t.dividerColor} />
-
-                {/* Package name */}
                 <h2
                   className="font-serif font-bold tracking-widest my-5 text-transparent bg-clip-text"
-                  style={{
-                    fontSize: 'clamp(2.8rem, 8vw, 3.5rem)',
-                    backgroundImage: t.nameCss,
-                    textShadow: 'none',
-                    lineHeight: 1,
-                  }}
+                  style={{ fontSize: 'clamp(2.8rem,8vw,3.5rem)', backgroundImage: t.nameCss, lineHeight: 1 }}
                 >
                   {id.toUpperCase()}
                 </h2>
-
-                {/* Decorative divider */}
                 <GlowDivider color={t.dividerColor} />
-
-                <p className="text-[11px] mt-3 italic" style={{ color: t.labelColor }}>
-                  {pkg.tagline}
-                </p>
+                <p className="text-[11px] mt-3 italic" style={{ color: t.labelColor }}>{pkg.tagline}</p>
               </div>
 
-              {/* ── Info area ── */}
-              <div className="px-5 pb-5">
+              {/* Info */}
+              <div className="px-5 pb-2">
                 <ul className="space-y-1.5 mb-4">
                   {pkg.includes.map((item) => (
                     <li key={item} className="flex items-start gap-2 text-xs" style={{ color: 'rgba(245,224,180,0.75)' }}>
@@ -165,28 +218,31 @@ export default function StepPacote() {
                     </li>
                   ))}
                 </ul>
-                {pkg.note && (
-                  <p className="text-[10px] italic mb-3" style={{ color: t.labelColor }}>
-                    {pkg.note}
-                  </p>
-                )}
 
-                {/* Prices */}
-                <div
-                  className="border-t pt-3 space-y-1.5"
-                  style={{ borderColor: `${t.dividerColor}40` }}
-                >
+                <div className="border-t pt-3 space-y-1.5 mb-3" style={{ borderColor: `${t.dividerColor}40` }}>
                   <PriceRow label="Período" value={pkg.price_period} color={t.priceColor} />
                   <PriceRow label="Pernoite" value={pkg.price_overnight} color={t.priceColor} />
                 </div>
+
+                {/* Ver detalhes button */}
+                <div className="border-t pb-4 pt-3" style={{ borderColor: `${t.dividerColor}25` }}>
+                  <button
+                    onClick={(e) => openDetail(id, e)}
+                    className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-[11px] tracking-widest uppercase font-medium transition-all duration-200 hover:opacity-90 active:scale-95"
+                    style={{
+                      color: t.accentColor,
+                      border: `1px solid ${t.dividerColor}50`,
+                      background: `${t.dividerColor}12`,
+                    }}
+                  >
+                    Ver pacote completo
+                    <span className="text-[10px]">↗</span>
+                  </button>
+                </div>
               </div>
 
-              {/* Selected check */}
               {isSel && (
-                <div
-                  className="absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center"
-                  style={{ background: t.accentColor }}
-                >
+                <div className="absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center" style={{ background: t.accentColor }}>
                   <svg className="w-3 h-3 text-black" fill="none" viewBox="0 0 12 12">
                     <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
@@ -196,6 +252,206 @@ export default function StepPacote() {
           )
         })}
       </div>
+
+      {/* Detail Modal */}
+      {detailId && detailPkg && (
+        <PackageModal
+          id={detailId}
+          pkg={detailPkg}
+          detail={DETAIL[detailId]}
+          visible={visible}
+          onClose={closeDetail}
+          onSelect={() => { closeDetail(); choose(detailPkg) }}
+        />
+      )}
+    </div>
+  )
+}
+
+// ── Modal ──────────────────────────────────────────────────
+
+interface ModalProps {
+  id: PkgId
+  pkg: Package
+  detail: PackageDetail
+  visible: boolean
+  onClose: () => void
+  onSelect: () => void
+}
+
+function PackageModal({ id, pkg, detail, visible, onClose, onSelect }: ModalProps) {
+  const t = THEME[id]
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      style={{ pointerEvents: visible ? 'auto' : 'none' }}
+    >
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 transition-opacity duration-350"
+        style={{
+          background: 'rgba(0,0,0,0.85)',
+          backdropFilter: 'blur(6px)',
+          opacity: visible ? 1 : 0,
+        }}
+        onClick={onClose}
+      />
+
+      {/* Sheet */}
+      <div
+        className="relative w-full sm:max-w-lg max-h-[92vh] sm:max-h-[85vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl scrollbar-hide transition-all duration-380"
+        style={{
+          background: t.bg,
+          border: `1px solid ${t.border}`,
+          boxShadow: `0 -20px 80px rgba(0,0,0,0.8), inset 0 0 60px rgba(0,0,0,0.5)`,
+          transform: visible ? 'translateY(0) scale(1)' : 'translateY(100%) scale(0.98)',
+          opacity: visible ? 1 : 0,
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Handle bar (mobile) */}
+        <div className="flex justify-center pt-3 pb-1 sm:hidden">
+          <div className="w-10 h-1 rounded-full" style={{ background: `${t.dividerColor}60` }} />
+        </div>
+
+        {/* Header */}
+        <div className="px-6 pt-4 pb-5 flex items-start justify-between">
+          <div>
+            <p className="text-[9px] tracking-[0.6em] uppercase mb-1 font-medium" style={{ color: t.labelColor }}>
+              Pacote
+            </p>
+            <h2
+              className="font-serif font-bold tracking-widest text-transparent bg-clip-text leading-none"
+              style={{ fontSize: 'clamp(2.4rem,10vw,3rem)', backgroundImage: t.nameCss }}
+            >
+              {id.toUpperCase()}
+            </h2>
+            <p className="text-xs mt-1.5 italic" style={{ color: t.labelColor }}>{detail.headline}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="mt-1 w-8 h-8 rounded-full flex items-center justify-center transition-opacity hover:opacity-80 shrink-0 ml-4"
+            style={{ background: `${t.dividerColor}25`, color: t.labelColor }}
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Divider */}
+        <div className="px-6"><GlowDivider color={t.dividerColor} /></div>
+
+        {/* Prices */}
+        <div className="px-6 py-5 grid grid-cols-2 gap-3">
+          {[
+            { label: 'Período', value: pkg.price_period },
+            { label: 'Pernoite', value: pkg.price_overnight },
+          ].map(({ label, value }) => (
+            <div
+              key={label}
+              className="rounded-xl p-3 text-center"
+              style={{ background: `${t.dividerColor}15`, border: `1px solid ${t.dividerColor}30` }}
+            >
+              <p className="text-[9px] tracking-widest uppercase mb-1" style={{ color: t.labelColor }}>{label}</p>
+              <p className="font-serif text-xl font-semibold" style={{ color: t.priceColor }}>{fmt(value)}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* O que está incluído */}
+        <Section title="O que está incluído" color={t.accentColor} dividerColor={t.dividerColor}>
+          <ul className="space-y-3">
+            {detail.includes.map((inc, i) => (
+              <li key={i}>
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 text-sm shrink-0" style={{ color: t.iconColor }}>✦</span>
+                  <div>
+                    <p className="text-sm" style={{ color: 'rgba(245,224,180,0.85)' }}>{inc.item}</p>
+                    {inc.note && (
+                      <p className="text-[11px] mt-0.5 italic" style={{ color: t.labelColor }}>
+                        ⚠ {inc.note}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Section>
+
+        {/* Suítes disponíveis */}
+        <Section title="Suítes disponíveis" color={t.accentColor} dividerColor={t.dividerColor}>
+          <div className="space-y-3">
+            {detail.suites.map((s, i) => (
+              <div
+                key={i}
+                className="rounded-xl p-4"
+                style={{ background: `${t.dividerColor}12`, border: `1px solid ${t.dividerColor}30` }}
+              >
+                <p className="text-sm font-semibold mb-0.5" style={{ color: t.priceColor }}>{s.category}</p>
+                {s.desc && <p className="text-[11px] mb-1.5 italic" style={{ color: t.labelColor }}>{s.desc}</p>}
+                <p className="text-xs" style={{ color: 'rgba(245,224,180,0.6)' }}>
+                  🚪 {s.rooms}
+                </p>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        {/* Datas */}
+        <Section title="Datas da promoção" color={t.accentColor} dividerColor={t.dividerColor}>
+          <div
+            className="rounded-xl p-4 text-center"
+            style={{ background: `${t.dividerColor}12`, border: `1px solid ${t.dividerColor}30` }}
+          >
+            <p className="text-[9px] tracking-widest uppercase mb-1" style={{ color: t.labelColor }}>
+              Semana dos Namorados
+            </p>
+            <p className="text-sm font-medium" style={{ color: 'rgba(245,224,180,0.85)' }}>
+              📅 {detail.dates}
+            </p>
+          </div>
+        </Section>
+
+        {/* Observações */}
+        <Section title="Observações importantes" color={t.accentColor} dividerColor={t.dividerColor}>
+          <ul className="space-y-2.5">
+            {detail.notes.map((note, i) => (
+              <li key={i} className="flex items-start gap-2.5">
+                <span className="text-xs mt-0.5 shrink-0" style={{ color: t.accentColor }}>!</span>
+                <p className="text-xs leading-relaxed" style={{ color: 'rgba(245,224,180,0.65)' }}>{note}</p>
+              </li>
+            ))}
+          </ul>
+        </Section>
+
+        {/* CTA */}
+        <div className="px-6 pb-8 pt-2">
+          <button
+            onClick={onSelect}
+            className="w-full py-4 rounded-xl font-semibold text-sm tracking-wider uppercase transition-all duration-200 hover:opacity-90 active:scale-95 text-black"
+            style={{ background: t.badgeBg }}
+          >
+            Escolher Pacote {id.charAt(0).toUpperCase() + id.slice(1)}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Sub-components ─────────────────────────────────────────
+
+function Section({ title, color, dividerColor, children }: {
+  title: string; color: string; dividerColor: string; children: React.ReactNode
+}) {
+  return (
+    <div className="px-6 pb-5">
+      <div className="flex items-center gap-3 mb-4">
+        <p className="text-[10px] tracking-widest uppercase font-semibold shrink-0" style={{ color }}>{title}</p>
+        <div className="h-px flex-1" style={{ background: `linear-gradient(to right, ${dividerColor}50, transparent)` }} />
+      </div>
+      {children}
     </div>
   )
 }
@@ -203,18 +459,9 @@ export default function StepPacote() {
 function GlowDivider({ color }: { color: string }) {
   return (
     <div className="flex items-center justify-center gap-2 px-4">
-      <div
-        className="h-px flex-1"
-        style={{ background: `linear-gradient(to right, transparent, ${color}60)` }}
-      />
-      <div
-        className="w-1.5 h-1.5 rounded-full shrink-0"
-        style={{ background: color, boxShadow: `0 0 8px 3px ${color}70` }}
-      />
-      <div
-        className="h-px flex-1"
-        style={{ background: `linear-gradient(to left, transparent, ${color}60)` }}
-      />
+      <div className="h-px flex-1" style={{ background: `linear-gradient(to right, transparent, ${color}60)` }} />
+      <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: color, boxShadow: `0 0 8px 3px ${color}70` }} />
+      <div className="h-px flex-1" style={{ background: `linear-gradient(to left, transparent, ${color}60)` }} />
     </div>
   )
 }
@@ -222,12 +469,8 @@ function GlowDivider({ color }: { color: string }) {
 function PriceRow({ label, value, color }: { label: string; value: number; color: string }) {
   return (
     <div className="flex items-baseline justify-between">
-      <span className="text-[10px] uppercase tracking-widest" style={{ color: 'rgba(180,150,80,0.45)' }}>
-        {label}
-      </span>
-      <span className="text-xs font-semibold" style={{ color }}>
-        {fmt(value)}
-      </span>
+      <span className="text-[10px] uppercase tracking-widest" style={{ color: 'rgba(180,150,80,0.45)' }}>{label}</span>
+      <span className="text-xs font-semibold" style={{ color }}>{fmt(value)}</span>
     </div>
   )
 }
