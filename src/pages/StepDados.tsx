@@ -21,11 +21,11 @@ export default function StepDados() {
         <span>←</span> Voltar
       </button>
 
-      <h1 className="font-serif text-4xl sm:text-5xl font-light mb-2 leading-tight">
+      <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light mb-2 leading-tight">
         Seus<br />
         <span className="gold-gradient font-semibold italic">dados</span>
       </h1>
-      <p className="text-gold-700/70 text-sm mb-10">
+      <p className="text-gold-700/70 text-sm mb-6 sm:mb-10">
         Usaremos seu WhatsApp para enviar a confirmação da reserva.
       </p>
 

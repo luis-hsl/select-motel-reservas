@@ -15,15 +15,15 @@ export default function StepSuite() {
         <span>←</span> Voltar
       </button>
 
-      <h1 className="font-serif text-4xl sm:text-5xl font-light mb-2 leading-tight">
+      <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light mb-2 leading-tight">
         Qual suíte<br />
         <span className="gold-gradient font-semibold italic">você prefere?</span>
       </h1>
-      <p className="text-gold-700/70 text-sm mb-10">
+      <p className="text-gold-700/70 text-sm mb-6 sm:mb-10">
         Selecione o ambiente ideal para a sua noite.
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         {SUITES.map((suite) => {
           const sel = selected?.id === suite.id
           return (

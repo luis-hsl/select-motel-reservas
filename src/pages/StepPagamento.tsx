@@ -81,11 +81,11 @@ export default function StepPagamento() {
         <span>←</span> Voltar
       </button>
 
-      <h1 className="font-serif text-4xl sm:text-5xl font-light mb-2 leading-tight">
+      <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light mb-2 leading-tight">
         Confirme sua<br />
         <span className="gold-gradient font-semibold italic">reserva</span>
       </h1>
-      <p className="text-gold-700/70 text-sm mb-10">
+      <p className="text-gold-700/70 text-sm mb-6 sm:mb-10">
         Revise os detalhes antes de prosseguir para o pagamento.
       </p>
 

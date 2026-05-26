@@ -34,11 +34,11 @@ export default function StepData() {
         <span>←</span> Voltar
       </button>
 
-      <h1 className="font-serif text-4xl sm:text-5xl font-light mb-2 leading-tight">
+      <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light mb-2 leading-tight">
         Quando será<br />
         <span className="gold-gradient font-semibold italic">o grande dia?</span>
       </h1>
-      <p className="text-gold-700/70 text-sm mb-10">
+      <p className="text-gold-700/70 text-sm mb-6 sm:mb-10">
         Reservas disponíveis de {PROMO_START.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })} a {PROMO_END.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}.
       </p>
 

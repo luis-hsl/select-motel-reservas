@@ -9,59 +9,72 @@ export default function ReservaSidebar() {
   const total = totalAmount()
 
   return (
-    <aside className="w-72 shrink-0">
-      <div className="sticky top-24 border border-gold-800/40 rounded-xl overflow-hidden">
-        {/* Header */}
-        <div className="bg-gold-900/20 px-5 py-3 border-b border-gold-800/30">
-          <p className="text-[10px] tracking-widest uppercase text-gold-500/60">Sua Reserva</p>
-        </div>
+    <>
+      {/* Desktop sidebar */}
+      <aside className="hidden lg:block w-72 shrink-0">
+        <div className="sticky top-24 border border-gold-800/40 rounded-xl overflow-hidden">
+          <div className="bg-gold-900/20 px-5 py-3 border-b border-gold-800/30">
+            <p className="text-[10px] tracking-widest uppercase text-gold-500/60">Sua Reserva</p>
+          </div>
 
-        <div className="px-5 py-4 space-y-4 bg-black/60">
-          {/* Package */}
-          {pkg ? (
-            <Row label="Pacote" value={pkg.label} />
-          ) : (
-            <Placeholder label="Pacote" />
-          )}
+          <div className="px-5 py-4 space-y-4 bg-black/60">
+            {pkg ? <Row label="Pacote" value={pkg.label} /> : <Placeholder label="Pacote" />}
+            {type
+              ? <Row label="Modalidade" value={type === 'period' ? 'Período' : 'Pernoite'} />
+              : <Placeholder label="Modalidade" />
+            }
+            {suite ? <Row label="Suíte" value={suite.name} /> : <Placeholder label="Suíte" />}
 
-          {/* Type */}
-          {type ? (
-            <Row
-              label="Modalidade"
-              value={type === 'period' ? 'Período' : 'Pernoite'}
-            />
-          ) : (
-            <Placeholder label="Modalidade" />
-          )}
-
-          {/* Suite */}
-          {suite ? (
-            <Row label="Suíte" value={suite.name} />
-          ) : (
-            <Placeholder label="Suíte" />
-          )}
-
-          {/* Divider */}
-          <div className="border-t border-gold-800/30 pt-4">
-            <div className="flex items-baseline justify-between">
-              <span className="text-[10px] tracking-widest uppercase text-gold-600/60">Total</span>
-              {total > 0 ? (
-                <span className="font-serif text-2xl font-semibold gold-gradient">
-                  {fmt(total)}
-                </span>
-              ) : (
-                <span className="text-gold-800/50 text-sm">—</span>
+            <div className="border-t border-gold-800/30 pt-4">
+              <div className="flex items-baseline justify-between">
+                <span className="text-[10px] tracking-widest uppercase text-gold-600/60">Total</span>
+                {total > 0
+                  ? <span className="font-serif text-2xl font-semibold gold-gradient">{fmt(total)}</span>
+                  : <span className="text-gold-800/50 text-sm">—</span>
+                }
+              </div>
+              {type && (
+                <p className="text-[11px] text-gold-700/50 mt-1">
+                  {type === 'period' ? 'Período promocional' : 'Pernoite'}
+                </p>
               )}
             </div>
-            {type && (
-              <p className="text-[11px] text-gold-700/50 mt-1">
-                {type === 'period' ? 'Período promocional' : 'Pernoite'}
-              </p>
+          </div>
+        </div>
+      </aside>
+
+      {/* Mobile bottom bar — only when something is selected */}
+      {(pkg || total > 0) && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-black/95 backdrop-blur border-t border-gold-800/30 px-4 py-3">
+          <div className="flex items-center justify-between max-w-5xl mx-auto">
+            <div className="flex items-center gap-3 min-w-0">
+              {pkg && (
+                <span className="text-xs text-gold-400 font-medium truncate">{pkg.label}</span>
+              )}
+              {type && (
+                <>
+                  <span className="text-gold-800/50 text-xs">·</span>
+                  <span className="text-xs text-gold-600/70 truncate">
+                    {type === 'period' ? 'Período' : 'Pernoite'}
+                  </span>
+                </>
+              )}
+              {suite && (
+                <>
+                  <span className="text-gold-800/50 text-xs">·</span>
+                  <span className="text-xs text-gold-600/70 truncate">{suite.name}</span>
+                </>
+              )}
+            </div>
+            {total > 0 && (
+              <span className="font-serif text-lg font-semibold gold-gradient shrink-0 ml-3">
+                {fmt(total)}
+              </span>
             )}
           </div>
         </div>
-      </div>
-    </aside>
+      )}
+    </>
   )
 }
 

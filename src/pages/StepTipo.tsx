@@ -19,15 +19,15 @@ export default function StepTipo() {
         <span>←</span> Voltar
       </button>
 
-      <h1 className="font-serif text-4xl sm:text-5xl font-light mb-2 leading-tight">
+      <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light mb-2 leading-tight">
         Período ou<br />
         <span className="gold-gradient font-semibold italic">pernoite?</span>
       </h1>
-      <p className="text-gold-700/70 text-sm mb-10">
+      <p className="text-gold-700/70 text-sm mb-6 sm:mb-10">
         Escolha a duração da sua experiência no <strong className="text-gold-500 font-medium">{pkg.label}</strong>.
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 max-w-xl">
         {([
           { id: 'period', label: 'Período', desc: 'Aproveite algumas horas inesquecíveis', price: pkg.price_period },
           { id: 'overnight', label: 'Pernoite', desc: 'A noite toda até a manhã seguinte', price: pkg.price_overnight },
