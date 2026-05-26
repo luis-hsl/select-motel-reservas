@@ -1,6 +1,7 @@
 export type PackageName = 'ouro' | 'prata' | 'bronze'
 export type ReservationType = 'period' | 'overnight'
 export type SuiteSize = 'large' | 'small'
+export type SuiteCategory = 'VIP Piscina' | 'Hidro' | 'Hidro Light' | 'Standard'
 
 export interface Package {
   id: PackageName
@@ -16,9 +17,12 @@ export interface Package {
 export interface Suite {
   id: string
   name: string
+  category: SuiteCategory
   description: string
   size: SuiteSize
   cleaning_buffer_h: number
+  room_number: number
+  packageIds: PackageName[]
 }
 
 export interface ReservationState {

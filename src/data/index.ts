@@ -46,10 +46,26 @@ export const PACKAGES: Package[] = [
 ]
 
 export const SUITES: Suite[] = [
-  { id: 'master', name: 'Suíte Master', description: 'Espaçosa com banheira e hidromassagem', size: 'large', cleaning_buffer_h: 2 },
-  { id: 'luxo', name: 'Suíte Luxo', description: 'Conforto e elegância com cama king', size: 'large', cleaning_buffer_h: 2 },
-  { id: 'classic', name: 'Suíte Clássica', description: 'Aconchegante com todo o necessário', size: 'small', cleaning_buffer_h: 1 },
-  { id: 'romantica', name: 'Suíte Romântica', description: 'Decoração especial para casais', size: 'small', cleaning_buffer_h: 1 },
+  // ── Pacote Ouro ─────────────────────────────────────────
+  { id: 'suite-14', name: 'Suíte 14', category: 'VIP Piscina', description: 'Suíte VIP com piscina privativa', room_number: 14, size: 'large', cleaning_buffer_h: 2, packageIds: ['ouro'] },
+  { id: 'suite-16', name: 'Suíte 16', category: 'VIP Piscina', description: 'Suíte VIP com piscina privativa', room_number: 16, size: 'large', cleaning_buffer_h: 2, packageIds: ['ouro'] },
+
+  // ── Pacote Prata ─────────────────────────────────────────
+  { id: 'suite-15', name: 'Suíte 15', category: 'Hidro', description: 'Suíte com banheira de hidromassagem', room_number: 15, size: 'large', cleaning_buffer_h: 2, packageIds: ['prata'] },
+  { id: 'suite-18', name: 'Suíte 18', category: 'Hidro', description: 'Suíte com banheira de hidromassagem', room_number: 18, size: 'large', cleaning_buffer_h: 2, packageIds: ['prata'] },
+
+  // ── Pacote Bronze · Hidro Light ──────────────────────────
+  { id: 'suite-12', name: 'Suíte 12', category: 'Hidro Light', description: 'Suíte com hidromassagem compacta', room_number: 12, size: 'small', cleaning_buffer_h: 1, packageIds: ['bronze'] },
+  { id: 'suite-13', name: 'Suíte 13', category: 'Hidro Light', description: 'Suíte com hidromassagem compacta', room_number: 13, size: 'small', cleaning_buffer_h: 1, packageIds: ['bronze'] },
+
+  // ── Pacote Bronze · Standard ─────────────────────────────
+  { id: 'suite-11', name: 'Suíte 11', category: 'Standard', description: 'Suíte confortável e aconchegante', room_number: 11, size: 'small', cleaning_buffer_h: 1, packageIds: ['bronze'] },
+  { id: 'suite-17', name: 'Suíte 17', category: 'Standard', description: 'Suíte confortável e aconchegante', room_number: 17, size: 'small', cleaning_buffer_h: 1, packageIds: ['bronze'] },
+  { id: 'suite-22', name: 'Suíte 22', category: 'Standard', description: 'Suíte confortável e aconchegante', room_number: 22, size: 'small', cleaning_buffer_h: 1, packageIds: ['bronze'] },
+  { id: 'suite-23', name: 'Suíte 23', category: 'Standard', description: 'Suíte confortável e aconchegante', room_number: 23, size: 'small', cleaning_buffer_h: 1, packageIds: ['bronze'] },
+  { id: 'suite-24', name: 'Suíte 24', category: 'Standard', description: 'Suíte confortável e aconchegante', room_number: 24, size: 'small', cleaning_buffer_h: 1, packageIds: ['bronze'] },
+  { id: 'suite-25', name: 'Suíte 25', category: 'Standard', description: 'Suíte confortável e aconchegante', room_number: 25, size: 'small', cleaning_buffer_h: 1, packageIds: ['bronze'] },
+  { id: 'suite-26', name: 'Suíte 26', category: 'Standard', description: 'Suíte confortável e aconchegante', room_number: 26, size: 'small', cleaning_buffer_h: 1, packageIds: ['bronze'] },
 ]
 
 // Valentine's week — June 9 to June 12, 2026
