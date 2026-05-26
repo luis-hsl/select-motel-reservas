@@ -4,7 +4,6 @@ import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
 import type { Suite, SuiteCategory } from '../types'
 
-const WHATSAPP_NUMBER = '5543999999999'
 const WHATSAPP_MSG = encodeURIComponent('Olá! Gostaria de verificar disponibilidade de suítes para o Dia dos Namorados.')
 
 const CATEGORY_LABEL: Record<SuiteCategory, string> = {
@@ -26,9 +25,33 @@ export default function StepSuite() {
   const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [galleryFor, setGalleryFor] = useState<Suite | null>(null)
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({})
+  const [whatsappNum, setWhatsappNum] = useState('5543999999999')
 
   const packageSuites = SUITES.filter(s => pkg && s.packageIds.includes(pkg.id as never))
   const maxSlots = type === 'overnight' ? 4 : 16
+
+  // Fetch photo URLs and WhatsApp number from Supabase
+  useEffect(() => {
+    supabase
+      .from('suites')
+      .select('id, photo_url')
+      .not('photo_url', 'is', null)
+      .then(({ data }) => {
+        if (data) {
+          const urls: Record<string, string> = {}
+          data.forEach(s => { if (s.photo_url) urls[s.id] = s.photo_url })
+          setPhotoUrls(urls)
+        }
+      })
+
+    supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'whatsapp_number')
+      .single()
+      .then(({ data }) => { if (data?.value) setWhatsappNum(data.value) })
+  }, [])
 
   useEffect(() => {
     if (!pkg || !type || packageSuites.length === 0) { setLoading(false); return }
@@ -88,7 +111,7 @@ export default function StepSuite() {
             <p className="text-sm text-red-400/80 mb-1">Todas as suítes do {pkg?.label} estão ocupadas para este período.</p>
             <p className="text-xs text-gold-800/50">Entre em contato com nosso suporte.</p>
           </div>
-          <SupportCard highlight />
+          <SupportCard highlight whatsappNum={whatsappNum} />
         </div>
       ) : (
         <div className="space-y-8">
@@ -107,6 +130,7 @@ export default function StepSuite() {
                     <SuiteCard
                       key={suite.id}
                       suite={suite}
+                      photoUrl={photoUrls[suite.id]}
                       occupied={occupiedIds.has(suite.id)}
                       selected={selected?.id === suite.id}
                       onChoose={() => choose(suite)}
@@ -117,13 +141,14 @@ export default function StepSuite() {
               </div>
             )
           })}
-          <SupportCard highlight={false} />
+          <SupportCard highlight={false} whatsappNum={whatsappNum} />
         </div>
       )}
 
       {galleryFor && (
         <SuiteGallery
           suite={galleryFor}
+          photoUrl={photoUrls[galleryFor.id]}
           occupied={occupiedIds.has(galleryFor.id)}
           selected={selected?.id === galleryFor.id}
           onChoose={() => { choose(galleryFor); setGalleryFor(null) }}
@@ -136,11 +161,11 @@ export default function StepSuite() {
 
 // ── Suite Card ─────────────────────────────────────────────
 
-function SuiteCard({ suite, occupied, selected, onChoose, onViewMore }: {
-  suite: Suite; occupied: boolean; selected: boolean
+function SuiteCard({ suite, photoUrl, occupied, selected, onChoose, onViewMore }: {
+  suite: Suite; photoUrl?: string; occupied: boolean; selected: boolean
   onChoose: () => void; onViewMore: () => void
 }) {
-  const coverUrl = `/suites/${suite.id}.jpg`
+  const coverUrl = photoUrl ?? `/suites/${suite.id}.jpg`
 
   return (
     <div
@@ -234,8 +259,8 @@ function SuiteCard({ suite, occupied, selected, onChoose, onViewMore }: {
 
 // ── Suite Gallery Modal ────────────────────────────────────
 
-function SuiteGallery({ suite, occupied, selected, onChoose, onClose }: {
-  suite: Suite; occupied: boolean; selected: boolean
+function SuiteGallery({ suite, photoUrl, occupied, selected, onChoose, onClose }: {
+  suite: Suite; photoUrl?: string; occupied: boolean; selected: boolean
   onChoose: () => void; onClose: () => void
 }) {
   const [visible, setVisible] = useState(false)
@@ -250,7 +275,7 @@ function SuiteGallery({ suite, occupied, selected, onChoose, onClose }: {
     setTimeout(onClose, 360)
   }
 
-  const coverUrl = `/suites/${suite.id}.jpg`
+  const coverUrl = photoUrl ?? `/suites/${suite.id}.jpg`
   const extraPhotos = GALLERY[suite.id] ?? []
 
   return (
@@ -390,10 +415,10 @@ function DetailChip({ label, value }: { label: string; value: string }) {
   )
 }
 
-function SupportCard({ highlight }: { highlight: boolean }) {
+function SupportCard({ highlight, whatsappNum }: { highlight: boolean; whatsappNum: string }) {
   return (
     <a
-      href={`https://wa.me/${WHATSAPP_NUMBER}?text=${WHATSAPP_MSG}`}
+      href={`https://wa.me/${whatsappNum}?text=${WHATSAPP_MSG}`}
       target="_blank" rel="noopener noreferrer"
       className={[
         'flex items-center gap-4 w-full rounded-xl border px-5 py-4 transition-all duration-200 hover:opacity-90 active:scale-[0.98]',
