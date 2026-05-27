@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { SUITES, PROMO_START, PROMO_END } from '../data'
+import { SUITES } from '../data'
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
 import type { Suite, SuiteCategory } from '../types'
@@ -21,15 +21,13 @@ const GALLERY: Record<string, string[]> = {
 }
 
 export default function StepSuite() {
-  const { package: pkg, type, suite: selected, setSuite, nextStep, prevStep } = useStore()
-  const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set())
+  const { package: pkg, suite: selected, setSuite, nextStep, prevStep } = useStore()
   const [loading, setLoading] = useState(true)
   const [galleryFor, setGalleryFor] = useState<Suite | null>(null)
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({})
   const [whatsappNum, setWhatsappNum] = useState('5543999999999')
 
   const packageSuites = SUITES.filter(s => pkg && s.packageIds.includes(pkg.id as never))
-  const maxSlots = type === 'overnight' ? 4 : 16
 
   // Fetch photo URLs and WhatsApp number from Supabase
   useEffect(() => {
@@ -51,33 +49,13 @@ export default function StepSuite() {
       .eq('key', 'whatsapp_number')
       .single()
       .then(({ data }) => { if (data?.value) setWhatsappNum(data.value) })
+
+    setLoading(false)
   }, [])
 
-  useEffect(() => {
-    if (!pkg || !type || packageSuites.length === 0) { setLoading(false); return }
-    const ids = packageSuites.map(s => s.id)
-    const promoEnd = new Date(PROMO_END); promoEnd.setHours(23, 59, 59)
-
-    supabase
-      .from('reservations').select('suite_id')
-      .in('suite_id', ids).eq('type', type)
-      .in('status', ['pending', 'confirmed', 'paid'])
-      .gte('check_in', PROMO_START.toISOString())
-      .lte('check_in', promoEnd.toISOString())
-      .then(({ data }) => {
-        const count: Record<string, number> = {}
-        data?.forEach(r => { count[r.suite_id] = (count[r.suite_id] || 0) + 1 })
-        setOccupiedIds(new Set(
-          Object.entries(count).filter(([, n]) => n >= maxSlots).map(([id]) => id)
-        ))
-        setLoading(false)
-      })
-  }, [pkg?.id, type])
-
-  const allOccupied = packageSuites.length > 0 && packageSuites.every(s => occupiedIds.has(s.id))
+  const allOccupied = false // availability is checked per-slot in StepData
 
   function choose(suite: Suite) {
-    if (occupiedIds.has(suite.id)) return
     setSuite(suite)
     setTimeout(nextStep, 300)
   }
@@ -131,7 +109,7 @@ export default function StepSuite() {
                       key={suite.id}
                       suite={suite}
                       photoUrl={photoUrls[suite.id]}
-                      occupied={occupiedIds.has(suite.id)}
+                      occupied={false}
                       selected={selected?.id === suite.id}
                       onChoose={() => choose(suite)}
                       onViewMore={() => setGalleryFor(suite)}
@@ -149,7 +127,7 @@ export default function StepSuite() {
         <SuiteGallery
           suite={galleryFor}
           photoUrl={photoUrls[galleryFor.id]}
-          occupied={occupiedIds.has(galleryFor.id)}
+          occupied={false}
           selected={selected?.id === galleryFor.id}
           onChoose={() => { choose(galleryFor); setGalleryFor(null) }}
           onClose={() => setGalleryFor(null)}

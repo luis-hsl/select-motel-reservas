@@ -18,6 +18,7 @@ interface StoreState {
   setCheckIn: (date: Date) => void
   setCustomer: (name: string, phone: string, email: string) => void
   totalAmount: () => number
+  checkOut: () => Date | null
   nextStep: () => void
   prevStep: () => void
 }
@@ -44,6 +45,14 @@ export const useStore = create<StoreState>((set, get) => ({
     const { package: pkg, type } = get()
     if (!pkg || !type) return 0
     return type === 'period' ? pkg.price_period : pkg.price_overnight
+  },
+
+  checkOut: () => {
+    const { checkIn, type } = get()
+    if (!checkIn || !type) return null
+    const out = new Date(checkIn)
+    out.setHours(out.getHours() + (type === 'period' ? 2 : 12))
+    return out
   },
 
   nextStep: () => set((s) => ({ currentStep: s.currentStep + 1 })),

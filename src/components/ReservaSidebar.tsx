@@ -4,9 +4,17 @@ function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
+function fmtDt(d: Date) {
+  return d.toLocaleString('pt-BR', {
+    day: '2-digit', month: '2-digit',
+    hour: '2-digit', minute: '2-digit',
+  })
+}
+
 export default function ReservaSidebar() {
-  const { package: pkg, type, suite, totalAmount } = useStore()
+  const { package: pkg, type, suite, checkIn, checkOut, totalAmount } = useStore()
   const total = totalAmount()
+  const checkout = checkOut()
 
   return (
     <>
@@ -24,6 +32,8 @@ export default function ReservaSidebar() {
               : <Placeholder label="Modalidade" />
             }
             {suite ? <Row label="Suíte" value={suite.name} /> : <Placeholder label="Suíte" />}
+            {checkIn ? <Row label="Check-in" value={fmtDt(checkIn)} /> : null}
+            {checkout ? <Row label="Check-out" value={fmtDt(checkout)} highlight /> : null}
 
             <div className="border-t border-gold-800/30 pt-4">
               <div className="flex items-baseline justify-between">
@@ -78,11 +88,11 @@ export default function ReservaSidebar() {
   )
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
     <div>
       <p className="text-[10px] tracking-widest uppercase text-gold-600/50 mb-0.5">{label}</p>
-      <p className="text-sm text-gold-300 font-medium">{value}</p>
+      <p className={`text-sm font-medium ${highlight ? 'text-gold-200' : 'text-gold-300'}`}>{value}</p>
     </div>
   )
 }
