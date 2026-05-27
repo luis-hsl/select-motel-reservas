@@ -1,22 +1,24 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { User } from '@supabase/supabase-js'
+import DashboardTab from './tabs/DashboardTab'
 import ReservasTab from './tabs/ReservasTab'
 import SuitesTab from './tabs/SuitesTab'
 import PacotesTab from './tabs/PacotesTab'
 import ConfigTab from './tabs/ConfigTab'
 
-type Tab = 'reservas' | 'suites' | 'pacotes' | 'config'
+type Tab = 'visao-geral' | 'reservas' | 'suites' | 'pacotes' | 'config'
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'reservas', label: 'Reservas' },
-  { id: 'suites',   label: 'Suítes' },
-  { id: 'pacotes',  label: 'Pacotes' },
-  { id: 'config',   label: 'Configurações' },
+  { id: 'visao-geral', label: 'Visão Geral' },
+  { id: 'reservas',    label: 'Reservas' },
+  { id: 'suites',      label: 'Suítes' },
+  { id: 'pacotes',     label: 'Pacotes' },
+  { id: 'config',      label: 'Configurações' },
 ]
 
 export default function AdminDashboard({ user }: { user: User }) {
-  const [tab, setTab] = useState<Tab>('reservas')
+  const [tab, setTab] = useState<Tab>('visao-geral')
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
@@ -63,10 +65,11 @@ export default function AdminDashboard({ user }: { user: User }) {
 
       {/* Content */}
       <main className="p-4 sm:p-6 max-w-5xl mx-auto">
-        {tab === 'reservas' && <ReservasTab />}
-        {tab === 'suites'   && <SuitesTab />}
-        {tab === 'pacotes'  && <PacotesTab />}
-        {tab === 'config'   && <ConfigTab />}
+        {tab === 'visao-geral' && <DashboardTab />}
+        {tab === 'reservas'    && <ReservasTab />}
+        {tab === 'suites'      && <SuitesTab />}
+        {tab === 'pacotes'     && <PacotesTab />}
+        {tab === 'config'      && <ConfigTab />}
       </main>
     </div>
   )
