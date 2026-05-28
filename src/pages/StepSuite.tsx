@@ -13,18 +13,13 @@ const CATEGORY_LABEL: Record<SuiteCategory, string> = {
   'Standard': 'Standard',
 }
 
-// Galeria de cada suíte — adicione mais URLs conforme disponível
-const GALLERY: Record<string, string[]> = {
-  'suite-11': [], 'suite-12': [], 'suite-13': [], 'suite-14': [],
-  'suite-15': [], 'suite-16': [], 'suite-17': [], 'suite-18': [],
-  'suite-22': [], 'suite-23': [], 'suite-24': [], 'suite-25': [], 'suite-26': [],
-}
 
 export default function StepSuite() {
   const { package: pkg, suite: selected, checkIn, type, setSuite, nextStep, prevStep } = useStore()
   const [loading, setLoading] = useState(true)
   const [galleryFor, setGalleryFor] = useState<Suite | null>(null)
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({})
+  const [allPhotos, setAllPhotos] = useState<Record<string, string[]>>({})
   const [whatsappNum, setWhatsappNum] = useState('5543999999999')
   const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set())
 
@@ -35,6 +30,7 @@ export default function StepSuite() {
 
     Promise.all([
       supabase.from('suites').select('id,photo_url').not('photo_url', 'is', null),
+      (supabase as any).from('suite_photos').select('suite_id,url').order('sort_order'),
       supabase.from('settings').select('value').eq('key', 'whatsapp_number').single(),
       checkIn && checkOut
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -43,13 +39,21 @@ export default function StepSuite() {
             p_check_out: checkOut.toISOString(),
           })
         : Promise.resolve({ data: [] }),
-    ]).then(([suiteRes, waRes, occRes]) => {
+    ]).then(([suiteRes, photosRes, waRes, occRes]) => {
       if (suiteRes.data) {
         const urls: Record<string, string> = {}
         suiteRes.data.forEach((s: { id: string; photo_url: string | null }) => {
           if (s.photo_url) urls[s.id] = s.photo_url
         })
         setPhotoUrls(urls)
+      }
+      if (photosRes.data) {
+        const grouped: Record<string, string[]> = {}
+        ;(photosRes.data as { suite_id: string; url: string }[]).forEach(p => {
+          if (!grouped[p.suite_id]) grouped[p.suite_id] = []
+          grouped[p.suite_id].push(p.url)
+        })
+        setAllPhotos(grouped)
       }
       if (waRes.data?.value) setWhatsappNum(waRes.data.value)
       if (occRes.data) {
@@ -136,7 +140,7 @@ export default function StepSuite() {
       {galleryFor && (
         <SuiteGallery
           suite={galleryFor}
-          photoUrl={photoUrls[galleryFor.id]}
+          photos={allPhotos[galleryFor.id] ?? (photoUrls[galleryFor.id] ? [photoUrls[galleryFor.id]] : [])}
           occupied={occupiedIds.has(galleryFor.id)}
           selected={selected?.id === galleryFor.id}
           onChoose={() => { choose(galleryFor); setGalleryFor(null) }}
@@ -247,8 +251,8 @@ function SuiteCard({ suite, photoUrl, occupied, selected, onChoose, onViewMore }
 
 // ── Suite Gallery Modal ────────────────────────────────────
 
-function SuiteGallery({ suite, photoUrl, occupied, selected, onChoose, onClose }: {
-  suite: Suite; photoUrl?: string; occupied: boolean; selected: boolean
+function SuiteGallery({ suite, photos, occupied, selected, onChoose, onClose }: {
+  suite: Suite; photos: string[]; occupied: boolean; selected: boolean
   onChoose: () => void; onClose: () => void
 }) {
   const [visible, setVisible] = useState(false)
@@ -263,8 +267,8 @@ function SuiteGallery({ suite, photoUrl, occupied, selected, onChoose, onClose }
     setTimeout(onClose, 360)
   }
 
-  const coverUrl = photoUrl ?? `/suites/${suite.id}.jpg`
-  const extraPhotos = GALLERY[suite.id] ?? []
+  const coverUrl = photos[0] ?? `/suites/${suite.id}.jpg`
+  const extraPhotos = photos.slice(1)
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" style={{ pointerEvents: visible ? 'auto' : 'none' }}>
