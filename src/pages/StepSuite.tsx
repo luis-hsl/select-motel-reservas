@@ -148,7 +148,6 @@ export default function StepSuite() {
           onClose={() => setGalleryFor(null)}
         />,
         document.body
-      )
       )}
     </div>
   )
