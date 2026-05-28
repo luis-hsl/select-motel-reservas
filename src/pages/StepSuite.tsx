@@ -157,8 +157,6 @@ function SuiteCard({ suite, photoUrl, occupied, selected, onChoose, onViewMore }
   suite: Suite; photoUrl?: string; occupied: boolean; selected: boolean
   onChoose: () => void; onViewMore: () => void
 }) {
-  const coverUrl = photoUrl ?? `/suites/${suite.id}.jpg`
-
   return (
     <div
       className={[
@@ -176,7 +174,7 @@ function SuiteCard({ suite, photoUrl, occupied, selected, onChoose, onViewMore }
             'radial-gradient(ellipse at 50% 110%, rgba(180,90,15,0.55) 0%, transparent 55%)',
             'radial-gradient(ellipse at 20% 85%, rgba(130,65,10,0.4) 0%, transparent 45%)',
             'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.65) 100%)',
-            `url(${coverUrl})`,
+            ...(photoUrl ? [`url(${photoUrl})`] : []),
           ].join(', '),
           backgroundSize: 'cover',
           backgroundPosition: 'center',
@@ -208,7 +206,6 @@ function SuiteCard({ suite, photoUrl, occupied, selected, onChoose, onViewMore }
               fontSize: 'clamp(4rem, 16vw, 6rem)',
               backgroundImage: 'linear-gradient(160deg, #fce8a8 0%, #d4a017 35%, #8b6010 70%, #c9a84c 100%)',
               lineHeight: 1,
-              filter: 'drop-shadow(0 2px 16px rgba(200,150,30,0.5))',
             }}
           >
             {suite.room_number}
@@ -267,7 +264,7 @@ function SuiteGallery({ suite, photos, occupied, selected, onChoose, onClose }: 
     setTimeout(onClose, 360)
   }
 
-  const coverUrl = photos[0] ?? `/suites/${suite.id}.jpg`
+  const coverUrl = photos[0]
   const extraPhotos = photos.slice(1)
 
   return (
@@ -306,7 +303,7 @@ function SuiteGallery({ suite, photos, occupied, selected, onChoose, onClose }: 
               'radial-gradient(ellipse at 50% 110%, rgba(180,90,15,0.6) 0%, transparent 55%)',
               'radial-gradient(ellipse at 15% 85%, rgba(130,65,10,0.45) 0%, transparent 48%)',
               'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.6) 100%)',
-              `url(${coverUrl})`,
+              ...(coverUrl ? [`url(${coverUrl})`] : []),
             ].join(', '),
             backgroundSize: 'cover',
             backgroundPosition: 'center',
@@ -333,7 +330,6 @@ function SuiteGallery({ suite, photos, occupied, selected, onChoose, onClose }: 
                 fontSize: 'clamp(5rem, 22vw, 8rem)',
                 backgroundImage: 'linear-gradient(160deg, #fce8a8 0%, #d4a017 35%, #8b6010 70%, #c9a84c 100%)',
                 lineHeight: 1,
-                filter: 'drop-shadow(0 4px 20px rgba(200,150,30,0.6))',
               }}
             >
               {suite.room_number}
