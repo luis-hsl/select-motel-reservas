@@ -108,7 +108,7 @@ export default function StepRefeicao() {
         <div className="mt-4 max-w-xl px-4 py-3 rounded-xl border border-gold-800/30 bg-gold-900/10">
           {selected === 'jantar' ? (
             <p className="text-xs text-gold-300/80">
-              ✦ O jantar inclui <strong className="text-gold-300">entrada</strong> — couvert servido antes do prato principal.
+              ✦ O jantar inclui <strong className="text-gold-300">entrada</strong> — tábua de frios com salame, lombo, queijo, amendoim e azeitonas.
             </p>
           ) : (
             <p className="text-xs text-gold-300/80">
