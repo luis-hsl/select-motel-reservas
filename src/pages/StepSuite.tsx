@@ -194,29 +194,33 @@ function SuiteCard({ suite, photoUrl, occupied, selected, onChoose, onViewMore }
       {/* Content */}
       <div className="relative z-10 h-full flex flex-col p-4">
 
-        {/* Top: SUÍTE label + line */}
-        <div className="text-center">
-          <p className="text-[9px] tracking-[0.45em] uppercase font-medium mb-1.5" style={{ color: 'rgba(220,185,100,0.75)' }}>
-            S U Í T E
-          </p>
-          <div
-            className="h-px mx-auto w-12"
-            style={{ background: 'linear-gradient(to right, transparent, #c9a84c, transparent)', boxShadow: '0 0 6px rgba(200,160,50,0.7)' }}
-          />
-        </div>
+        {/* Top: SUÍTE label + line — only when no cover photo */}
+        {!photoUrl && (
+          <div className="text-center">
+            <p className="text-[9px] tracking-[0.45em] uppercase font-medium mb-1.5" style={{ color: 'rgba(220,185,100,0.75)' }}>
+              S U Í T E
+            </p>
+            <div
+              className="h-px mx-auto w-12"
+              style={{ background: 'linear-gradient(to right, transparent, #c9a84c, transparent)', boxShadow: '0 0 6px rgba(200,160,50,0.7)' }}
+            />
+          </div>
+        )}
 
-        {/* Center: Room number */}
+        {/* Center: Room number — only when no cover photo */}
         <div className="flex-1 flex items-center justify-center">
-          <span
-            className="font-serif font-bold text-transparent bg-clip-text select-none"
-            style={{
-              fontSize: 'clamp(4rem, 16vw, 6rem)',
-              backgroundImage: 'linear-gradient(160deg, #fce8a8 0%, #d4a017 35%, #8b6010 70%, #c9a84c 100%)',
-              lineHeight: 1,
-            }}
-          >
-            {suite.room_number}
-          </span>
+          {!photoUrl && (
+            <span
+              className="font-serif font-bold text-transparent bg-clip-text select-none"
+              style={{
+                fontSize: 'clamp(4rem, 16vw, 6rem)',
+                backgroundImage: 'linear-gradient(160deg, #fce8a8 0%, #d4a017 35%, #8b6010 70%, #c9a84c 100%)',
+                lineHeight: 1,
+              }}
+            >
+              {suite.room_number}
+            </span>
+          )}
         </div>
 
         {/* Bottom: category + buttons */}
@@ -312,38 +316,17 @@ function SuiteGallery({ suite, photos, videoUrl, occupied, selected, onChoose, o
           <div className="w-10 h-1 rounded-full bg-gold-800/40" />
         </div>
 
-        {/* Video hero (when available) */}
+        {/* Video hero — when available, show ONLY video (no photos) */}
         {videoUrl && (
-          <div className="relative overflow-hidden" style={{ aspectRatio: '4 / 3' }}>
+          <div className="relative bg-black">
             <video
               src={videoUrl}
               autoPlay
               muted
               loop
               playsInline
-              className="w-full h-full object-cover"
+              className="w-full block"
             />
-            {/* Gradient overlay */}
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, transparent 35%, rgba(0,0,0,0.75) 100%)' }}
-            />
-            {/* Suite number overlay bottom-left */}
-            <div className="absolute bottom-4 left-5 z-10">
-              <p className="text-[8px] tracking-[0.45em] uppercase mb-0.5" style={{ color: 'rgba(220,185,100,0.7)' }}>
-                S U Í T E
-              </p>
-              <span
-                className="font-serif font-bold text-transparent bg-clip-text block"
-                style={{
-                  fontSize: 'clamp(2.5rem, 11vw, 4rem)',
-                  backgroundImage: 'linear-gradient(160deg, #fce8a8 0%, #d4a017 35%, #8b6010 70%, #c9a84c 100%)',
-                  lineHeight: 1,
-                }}
-              >
-                {suite.room_number}
-              </span>
-            </div>
             {/* Close button */}
             <button
               onClick={close}
@@ -355,9 +338,9 @@ function SuiteGallery({ suite, photos, videoUrl, occupied, selected, onChoose, o
           </div>
         )}
 
-        {/* Photo area (carousel or placeholder) — hidden when video is shown and no extra photos */}
-        {(!videoUrl || photos.length > 0) && (
-          <div className="relative overflow-hidden" style={{ aspectRatio: videoUrl ? '21 / 9' : '4 / 3' }}>
+        {/* Photo area — only when there is no video */}
+        {!videoUrl && (
+          <div className="relative overflow-hidden" style={{ aspectRatio: '4 / 3' }}>
             {photos.length > 0 ? (
               /* ── Swipeable carousel ── */
               <div
