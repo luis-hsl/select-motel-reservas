@@ -86,11 +86,11 @@ export default function SuitesTab() {
             <div key={suite.id} className="bg-white/[0.03] border border-white/8 rounded-xl overflow-hidden">
 
               {/* ── Foto de capa ── */}
-              <div className="aspect-video relative bg-white/5">
+              <div className="relative bg-white/5">
                 {suite.photo_url ? (
-                  <img src={suite.photo_url} alt={suite.name} className="w-full h-full object-cover" />
+                  <img src={suite.photo_url} alt={suite.name} className="w-full block" />
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center gap-1">
+                  <div className="aspect-video flex flex-col items-center justify-center gap-1">
                     <span className="text-white/15 text-3xl">🖼️</span>
                     <span className="text-white/20 text-xs">Sem foto de capa</span>
                   </div>
