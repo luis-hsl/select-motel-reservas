@@ -11,7 +11,7 @@ const OPCOES = [
     border: 'rgba(180,40,40,0.5)',
     ring: 'rgba(200,60,60,0.35)',
     glow: 'rgba(140,30,30,0.4)',
-    nameCss: 'linear-gradient(180deg,#f5c0c0 0%,#c84040 45%,#7a1010 100%)',
+    nameCss: 'linear-gradient(180deg,#f5e0a0 0%,#d4a017 45%,#8b6010 100%)',
   },
   {
     id: 'frisante' as const,
@@ -110,7 +110,7 @@ export default function StepBebida() {
 
                 <h2
                   className="font-serif font-bold tracking-widest mb-1 text-transparent bg-clip-text leading-none"
-                  style={{ fontSize: 'clamp(1.4rem,4vw,1.9rem)', backgroundImage: opt.nameCss }}
+                  style={{ fontSize: 'clamp(1.1rem,3vw,1.5rem)', backgroundImage: opt.nameCss }}
                 >
                   {opt.label.toUpperCase()}
                 </h2>
