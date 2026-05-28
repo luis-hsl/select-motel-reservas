@@ -60,12 +60,12 @@ export default function ConfigTab() {
 
       {/* ── Seção Fundir ── */}
       <div className="mb-8 p-4 rounded-xl bg-white/[0.03] border border-white/8">
-        <p className="text-white/60 text-xs font-medium uppercase tracking-widest mb-4">🎁 Presente / Fundir</p>
+        <p className="text-white/60 text-xs font-medium uppercase tracking-widest mb-4">🎁 Presente / Fondue</p>
 
         {/* Foto atual */}
         <div className="mb-3">
           {fundirPhotoUrl ? (
-            <img src={fundirPhotoUrl} alt="Fundir" className="w-full rounded-xl block mb-2" />
+            <img src={fundirPhotoUrl} alt="Fondue" className="w-full rounded-xl block mb-2" />
           ) : (
             <div className="aspect-video flex items-center justify-center rounded-xl bg-white/5 mb-2">
               <span className="text-white/20 text-sm">Sem foto definida</span>
@@ -83,7 +83,7 @@ export default function ConfigTab() {
             disabled={uploadingFundir}
             className="w-full py-2.5 rounded-xl text-xs font-medium border border-gold-500/30 text-gold-400/80 hover:bg-gold-500/10 transition-colors disabled:opacity-40"
           >
-            {uploadingFundir ? '↑ Enviando...' : fundirPhotoUrl ? '🖼 Trocar foto do fundir' : '🖼 + Foto do fundir'}
+            {uploadingFundir ? '↑ Enviando...' : fundirPhotoUrl ? '🖼 Trocar foto do fondue' : '🖼 + Foto do fondue'}
           </button>
         </div>
 
