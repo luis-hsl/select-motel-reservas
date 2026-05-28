@@ -1,4 +1,5 @@
 import './index.css'
+import { useState, useEffect } from 'react'
 import ProgressBar from './components/ProgressBar'
 import ReservaSidebar from './components/ReservaSidebar'
 import StepPacote from './pages/StepPacote'
@@ -22,7 +23,20 @@ const STEPS: Record<number, React.ComponentType> = {
 
 export default function App() {
   const { currentStep } = useStore()
-  const StepComponent = STEPS[currentStep] ?? StepPacote
+  const [shown, setShown] = useState(currentStep)
+  const [phase, setPhase] = useState<'in' | 'out'>('in')
+
+  useEffect(() => {
+    if (currentStep === shown) return
+    setPhase('out')
+    const t = setTimeout(() => {
+      setShown(currentStep)
+      setPhase('in')
+    }, 180)
+    return () => clearTimeout(t)
+  }, [currentStep])
+
+  const StepComponent = STEPS[shown] ?? StepPacote
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
@@ -32,7 +46,9 @@ export default function App() {
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 xl:gap-16 items-start">
           {/* Main content */}
           <main className="flex-1 min-w-0 w-full">
-            <StepComponent />
+            <div key={shown} className={phase === 'out' ? 'step-out' : 'step-in'}>
+              <StepComponent />
+            </div>
           </main>
 
           {/* Sidebar — desktop only */}
