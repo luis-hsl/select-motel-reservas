@@ -159,7 +159,7 @@ export default function StepData() {
         <span>←</span> Voltar
       </button>
 
-      <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light mb-2 leading-tight">
+      <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-light mb-2 leading-tight">
         Escolha a data<br />
         <span className="gold-gradient font-semibold italic">e o horário</span>
       </h1>
@@ -167,99 +167,102 @@ export default function StepData() {
         Selecione quando você quer chegar.
       </p>
 
-      {/* Calendar */}
-      <div className="mb-8">
-        <p className="text-[10px] tracking-widest uppercase text-gold-600/60 mb-3">Data</p>
-        <Calendar
-          selected={selectedDate}
-          onSelect={(d) => {
-            setSelectedDate(d)
-            setSelectedSlot(null)
-            setTimeout(() => {
-              slotsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-            }, 80)
-          }}
-        />
-      </div>
-
-      {/* Time slots */}
-      {selectedDate && (
-        <div ref={slotsRef} className="mb-8" style={{ scrollMarginTop: '5rem' }}>
-          <p className="text-[10px] tracking-widest uppercase text-gold-600/60 mb-3">
-            Horário de check-in
-          </p>
-
-          {type === 'overnight' ? (
-            <button
-              onClick={() => setSelectedSlot(OVERNIGHT_CHECKIN)}
-              className={[
-                'w-full py-4 rounded-xl border text-sm font-medium transition-all duration-200',
-                selectedSlot
-                  ? 'border-gold-500 bg-gold-900/20 text-gold-300'
-                  : 'border-gold-900/40 text-gold-700/60 hover:border-gold-700/50 hover:text-gold-400',
-              ].join(' ')}
-            >
-              00:00 — entrada à meia-noite
-            </button>
-          ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-              {slots.map((slot) => {
-                const sel = selectedSlot === slot
-                const [h] = slot.split(':').map(Number)
-                const period = h < 12 ? 'AM' : 'PM'
-                return (
-                  <button
-                    key={slot}
-                    onClick={() => setSelectedSlot(slot)}
-                    className={[
-                      'py-3 rounded-xl border text-sm font-medium transition-all duration-200 outline-none flex flex-col items-center gap-0.5',
-                      sel
-                        ? 'border-gold-500 bg-gold-900/20 text-gold-300'
-                        : 'border-gold-900/40 text-gold-700/60 hover:border-gold-700/50 hover:text-gold-400',
-                    ].join(' ')}
-                  >
-                    <span>{slot}</span>
-                    <span className={['text-[9px] tracking-widest', sel ? 'text-gold-500/60' : 'text-gold-800/60'].join(' ')}>{period}</span>
-                  </button>
-                )
-              })}
-            </div>
-          )}
-
-          {/* Summary */}
-          {selectedCheckOut && selectedSlot && (
-            <div className="mt-4 px-4 py-3 rounded-xl border border-gold-800/30 bg-gold-900/10">
-              <p className="text-[10px] tracking-widest uppercase text-gold-600/50 mb-1">
-                Resumo do período
-              </p>
-              <div className="flex items-center gap-3 text-sm flex-wrap">
-                <span className="text-gold-400 font-medium">Check-in: {selectedSlot}</span>
-                <span className="text-gold-700/40">→</span>
-                <span className="text-gold-300 font-semibold">
-                  Check-out:{' '}
-                  {selectedCheckOut.toLocaleTimeString('pt-BR', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </span>
-              </div>
-            </div>
-          )}
+      <div className="lg:grid lg:grid-cols-2 lg:gap-10 xl:gap-14 lg:items-start">
+        {/* Coluna esquerda: Calendário */}
+        <div className="mb-8 lg:mb-0">
+          <p className="text-[10px] tracking-widest uppercase text-gold-600/60 mb-3">Data</p>
+          <Calendar
+            selected={selectedDate}
+            onSelect={(d) => {
+              setSelectedDate(d)
+              setSelectedSlot(null)
+              setTimeout(() => {
+                slotsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }, 80)
+            }}
+          />
         </div>
-      )}
 
-      <button
-        onClick={confirm}
-        disabled={!canContinue}
-        className={[
-          'flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-200',
-          canContinue
-            ? 'bg-gradient-to-r from-gold-700 to-gold-500 text-black hover:from-gold-600 hover:to-gold-400'
-            : 'bg-gold-900/20 text-gold-800/40 cursor-not-allowed',
-        ].join(' ')}
-      >
-        Ver suítes disponíveis <span>→</span>
-      </button>
+        {/* Coluna direita: Horários + botão */}
+        <div>
+          {selectedDate && (
+            <div ref={slotsRef} className="mb-8" style={{ scrollMarginTop: '5rem' }}>
+              <p className="text-[10px] tracking-widest uppercase text-gold-600/60 mb-3">
+                Horário de check-in
+              </p>
+
+              {type === 'overnight' ? (
+                <button
+                  onClick={() => setSelectedSlot(OVERNIGHT_CHECKIN)}
+                  className={[
+                    'w-full py-4 rounded-xl border text-sm font-medium transition-all duration-200',
+                    selectedSlot
+                      ? 'border-gold-500 bg-gold-900/20 text-gold-300'
+                      : 'border-gold-900/40 text-gold-700/60 hover:border-gold-700/50 hover:text-gold-400',
+                  ].join(' ')}
+                >
+                  00:00 — entrada à meia-noite
+                </button>
+              ) : (
+                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                  {slots.map((slot) => {
+                    const sel = selectedSlot === slot
+                    const [h] = slot.split(':').map(Number)
+                    const period = h < 12 ? 'Manhã' : h < 18 ? 'Tarde' : 'Noite'
+                    return (
+                      <button
+                        key={slot}
+                        onClick={() => setSelectedSlot(slot)}
+                        className={[
+                          'py-3 rounded-xl border text-sm font-medium transition-all duration-200 outline-none flex flex-col items-center gap-0.5',
+                          sel
+                            ? 'border-gold-500 bg-gold-900/20 text-gold-300'
+                            : 'border-gold-900/40 text-gold-700/60 hover:border-gold-700/50 hover:text-gold-400',
+                        ].join(' ')}
+                      >
+                        <span>{slot}</span>
+                        <span className={['text-[9px] tracking-widest', sel ? 'text-gold-500/60' : 'text-gold-800/60'].join(' ')}>{period}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+
+              {selectedCheckOut && selectedSlot && (
+                <div className="mt-4 px-4 py-3 rounded-xl border border-gold-800/30 bg-gold-900/10">
+                  <p className="text-[10px] tracking-widests uppercase text-gold-600/50 mb-1">
+                    Resumo do período
+                  </p>
+                  <div className="flex items-center gap-3 text-sm flex-wrap">
+                    <span className="text-gold-400 font-medium">Check-in: {selectedSlot}</span>
+                    <span className="text-gold-700/40">→</span>
+                    <span className="text-gold-300 font-semibold">
+                      Check-out:{' '}
+                      {selectedCheckOut.toLocaleTimeString('pt-BR', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <button
+            onClick={confirm}
+            disabled={!canContinue}
+            className={[
+              'flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-200',
+              canContinue
+                ? 'bg-gradient-to-r from-gold-700 to-gold-500 text-black hover:from-gold-600 hover:to-gold-400'
+                : 'bg-gold-900/20 text-gold-800/40 cursor-not-allowed',
+            ].join(' ')}
+          >
+            Ver suítes disponíveis <span>→</span>
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

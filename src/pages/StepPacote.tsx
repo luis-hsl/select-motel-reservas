@@ -300,7 +300,7 @@ function PackageModal({ id, pkg, detail, visible, onClose, onSelect }: ModalProp
 
       {/* Sheet */}
       <div
-        className="relative w-full sm:max-w-lg max-h-[92vh] sm:max-h-[85vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl scrollbar-hide transition-all duration-380"
+        className="relative w-full sm:max-w-2xl lg:max-w-3xl max-h-[92vh] sm:max-h-[88vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl scrollbar-hide transition-all duration-380"
         style={{
           background: t.bg,
           border: `1px solid ${t.border}`,
@@ -342,7 +342,7 @@ function PackageModal({ id, pkg, detail, visible, onClose, onSelect }: ModalProp
         <div className="px-6"><GlowDivider color={t.dividerColor} /></div>
 
         {/* Prices */}
-        <div className="px-6 py-5 grid grid-cols-2 gap-3">
+        <div className="px-6 py-5 grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[
             { label: 'Período', value: pkg.price_period },
             { label: 'Pernoite', value: pkg.price_overnight },
