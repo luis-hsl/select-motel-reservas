@@ -11,6 +11,7 @@ export default function StepPresente() {
   const { nextStep, prevStep } = useStore()
   const [photoUrl, setPhotoUrl]   = useState<string | null>(null)
   const [itemName, setItemName]   = useState('Fondue de Chocolate')
+  const [loaded, setLoaded]       = useState(false)
   const [resgatado, setResgatado] = useState(false)
   const ctaRef = useRef<HTMLButtonElement>(null)
 
@@ -23,6 +24,7 @@ export default function StepPresente() {
           if (r.key === 'fundir_photo_url' && r.value) setPhotoUrl(r.value)
           if (r.key === 'fundir_name' && r.value) setItemName(r.value)
         })
+        setLoaded(true)
       })
   }, [])
 
@@ -50,8 +52,11 @@ export default function StepPresente() {
         Uma surpresa exclusiva do seu Dia dos Namorados no Select.
       </p>
 
-      {/* Card selecionável */}
+      {/* Card selecionável — só renderiza após dados carregados */}
       <div className="max-w-xs">
+        {!loaded ? (
+          <div className="rounded-2xl bg-white/[0.03] border border-white/5" style={{ minHeight: 300 }} />
+        ) : (
         <button
           onClick={() => setResgatado(true)}
           className="relative w-full text-left rounded-2xl overflow-hidden outline-none transition-all duration-300 active:scale-[0.98]"
@@ -97,6 +102,7 @@ export default function StepPresente() {
             </h2>
           </div>
         </button>
+        )}
       </div>
 
       <div className="mt-6">
