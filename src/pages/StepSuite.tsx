@@ -5,7 +5,6 @@ import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
 import type { Suite, SuiteCategory } from '../types'
 
-const WHATSAPP_MSG = encodeURIComponent('Olá! Gostaria de verificar disponibilidade de suítes para o Dia dos Namorados.')
 
 const CATEGORY_LABEL: Record<SuiteCategory, string> = {
   'VIP Piscina': 'VIP · Piscina',
@@ -22,8 +21,7 @@ export default function StepSuite() {
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({})
   const [videoUrls, setVideoUrls] = useState<Record<string, string>>({})
   const [allPhotos, setAllPhotos] = useState<Record<string, string[]>>({})
-  const [whatsappNum, setWhatsappNum] = useState('5543999999999')
-  const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set())
+const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set())
 
   const packageSuites = SUITES.filter(s => pkg && s.packageIds.includes(pkg.id as never))
 
@@ -33,7 +31,6 @@ export default function StepSuite() {
     Promise.all([
       supabase.from('suites').select('id,photo_url,video_url'),
       (supabase as any).from('suite_photos').select('suite_id,url').order('sort_order'),
-      supabase.from('settings').select('value').eq('key', 'whatsapp_number').single(),
       checkIn && checkOut
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ? (supabase as any).rpc('get_occupied_suite_ids', {
@@ -41,7 +38,7 @@ export default function StepSuite() {
             p_check_out: checkOut.toISOString(),
           })
         : Promise.resolve({ data: [] }),
-    ]).then(([suiteRes, photosRes, waRes, occRes]) => {
+    ]).then(([suiteRes, photosRes, occRes]) => {
       if (suiteRes.data) {
         const photos: Record<string, string> = {}
         const videos: Record<string, string> = {}
@@ -60,7 +57,6 @@ export default function StepSuite() {
         })
         setAllPhotos(grouped)
       }
-      if (waRes.data?.value) setWhatsappNum(waRes.data.value)
       if (occRes.data) {
         setOccupiedIds(new Set((occRes.data as { suite_id: string }[]).map(r => r.suite_id)))
       }
@@ -108,7 +104,6 @@ export default function StepSuite() {
             <p className="text-sm text-red-400/80 mb-1">Todas as suítes do {pkg?.label} estão ocupadas para este período.</p>
             <p className="text-xs text-gold-800/50">Entre em contato com nosso suporte.</p>
           </div>
-          <SupportCard highlight whatsappNum={whatsappNum} />
         </div>
       ) : (
         <div className="space-y-8">
@@ -138,7 +133,6 @@ export default function StepSuite() {
               </div>
             )
           })}
-          <SupportCard highlight={false} whatsappNum={whatsappNum} />
         </div>
       )}
 
@@ -499,26 +493,3 @@ function DetailChip({ label, value }: { label: string; value: string }) {
   )
 }
 
-function SupportCard({ highlight, whatsappNum }: { highlight: boolean; whatsappNum: string }) {
-  return (
-    <a
-      href={`https://wa.me/${whatsappNum}?text=${WHATSAPP_MSG}`}
-      target="_blank" rel="noopener noreferrer"
-      className={[
-        'flex items-center gap-4 w-full rounded-xl border px-5 py-4 transition-all duration-200 hover:opacity-90 active:scale-[0.98]',
-        highlight ? 'border-gold-600/60 bg-gold-900/20' : 'border-gold-900/30 bg-black/30',
-      ].join(' ')}
-    >
-      <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-lg" style={{ background: 'rgba(37,211,102,0.15)', border: '1px solid rgba(37,211,102,0.3)' }}>
-        💬
-      </div>
-      <div className="min-w-0">
-        <p className={['text-sm font-medium', highlight ? 'text-gold-300' : 'text-gold-400/80'].join(' ')}>
-          Falar com o suporte
-        </p>
-        <p className="text-[11px] text-gold-700/50">Dúvidas sobre disponibilidade? Chamamos no WhatsApp.</p>
-      </div>
-      <span className="text-gold-700/40 text-sm ml-auto shrink-0">→</span>
-    </a>
-  )
-}
