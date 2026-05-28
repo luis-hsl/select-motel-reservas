@@ -12,7 +12,7 @@ function fmtDt(d: Date) {
 }
 
 export default function ReservaSidebar() {
-  const { package: pkg, drink, type, suite, checkIn, checkOut, totalAmount } = useStore()
+  const { package: pkg, drink, food, type, suite, checkIn, checkOut, totalAmount } = useStore()
   const total = totalAmount()
   const checkout = checkOut()
 
@@ -28,6 +28,7 @@ export default function ReservaSidebar() {
           <div className="px-5 xl:px-6 py-4 xl:py-5 space-y-4 bg-black/60">
             {pkg ? <Row label="Pacote" value={pkg.label} /> : <Placeholder label="Pacote" />}
             {drink && <Row label="Bebida" value={drink === 'vinho' ? '🍷 Vinho' : '🥂 Frisante'} />}
+            {food && <Row label="Refeição" value={food === 'jantar' ? '🍽 Jantar' : '🍣 Sushi'} />}
             {type
               ? <Row label="Modalidade" value={type === 'period' ? 'Período' : 'Pernoite'} />
               : <Placeholder label="Modalidade" />
