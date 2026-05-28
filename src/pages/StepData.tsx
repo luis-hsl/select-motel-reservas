@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { getAvailableDates, calcCheckOut, PERIOD_SLOTS, OVERNIGHT_CHECKIN } from '../data'
 import { useStore } from '../store/useStore'
 
@@ -126,6 +126,7 @@ export default function StepData() {
   const { type, setCheckIn, nextStep, prevStep } = useStore()
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
+  const slotsRef = useRef<HTMLDivElement>(null)
 
   const slots = type === 'period' ? PERIOD_SLOTS : [OVERNIGHT_CHECKIN]
 
@@ -171,13 +172,19 @@ export default function StepData() {
         <p className="text-[10px] tracking-widest uppercase text-gold-600/60 mb-3">Data</p>
         <Calendar
           selected={selectedDate}
-          onSelect={(d) => { setSelectedDate(d); setSelectedSlot(null) }}
+          onSelect={(d) => {
+            setSelectedDate(d)
+            setSelectedSlot(null)
+            setTimeout(() => {
+              slotsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }, 80)
+          }}
         />
       </div>
 
       {/* Time slots */}
       {selectedDate && (
-        <div className="mb-8">
+        <div ref={slotsRef} className="mb-8" style={{ scrollMarginTop: '5rem' }}>
           <p className="text-[10px] tracking-widest uppercase text-gold-600/60 mb-3">
             Horário de check-in
           </p>
