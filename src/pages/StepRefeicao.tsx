@@ -98,6 +98,11 @@ export default function StepRefeicao() {
                 >
                   {opt.label.toUpperCase()}
                 </h2>
+                {opt.id === 'sushi' && (
+                  <p className="text-[9px] tracking-wide mt-1.5" style={{ color: 'rgba(255,200,150,0.65)' }}>
+                    ⚠ Entrada não inclusa
+                  </p>
+                )}
               </div>
             </button>
           )
