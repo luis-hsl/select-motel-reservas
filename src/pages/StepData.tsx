@@ -127,6 +127,7 @@ export default function StepData() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
   const slotsRef = useRef<HTMLDivElement>(null)
+  const ctaRef = useRef<HTMLButtonElement>(null)
 
   const slots = type === 'period' ? PERIOD_SLOTS : [OVERNIGHT_CHECKIN]
 
@@ -193,7 +194,12 @@ export default function StepData() {
 
               {type === 'overnight' ? (
                 <button
-                  onClick={() => setSelectedSlot(OVERNIGHT_CHECKIN)}
+                  onClick={() => {
+                    setSelectedSlot(OVERNIGHT_CHECKIN)
+                    setTimeout(() => {
+                      ctaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+                    }, 80)
+                  }}
                   className={[
                     'w-full py-4 rounded-xl border text-sm font-medium transition-all duration-200',
                     selectedSlot
@@ -212,7 +218,12 @@ export default function StepData() {
                     return (
                       <button
                         key={slot}
-                        onClick={() => setSelectedSlot(slot)}
+                        onClick={() => {
+                          setSelectedSlot(slot)
+                          setTimeout(() => {
+                            ctaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+                          }, 80)
+                        }}
                         className={[
                           'py-3 rounded-xl border text-sm font-medium transition-all duration-200 outline-none flex flex-col items-center gap-0.5',
                           sel
@@ -250,8 +261,10 @@ export default function StepData() {
           )}
 
           <button
+            ref={ctaRef}
             onClick={confirm}
             disabled={!canContinue}
+            style={{ scrollMarginTop: '5rem' }}
             className={[
               'flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-200',
               canContinue
