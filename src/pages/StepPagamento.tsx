@@ -142,7 +142,7 @@ export default function StepPagamento() {
   // ── Success screen ──────────────────────────────────────────
   if (reservationId) {
     return (
-      <div className="max-w-md">
+      <div className="max-w-lg">
         <div className="border border-gold-700/40 rounded-2xl overflow-hidden">
           <div className="bg-gold-900/20 px-6 py-4 border-b border-gold-800/30 text-center">
             <div className="w-10 h-10 rounded-full border border-gold-500/50 flex items-center justify-center mx-auto mb-3"
@@ -186,7 +186,7 @@ export default function StepPagamento() {
 
   // ── Main flow ──────────────────────────────────────────────
   return (
-    <div className="max-w-md">
+    <div>
       <button
         onClick={prevStep}
         className="flex items-center gap-1 text-gold-700/60 text-sm mb-8 hover:text-gold-500 transition-colors"
@@ -194,7 +194,7 @@ export default function StepPagamento() {
         <span>←</span> Voltar
       </button>
 
-      <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light mb-2 leading-tight">
+      <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-light mb-2 leading-tight">
         Pagamento e<br />
         <span className="gold-gradient font-semibold italic">confirmação</span>
       </h1>
@@ -202,128 +202,128 @@ export default function StepPagamento() {
         Revise e escolha a forma de pagamento.
       </p>
 
-      {/* Summary */}
-      <div className="border border-gold-800/40 rounded-xl overflow-hidden mb-6">
-        <div className="bg-gold-900/20 px-5 py-3 border-b border-gold-800/30">
-          <p className="text-[10px] tracking-widest uppercase text-gold-500/60">Resumo da reserva</p>
-        </div>
-        <div className="px-5 py-4 space-y-2.5">
-          <SummaryRow label="Cliente" value={customerName} />
-          <SummaryRow label="Suíte" value={suite?.name ?? '—'} />
-          <SummaryRow label="Pacote" value={pkg?.label ?? '—'} />
-          <SummaryRow label="Modalidade" value={type === 'period' ? 'Período' : 'Pernoite'} />
-          <SummaryRow
-            label="Check-in"
-            value={checkIn ? fmtDt(checkIn) : '—'}
-          />
-          <SummaryRow
-            label="Check-out"
-            value={checkout ? fmtDt(checkout) : '—'}
-            highlight
-          />
-          <div className="border-t border-gold-900/40 pt-3 flex items-baseline justify-between">
-            <span className="text-[10px] tracking-widest uppercase text-gold-600/60">Total</span>
-            <span className="font-serif text-2xl font-semibold gold-gradient">{fmt(total)}</span>
+      <div className="lg:grid lg:grid-cols-2 lg:gap-10 xl:gap-14 lg:items-start">
+        {/* Left col: Summary */}
+        <div>
+          <div className="border border-gold-800/40 rounded-xl overflow-hidden mb-6 lg:mb-0">
+            <div className="bg-gold-900/20 px-5 py-3 border-b border-gold-800/30">
+              <p className="text-[10px] tracking-widest uppercase text-gold-500/60">Resumo da reserva</p>
+            </div>
+            <div className="px-5 py-4 space-y-2.5">
+              <SummaryRow label="Cliente" value={customerName} />
+              <SummaryRow label="Suíte" value={suite?.name ?? '—'} />
+              <SummaryRow label="Pacote" value={pkg?.label ?? '—'} />
+              <SummaryRow label="Modalidade" value={type === 'period' ? 'Período' : 'Pernoite'} />
+              <SummaryRow label="Check-in" value={checkIn ? fmtDt(checkIn) : '—'} />
+              <SummaryRow label="Check-out" value={checkout ? fmtDt(checkout) : '—'} highlight />
+              <div className="border-t border-gold-900/40 pt-3 flex items-baseline justify-between">
+                <span className="text-[10px] tracking-widest uppercase text-gold-600/60">Total</span>
+                <span className="font-serif text-2xl font-semibold gold-gradient">{fmt(total)}</span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Payment method */}
-      <div className="mb-6">
-        <p className="text-[10px] tracking-widest uppercase text-gold-600/60 mb-3">
-          Forma de pagamento
-        </p>
-        <div className="grid grid-cols-2 gap-3">
-          <MethodCard
-            id="pix"
-            selected={method === 'pix'}
-            onClick={() => setMethod('pix')}
-            icon={
-              <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            }
-            label="Pix"
-            sub="Aprovação imediata"
-          />
-          <MethodCard
-            id="card"
-            selected={method === 'card'}
-            onClick={() => setMethod('card')}
-            icon={
-              <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none">
-                <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
-                <path d="M2 10h20" stroke="currentColor" strokeWidth="1.5" />
-              </svg>
-            }
-            label="Cartão"
-            sub="Crédito ou débito"
-          />
-        </div>
-      </div>
-
-      {/* Pix panel */}
-      {method === 'pix' && (
-        <div className="mb-6 space-y-4">
-          {!pixSettings ? (
-            <div className="p-4 rounded-xl border border-yellow-700/30 bg-yellow-900/10 text-yellow-400/70 text-sm">
-              Chave Pix não configurada. Acesse o painel admin → Configurações e adicione a chave <code className="font-mono text-xs">pix_key</code>.
+        {/* Right col: Payment */}
+        <div>
+          {/* Payment method */}
+          <div className="mb-6">
+            <p className="text-[10px] tracking-widest uppercase text-gold-600/60 mb-3">
+              Forma de pagamento
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <MethodCard
+                id="pix"
+                selected={method === 'pix'}
+                onClick={() => setMethod('pix')}
+                icon={
+                  <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                }
+                label="Pix"
+                sub="Aprovação imediata"
+              />
+              <MethodCard
+                id="card"
+                selected={method === 'card'}
+                onClick={() => setMethod('card')}
+                icon={
+                  <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none">
+                    <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
+                    <path d="M2 10h20" stroke="currentColor" strokeWidth="1.5" />
+                  </svg>
+                }
+                label="Cartão"
+                sub="Crédito ou débito"
+              />
             </div>
-          ) : pixPayload ? (
-            <>
-              <div className="flex justify-center">
-                <div className="p-4 bg-white rounded-2xl">
-                  <QRCodeSVG value={pixPayload} size={200} level="M" />
+          </div>
+
+          {/* Pix panel */}
+          {method === 'pix' && (
+            <div className="mb-6 space-y-4">
+              {!pixSettings ? (
+                <div className="p-4 rounded-xl border border-yellow-700/30 bg-yellow-900/10 text-yellow-400/70 text-sm">
+                  Chave Pix não configurada. Acesse o painel admin → Configurações e adicione a chave <code className="font-mono text-xs">pix_key</code>.
                 </div>
-              </div>
-              <button
-                onClick={copyPix}
-                className="w-full py-3 rounded-xl text-sm font-medium border border-gold-700/40 text-gold-400 hover:bg-gold-900/20 transition-colors flex items-center justify-center gap-2"
-              >
-                {copied ? '✓ Copiado!' : 'Copiar código Pix'}
-              </button>
-              <p className="text-[11px] text-gold-800/50 text-center">
-                Escaneie o QR Code ou copie o código no app do seu banco.
-              </p>
-            </>
-          ) : (
-            <div className="p-4 rounded-xl border border-gold-800/30 bg-gold-900/10 text-gold-600/50 text-sm text-center">
-              Gerando QR Code…
+              ) : pixPayload ? (
+                <>
+                  <div className="flex justify-center">
+                    <div className="p-4 bg-white rounded-2xl">
+                      <QRCodeSVG value={pixPayload} size={220} level="M" />
+                    </div>
+                  </div>
+                  <button
+                    onClick={copyPix}
+                    className="w-full py-3 rounded-xl text-sm font-medium border border-gold-700/40 text-gold-400 hover:bg-gold-900/20 transition-colors flex items-center justify-center gap-2"
+                  >
+                    {copied ? '✓ Copiado!' : 'Copiar código Pix'}
+                  </button>
+                  <p className="text-[11px] text-gold-800/50 text-center">
+                    Escaneie o QR Code ou copie o código no app do seu banco.
+                  </p>
+                </>
+              ) : (
+                <div className="p-4 rounded-xl border border-gold-800/30 bg-gold-900/10 text-gold-600/50 text-sm text-center">
+                  Gerando QR Code…
+                </div>
+              )}
             </div>
           )}
+
+          {/* Card panel */}
+          {method === 'card' && (
+            <div className="mb-6 p-5 rounded-xl border border-gold-800/30 bg-gold-900/10 text-center space-y-3">
+              <p className="text-gold-400/80 text-sm font-medium">Pagamento via cartão</p>
+              <p className="text-gold-700/60 text-xs leading-relaxed">
+                Para pagamentos com cartão, finalize sua reserva abaixo e nosso atendimento entrará em contato pelo WhatsApp para processar o pagamento.
+              </p>
+            </div>
+          )}
+
+          {error && (
+            <p className="mb-4 text-red-400 text-sm text-center bg-red-900/20 border border-red-800/40 rounded-lg px-4 py-3">
+              {error}
+            </p>
+          )}
+
+          {method && (
+            <button
+              onClick={createReservation}
+              disabled={loading}
+              className="w-full py-4 rounded-xl font-semibold text-sm tracking-wide text-black transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ background: 'linear-gradient(135deg, #c8a035 0%, #e8c060 50%, #c8a035 100%)' }}
+            >
+              {loading
+                ? 'Registrando…'
+                : method === 'pix'
+                ? 'Já efetuei o pagamento'
+                : `Confirmar reserva — ${fmt(total)}`}
+            </button>
+          )}
         </div>
-      )}
-
-      {/* Card panel */}
-      {method === 'card' && (
-        <div className="mb-6 p-5 rounded-xl border border-gold-800/30 bg-gold-900/10 text-center space-y-3">
-          <p className="text-gold-400/80 text-sm font-medium">Pagamento via cartão</p>
-          <p className="text-gold-700/60 text-xs leading-relaxed">
-            Para pagamentos com cartão, finalize sua reserva abaixo e nosso atendimento entrará em contato pelo WhatsApp para processar o pagamento.
-          </p>
-        </div>
-      )}
-
-      {error && (
-        <p className="mb-4 text-red-400 text-sm text-center bg-red-900/20 border border-red-800/40 rounded-lg px-4 py-3">
-          {error}
-        </p>
-      )}
-
-      {method && (
-        <button
-          onClick={createReservation}
-          disabled={loading}
-          className="w-full py-4 rounded-xl font-semibold text-sm tracking-wide text-black transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{ background: 'linear-gradient(135deg, #c8a035 0%, #e8c060 50%, #c8a035 100%)' }}
-        >
-          {loading
-            ? 'Registrando…'
-            : method === 'pix'
-            ? 'Já efetuei o pagamento'
-            : `Confirmar reserva — ${fmt(total)}`}
-        </button>
-      )}
+      </div>
     </div>
   )
 }

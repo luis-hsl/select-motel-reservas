@@ -26,8 +26,8 @@ export default function App() {
     <div className="min-h-screen bg-[#0a0a0a]">
       <ProgressBar currentStep={currentStep} />
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-20 sm:pt-24 pb-20 sm:pb-16">
-        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-start">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 xl:px-10 pt-20 sm:pt-24 pb-20 sm:pb-16">
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 xl:gap-16 items-start">
           {/* Main content */}
           <main className="flex-1 min-w-0 w-full">
             <StepComponent />

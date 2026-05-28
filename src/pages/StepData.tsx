@@ -1,74 +1,154 @@
-import { useState } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { getAvailableDates, calcCheckOut, PERIOD_SLOTS, OVERNIGHT_CHECKIN } from '../data'
 import { useStore } from '../store/useStore'
-import { supabase } from '../lib/supabase'
 
-const AVAILABLE_DATES = getAvailableDates(60)
+const AVAILABLE_DATES = getAvailableDates()
+const AVAILABLE_SET = new Set(AVAILABLE_DATES.map(d => d.toDateString()))
 
+const DAY_LETTERS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
+const MONTHS_PT = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+]
+
+// ── Calendar ────────────────────────────────────────────────
+
+function Calendar({
+  selected,
+  onSelect,
+}: {
+  selected: Date | null
+  onSelect: (d: Date) => void
+}) {
+  const today = useMemo(() => {
+    const t = new Date()
+    t.setHours(0, 0, 0, 0)
+    return t
+  }, [])
+
+  const [vy, setVy] = useState(AVAILABLE_DATES[0].getFullYear())
+  const [vm, setVm] = useState(AVAILABLE_DATES[0].getMonth())
+
+  const cells = useMemo(() => {
+    const firstDow = new Date(vy, vm, 1).getDay()
+    const daysInMonth = new Date(vy, vm + 1, 0).getDate()
+    const arr: (Date | null)[] = Array(firstDow).fill(null)
+    for (let d = 1; d <= daysInMonth; d++) arr.push(new Date(vy, vm, d))
+    return arr
+  }, [vy, vm])
+
+  const minY = AVAILABLE_DATES[0].getFullYear()
+  const minM = AVAILABLE_DATES[0].getMonth()
+  const maxY = AVAILABLE_DATES[AVAILABLE_DATES.length - 1].getFullYear()
+  const maxM = AVAILABLE_DATES[AVAILABLE_DATES.length - 1].getMonth()
+
+  const canPrev = vy > minY || (vy === minY && vm > minM)
+  const canNext = vy < maxY || (vy === maxY && vm < maxM)
+
+  function prev() {
+    if (vm === 0) { setVy(y => y - 1); setVm(11) } else setVm(m => m - 1)
+  }
+  function next() {
+    if (vm === 11) { setVy(y => y + 1); setVm(0) } else setVm(m => m + 1)
+  }
+
+  return (
+    <div className="rounded-2xl border border-gold-900/30 bg-gradient-to-b from-gold-950/20 to-transparent p-5">
+      {/* Month nav */}
+      <div className="flex items-center justify-between mb-5">
+        <button
+          onClick={prev} disabled={!canPrev}
+          className="w-9 h-9 flex items-center justify-center rounded-xl text-lg text-gold-500 hover:text-gold-300 hover:bg-gold-800/30 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
+        >
+          ‹
+        </button>
+        <span className="text-sm font-medium text-gold-300/80 tracking-widest uppercase">
+          {MONTHS_PT[vm]} {vy}
+        </span>
+        <button
+          onClick={next} disabled={!canNext}
+          className="w-9 h-9 flex items-center justify-center rounded-xl text-lg text-gold-500 hover:text-gold-300 hover:bg-gold-800/30 disabled:opacity-20 disabled:cursor-not-allowed transition-all"
+        >
+          ›
+        </button>
+      </div>
+
+      {/* Weekday headers */}
+      <div className="grid grid-cols-7 mb-1">
+        {DAY_LETTERS.map((l, i) => (
+          <div key={i} className="text-center text-[10px] font-medium tracking-widest text-gold-700/40 pb-2">
+            {l}
+          </div>
+        ))}
+      </div>
+
+      {/* Day cells */}
+      <div className="grid grid-cols-7 gap-y-0.5">
+        {cells.map((d, i) => {
+          if (!d) return <div key={i} />
+          const avail = AVAILABLE_SET.has(d.toDateString())
+          const isSel = selected?.toDateString() === d.toDateString()
+          const isToday = d.toDateString() === today.toDateString()
+          return (
+            <div key={i} className="flex justify-center py-0.5">
+              <button
+                onClick={() => avail && onSelect(d)}
+                disabled={!avail}
+                className={[
+                  'w-10 h-10 rounded-full text-sm transition-all duration-150 relative select-none',
+                  isSel
+                    ? 'font-bold text-black scale-105'
+                    : avail
+                    ? 'text-gold-200/80 hover:bg-gold-800/40 hover:text-gold-100'
+                    : 'text-gold-900/40 cursor-not-allowed',
+                ].join(' ')}
+                style={isSel ? {
+                  background: 'linear-gradient(135deg, #c9a84c, #f5d87a, #a07820)',
+                  boxShadow: '0 2px 16px rgba(200,160,50,0.35)',
+                } : undefined}
+              >
+                {d.getDate()}
+                {isToday && !isSel && (
+                  <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-gold-500/70" />
+                )}
+              </button>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ── Main step ───────────────────────────────────────────────
 
 export default function StepData() {
-  const { type, suite, setCheckIn, nextStep, prevStep } = useStore()
+  const { type, setCheckIn, nextStep, prevStep } = useStore()
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
-  const [checking, setChecking] = useState(false)
-  const [unavailable, setUnavailable] = useState(false)
+  const slotsRef = useRef<HTMLDivElement>(null)
 
   const slots = type === 'period' ? PERIOD_SLOTS : [OVERNIGHT_CHECKIN]
 
-  const selectedCheckOut =
-    selectedDate && selectedSlot && type
-      ? (() => {
-          const [h, m] = selectedSlot.split(':').map(Number)
-          const ci = new Date(selectedDate)
-          ci.setHours(h, m, 0, 0)
-          return calcCheckOut(ci, type)
-        })()
-      : null
-
-  async function handleSlotClick(slot: string) {
-    if (!selectedDate || !suite || !type) {
-      setSelectedSlot(slot)
-      setUnavailable(false)
-      return
-    }
-
-    setChecking(true)
-    setUnavailable(false)
-
+  function slotCheckIn(slot: string, date: Date): Date {
     const [h, m] = slot.split(':').map(Number)
-    const checkIn = new Date(selectedDate)
-    checkIn.setHours(h, m, 0, 0)
-    const checkOut = calcCheckOut(checkIn, type)
-
-    const { data } = await supabase
-      .from('reservations')
-      .select('id')
-      .eq('suite_id', suite.id)
-      .in('status', ['pending', 'confirmed', 'paid'])
-      .lt('check_in', checkOut.toISOString())
-      .gt('check_out', checkIn.toISOString())
-
-    setChecking(false)
-
-    if ((data?.length ?? 0) > 0) {
-      setUnavailable(true)
-      setSelectedSlot(null)
-    } else {
-      setUnavailable(false)
-      setSelectedSlot(slot)
-    }
+    const d = new Date(date)
+    d.setHours(h, m, 0, 0)
+    return d
   }
+
+  const selectedCheckOut =
+    selectedDate && selectedSlot
+      ? calcCheckOut(slotCheckIn(selectedSlot, selectedDate), type ?? 'period')
+      : null
 
   function confirm() {
     if (!selectedDate || !selectedSlot) return
-    const [h, m] = selectedSlot.split(':').map(Number)
-    const dt = new Date(selectedDate)
-    dt.setHours(h, m, 0, 0)
-    setCheckIn(dt)
+    setCheckIn(slotCheckIn(selectedSlot, selectedDate))
     nextStep()
   }
 
-  const canContinue = selectedDate && selectedSlot && !checking
+  const canContinue = !!(selectedDate && selectedSlot)
 
   return (
     <div>
@@ -79,7 +159,7 @@ export default function StepData() {
         <span>←</span> Voltar
       </button>
 
-      <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light mb-2 leading-tight">
+      <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-light mb-2 leading-tight">
         Escolha a data<br />
         <span className="gold-gradient font-semibold italic">e o horário</span>
       </h1>
@@ -87,108 +167,102 @@ export default function StepData() {
         Selecione quando você quer chegar.
       </p>
 
-      {/* Date picker */}
-      <div className="mb-8">
-        <p className="text-[10px] tracking-widest uppercase text-gold-600/60 mb-3">Data</p>
-        <div className="flex flex-wrap gap-2">
-          {AVAILABLE_DATES.map((d) => {
-            const sel = selectedDate?.toDateString() === d.toDateString()
-            return (
-              <button
-                key={d.toISOString()}
-                onClick={() => { setSelectedDate(d); setSelectedSlot(null); setUnavailable(false) }}
-                className={[
-                  'px-4 py-2 rounded-lg border text-sm transition-all duration-200 outline-none',
-                  sel
-                    ? 'border-gold-500 bg-gold-900/20 text-gold-300'
-                    : 'border-gold-900/40 text-gold-700/60 hover:border-gold-700/50 hover:text-gold-400',
-                ].join(' ')}
-              >
-                {d.toLocaleDateString('pt-BR', {
-                  weekday: 'short', day: '2-digit', month: '2-digit',
-                })}
-              </button>
-            )
-          })}
+      <div className="lg:grid lg:grid-cols-2 lg:gap-10 xl:gap-14 lg:items-start">
+        {/* Left col: Calendar */}
+        <div className="mb-8 lg:mb-0">
+          <p className="text-[10px] tracking-widest uppercase text-gold-600/60 mb-3">Data</p>
+          <Calendar
+            selected={selectedDate}
+            onSelect={(d) => {
+              setSelectedDate(d)
+              setSelectedSlot(null)
+              setTimeout(() => {
+                slotsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }, 80)
+            }}
+          />
         </div>
-      </div>
 
-      {/* Time slots */}
-      {selectedDate && (
-        <div className="mb-8">
-          <p className="text-[10px] tracking-widest uppercase text-gold-600/60 mb-3">
-            Horário de check-in
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {slots.map((slot) => {
-              const sel = selectedSlot === slot
-              return (
+        {/* Right col: Time slots + CTA */}
+        <div>
+          {selectedDate && (
+            <div ref={slotsRef} className="mb-8" style={{ scrollMarginTop: '5rem' }}>
+              <p className="text-[10px] tracking-widest uppercase text-gold-600/60 mb-3">
+                Horário de check-in
+              </p>
+
+              {type === 'overnight' ? (
                 <button
-                  key={slot}
-                  onClick={() => handleSlotClick(slot)}
-                  disabled={checking}
+                  onClick={() => setSelectedSlot(OVERNIGHT_CHECKIN)}
                   className={[
-                    'px-5 py-2.5 rounded-lg border text-sm font-medium transition-all duration-200 outline-none disabled:opacity-50',
-                    sel
+                    'w-full py-4 rounded-xl border text-sm font-medium transition-all duration-200',
+                    selectedSlot
                       ? 'border-gold-500 bg-gold-900/20 text-gold-300'
                       : 'border-gold-900/40 text-gold-700/60 hover:border-gold-700/50 hover:text-gold-400',
                   ].join(' ')}
                 >
-                  {slot}
+                  00:00 — entrada à meia-noite
                 </button>
-              )
-            })}
-          </div>
-
-          {/* Unavailable feedback */}
-          {unavailable && (
-            <p className="mt-3 text-sm text-red-400/80 bg-red-900/10 border border-red-800/30 rounded-lg px-4 py-2.5">
-              Este horário já está reservado para a suíte escolhida. Por favor, selecione outro.
-            </p>
-          )}
-
-          {/* Checkout summary */}
-          {selectedCheckOut && selectedSlot && (
-            <div className="mt-4 flex items-center gap-3 px-4 py-3 rounded-xl border border-gold-800/30 bg-gold-900/10">
-              <div className="flex-1">
-                <p className="text-[10px] tracking-widest uppercase text-gold-600/50 mb-1">
-                  Resumo do período
-                </p>
-                <div className="flex items-center gap-3 text-sm">
-                  <span className="text-gold-400 font-medium">
-                    Check-in: {selectedSlot}
-                  </span>
-                  <span className="text-gold-700/40">→</span>
-                  <span className="text-gold-300 font-semibold">
-                    Check-out:{' '}
-                    {selectedCheckOut.toLocaleString('pt-BR', {
-                      weekday: 'short',
-                      day: '2-digit',
-                      month: '2-digit',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </span>
+              ) : (
+                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                  {slots.map((slot) => {
+                    const sel = selectedSlot === slot
+                    const [h] = slot.split(':').map(Number)
+                    const period = h < 12 ? 'Manhã' : h < 18 ? 'Tarde' : 'Noite'
+                    return (
+                      <button
+                        key={slot}
+                        onClick={() => setSelectedSlot(slot)}
+                        className={[
+                          'py-3 rounded-xl border text-sm font-medium transition-all duration-200 outline-none flex flex-col items-center gap-0.5',
+                          sel
+                            ? 'border-gold-500 bg-gold-900/20 text-gold-300'
+                            : 'border-gold-900/40 text-gold-700/60 hover:border-gold-700/50 hover:text-gold-400',
+                        ].join(' ')}
+                      >
+                        <span>{slot}</span>
+                        <span className={['text-[9px] tracking-widest', sel ? 'text-gold-500/60' : 'text-gold-800/60'].join(' ')}>{period}</span>
+                      </button>
+                    )
+                  })}
                 </div>
-              </div>
+              )}
+
+              {selectedCheckOut && selectedSlot && (
+                <div className="mt-4 px-4 py-3 rounded-xl border border-gold-800/30 bg-gold-900/10">
+                  <p className="text-[10px] tracking-widest uppercase text-gold-600/50 mb-1">
+                    Resumo do período
+                  </p>
+                  <div className="flex items-center gap-3 text-sm flex-wrap">
+                    <span className="text-gold-400 font-medium">Check-in: {selectedSlot}</span>
+                    <span className="text-gold-700/40">→</span>
+                    <span className="text-gold-300 font-semibold">
+                      Check-out:{' '}
+                      {selectedCheckOut.toLocaleTimeString('pt-BR', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
-        </div>
-      )}
 
-      <button
-        onClick={confirm}
-        disabled={!canContinue}
-        className={[
-          'flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-200',
-          canContinue
-            ? 'bg-gradient-to-r from-gold-700 to-gold-500 text-black hover:from-gold-600 hover:to-gold-400'
-            : 'bg-gold-900/20 text-gold-800/40 cursor-not-allowed',
-        ].join(' ')}
-      >
-        {checking ? 'Verificando disponibilidade…' : 'Continuar'} {!checking && <span>→</span>}
-      </button>
+          <button
+            onClick={confirm}
+            disabled={!canContinue}
+            className={[
+              'flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-200',
+              canContinue
+                ? 'bg-gradient-to-r from-gold-700 to-gold-500 text-black hover:from-gold-600 hover:to-gold-400'
+                : 'bg-gold-900/20 text-gold-800/40 cursor-not-allowed',
+            ].join(' ')}
+          >
+            Ver suítes disponíveis <span>→</span>
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
-

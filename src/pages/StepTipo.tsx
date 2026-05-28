@@ -83,7 +83,7 @@ export default function StepTipo() {
         <strong className="text-gold-500 font-medium">{pkg.label}</strong>.
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl xl:max-w-4xl">
         {TIPOS.map((opt) => {
           const isSel = type === opt.id
           return (
@@ -110,7 +110,7 @@ export default function StepTipo() {
               />
 
               {/* Content — posicionado em baixo/esquerda como nas fotos */}
-              <div className="flex flex-col justify-between h-full p-7" style={{ minHeight: '280px' }}>
+              <div className="flex flex-col justify-between h-full p-7 xl:p-9" style={{ minHeight: '280px' }}>
 
                 {/* Top: price chip */}
                 <div className="flex justify-end">

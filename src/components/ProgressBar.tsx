@@ -9,15 +9,15 @@ export default function ProgressBar({ currentStep }: Props) {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur border-b border-gold-800/30">
-      <div className="max-w-5xl mx-auto px-6 py-3 flex items-center justify-between gap-6">
+      <div className="max-w-7xl mx-auto px-6 xl:px-10 py-3 flex items-center justify-between gap-6">
         {/* Logo */}
         <div className="flex items-center gap-2 shrink-0">
-          <span className="font-serif text-lg font-semibold gold-gradient">SM</span>
+          <span className="font-serif text-lg xl:text-xl font-semibold gold-gradient">SM</span>
           <span className="text-gold-500/70 text-xs tracking-widest uppercase hidden sm:block">Select Motel</span>
         </div>
 
         {/* Step label + bar */}
-        <div className="flex-1 max-w-xs">
+        <div className="flex-1 max-w-xs sm:max-w-sm xl:max-w-md">
           <div className="flex items-center justify-between mb-1">
             <span className="text-[10px] tracking-widest uppercase text-gold-600/60">
               {String(currentStep).padStart(2, '0')} / {String(TOTAL_STEPS).padStart(2, '0')}

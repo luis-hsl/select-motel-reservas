@@ -19,13 +19,13 @@ export default function ReservaSidebar() {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden lg:block w-72 shrink-0">
+      <aside className="hidden lg:block w-80 xl:w-96 shrink-0">
         <div className="sticky top-24 border border-gold-800/40 rounded-xl overflow-hidden">
           <div className="bg-gold-900/20 px-5 py-3 border-b border-gold-800/30">
-            <p className="text-[10px] tracking-widest uppercase text-gold-500/60">Sua Reserva</p>
+            <p className="text-[10px] xl:text-[11px] tracking-widest uppercase text-gold-500/60">Sua Reserva</p>
           </div>
 
-          <div className="px-5 py-4 space-y-4 bg-black/60">
+          <div className="px-5 xl:px-6 py-4 xl:py-5 space-y-4 bg-black/60">
             {pkg ? <Row label="Pacote" value={pkg.label} /> : <Placeholder label="Pacote" />}
             {type
               ? <Row label="Modalidade" value={type === 'period' ? 'Período' : 'Pernoite'} />
@@ -91,8 +91,8 @@ export default function ReservaSidebar() {
 function Row({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
     <div>
-      <p className="text-[10px] tracking-widest uppercase text-gold-600/50 mb-0.5">{label}</p>
-      <p className={`text-sm font-medium ${highlight ? 'text-gold-200' : 'text-gold-300'}`}>{value}</p>
+      <p className="text-[10px] xl:text-[11px] tracking-widest uppercase text-gold-600/50 mb-0.5">{label}</p>
+      <p className={`text-sm xl:text-base font-medium ${highlight ? 'text-gold-200' : 'text-gold-300'}`}>{value}</p>
     </div>
   )
 }
