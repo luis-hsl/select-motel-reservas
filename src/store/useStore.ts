@@ -4,7 +4,7 @@ import type { Package, Suite, ReservationType } from '../types'
 interface StoreState {
   currentStep: number
   package: Package | null
-  drink: 'vinho' | 'frisante' | null
+  drink: 'vinho' | 'frisante' | 'drinque' | null
   food: 'jantar' | 'sushi' | 'pizza' | null
   type: ReservationType | null
   suite: Suite | null
@@ -15,7 +15,7 @@ interface StoreState {
 
   setStep: (step: number) => void
   setPackage: (pkg: Package) => void
-  setDrink: (drink: 'vinho' | 'frisante') => void
+  setDrink: (drink: 'vinho' | 'frisante' | 'drinque') => void
   setFood: (food: 'jantar' | 'sushi' | 'pizza') => void
   setType: (type: ReservationType) => void
   setSuite: (suite: Suite) => void
@@ -63,18 +63,8 @@ export const useStore = create<StoreState>((set, get) => ({
     return out
   },
 
-  nextStep: () => set((s) => {
-    const next = s.currentStep + 1
-    // Bebida (6): Bronze pula para Presente (7) — Bronze não tem bebida incluída
-    if (next === 6 && s.package?.id === 'bronze') return { currentStep: 7 }
-    return { currentStep: next }
-  }),
-  prevStep: () => set((s) => {
-    const prev = s.currentStep - 1
-    // Voltando de Presente (7): Bronze pula Bebida → vai para Refeição (5)
-    if (prev === 6 && s.package?.id === 'bronze') return { currentStep: 5 }
-    return { currentStep: Math.max(1, prev) }
-  }),
+  nextStep: () => set((s) => ({ currentStep: s.currentStep + 1 })),
+  prevStep: () => set((s) => ({ currentStep: Math.max(1, s.currentStep - 1) })),
 }))
 
 export const TOTAL_STEPS = 9
