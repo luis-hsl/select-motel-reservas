@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { PACKAGES } from '../data'
 import { useStore } from '../store/useStore'
 import type { Package } from '../types'
@@ -123,14 +123,42 @@ const DETAIL: Record<PkgId, PackageDetail> = {
   },
 }
 
+const DRINK_HAS_CHOICE: Record<PkgId, boolean> = {
+  ouro: true,
+  prata: true,
+  bronze: false,
+}
+
 export default function StepPacote() {
-  const { package: selected, setPackage, nextStep } = useStore()
+  const { package: selected, setPackage, setDrink, nextStep } = useStore()
+  const [pendingPkg, setPendingPkg] = useState<Package | null>(null)
+  const [selectedDrink, setSelectedDrink] = useState<'vinho' | 'frisante' | null>(null)
   const [detailId, setDetailId] = useState<PkgId | null>(null)
   const [visible, setVisible] = useState(false)
+  const drinkRef = useRef<HTMLDivElement>(null)
 
-  function choose(pkg: Package) {
-    setPackage(pkg)
-    setTimeout(nextStep, 300)
+  const needsDrinkChoice = pendingPkg ? DRINK_HAS_CHOICE[pendingPkg.id as PkgId] : false
+
+  function selectPkg(pkg: Package) {
+    if (DRINK_HAS_CHOICE[pkg.id as PkgId]) {
+      setPendingPkg(pkg)
+      setSelectedDrink(null)
+      setTimeout(() => {
+        drinkRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 80)
+    } else {
+      // Bronze: segue direto sem escolha de bebida
+      setPackage(pkg)
+      setDrink('vinho') // reset
+      setTimeout(nextStep, 300)
+    }
+  }
+
+  function confirmWithDrink() {
+    if (!pendingPkg || !selectedDrink) return
+    setPackage(pendingPkg)
+    setDrink(selectedDrink)
+    nextStep()
   }
 
   function openDetail(id: PkgId, e: React.MouseEvent) {
@@ -152,6 +180,8 @@ export default function StepPacote() {
 
   const detailPkg = detailId ? PACKAGES.find(p => p.id === detailId) : null
 
+  const t = pendingPkg ? THEME[pendingPkg.id as PkgId] : null
+
   return (
     <div>
       <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light mb-2 leading-tight">
@@ -165,19 +195,19 @@ export default function StepPacote() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {PACKAGES.map((pkg) => {
           const id = pkg.id as PkgId
-          const t = THEME[id]
-          const isSel = selected?.id === pkg.id
+          const th = THEME[id]
+          const isSel = (pendingPkg?.id ?? selected?.id) === pkg.id
 
           return (
             <button
               key={pkg.id}
-              onClick={() => choose(pkg)}
+              onClick={() => selectPkg(pkg)}
               className="relative text-left rounded-2xl overflow-hidden outline-none transition-all duration-300"
               style={{
-                background: t.bg,
-                border: `1px solid ${t.border}`,
+                background: th.bg,
+                border: `1px solid ${th.border}`,
                 boxShadow: isSel
-                  ? `0 0 0 2px ${t.ring}, inset 0 0 40px rgba(0,0,0,0.4)`
+                  ? `0 0 0 2px ${th.ring}, inset 0 0 40px rgba(0,0,0,0.4)`
                   : 'inset 0 0 40px rgba(0,0,0,0.5)',
               }}
             >
@@ -185,7 +215,7 @@ export default function StepPacote() {
                 <div className="absolute top-0 left-0 right-0 flex justify-center z-10">
                   <span
                     className="text-[9px] tracking-[0.3em] uppercase font-semibold px-4 py-1 rounded-b-xl text-black"
-                    style={{ background: t.accentColor }}
+                    style={{ background: th.accentColor }}
                   >
                     Mais escolhido
                   </span>
@@ -194,18 +224,18 @@ export default function StepPacote() {
 
               {/* Visual hero */}
               <div className="pt-10 pb-5 px-5 text-center">
-                <p className="text-[9px] tracking-[0.6em] uppercase mb-4 font-medium" style={{ color: t.labelColor }}>
+                <p className="text-[9px] tracking-[0.6em] uppercase mb-4 font-medium" style={{ color: th.labelColor }}>
                   Pacote
                 </p>
-                <GlowDivider color={t.dividerColor} />
+                <GlowDivider color={th.dividerColor} />
                 <h2
                   className="font-serif font-bold tracking-widest my-5 text-transparent bg-clip-text"
-                  style={{ fontSize: 'clamp(2.8rem,8vw,3.5rem)', backgroundImage: t.nameCss, lineHeight: 1 }}
+                  style={{ fontSize: 'clamp(2.8rem,8vw,3.5rem)', backgroundImage: th.nameCss, lineHeight: 1 }}
                 >
                   {id.toUpperCase()}
                 </h2>
-                <GlowDivider color={t.dividerColor} />
-                <p className="text-[11px] mt-3 italic" style={{ color: t.labelColor }}>{pkg.tagline}</p>
+                <GlowDivider color={th.dividerColor} />
+                <p className="text-[11px] mt-3 italic" style={{ color: th.labelColor }}>{pkg.tagline}</p>
               </div>
 
               {/* Info */}
@@ -213,26 +243,26 @@ export default function StepPacote() {
                 <ul className="space-y-1.5 mb-4">
                   {pkg.includes.map((item) => (
                     <li key={item} className="flex items-start gap-2 text-xs" style={{ color: 'rgba(245,224,180,0.75)' }}>
-                      <span className="shrink-0 mt-0.5 text-[10px]" style={{ color: t.iconColor }}>✦</span>
+                      <span className="shrink-0 mt-0.5 text-[10px]" style={{ color: th.iconColor }}>✦</span>
                       {item}
                     </li>
                   ))}
                 </ul>
 
-                <div className="border-t pt-3 space-y-1.5 mb-3" style={{ borderColor: `${t.dividerColor}40` }}>
-                  <PriceRow label="Período" value={pkg.price_period} color={t.priceColor} />
-                  <PriceRow label="Pernoite" value={pkg.price_overnight} color={t.priceColor} />
+                <div className="border-t pt-3 space-y-1.5 mb-3" style={{ borderColor: `${th.dividerColor}40` }}>
+                  <PriceRow label="Período" value={pkg.price_period} color={th.priceColor} />
+                  <PriceRow label="Pernoite" value={pkg.price_overnight} color={th.priceColor} />
                 </div>
 
                 {/* Ver detalhes button */}
-                <div className="border-t pb-4 pt-3" style={{ borderColor: `${t.dividerColor}25` }}>
+                <div className="border-t pb-4 pt-3" style={{ borderColor: `${th.dividerColor}25` }}>
                   <button
                     onClick={(e) => openDetail(id, e)}
                     className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-[11px] tracking-widest uppercase font-medium transition-all duration-200 hover:opacity-90 active:scale-95"
                     style={{
-                      color: t.accentColor,
-                      border: `1px solid ${t.dividerColor}50`,
-                      background: `${t.dividerColor}12`,
+                      color: th.accentColor,
+                      border: `1px solid ${th.dividerColor}50`,
+                      background: `${th.dividerColor}12`,
                     }}
                   >
                     Ver pacote completo
@@ -242,7 +272,7 @@ export default function StepPacote() {
               </div>
 
               {isSel && (
-                <div className="absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center" style={{ background: t.accentColor }}>
+                <div className="absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center" style={{ background: th.accentColor }}>
                   <svg className="w-3 h-3 text-black" fill="none" viewBox="0 0 12 12">
                     <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
@@ -253,6 +283,72 @@ export default function StepPacote() {
         })}
       </div>
 
+      {/* Escolha de bebida — aparece após selecionar Ouro ou Prata */}
+      {needsDrinkChoice && pendingPkg && t && (
+        <div
+          ref={drinkRef}
+          className="mt-8 rounded-2xl border p-6"
+          style={{ borderColor: t.border, background: `${t.dividerColor}08`, scrollMarginTop: '5rem' }}
+        >
+          <p className="text-[10px] tracking-widests uppercase mb-1" style={{ color: t.labelColor }}>
+            Incluído no Pacote {pendingPkg.id.charAt(0).toUpperCase() + pendingPkg.id.slice(1)}
+          </p>
+          <p className="font-serif text-lg font-light mb-5" style={{ color: t.priceColor }}>
+            Qual bebida o casal prefere?
+          </p>
+
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            {(['vinho', 'frisante'] as const).map((drink) => {
+              const isSel = selectedDrink === drink
+              return (
+                <button
+                  key={drink}
+                  onClick={() => setSelectedDrink(drink)}
+                  className="relative flex flex-col items-center gap-3 py-6 px-4 rounded-xl border transition-all duration-200"
+                  style={{
+                    borderColor: isSel ? t.accentColor : `${t.dividerColor}40`,
+                    background: isSel ? `${t.dividerColor}18` : `${t.dividerColor}08`,
+                  }}
+                >
+                  {isSel && (
+                    <div
+                      className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full flex items-center justify-center"
+                      style={{ background: t.accentColor }}
+                    >
+                      <svg className="w-2.5 h-2.5 text-black" fill="none" viewBox="0 0 10 10">
+                        <path d="M2 5l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </div>
+                  )}
+                  <span className="text-2xl">
+                    {drink === 'vinho' ? '🍷' : '🥂'}
+                  </span>
+                  <div className="text-center">
+                    <p className="text-sm font-semibold" style={{ color: isSel ? t.priceColor : 'rgba(245,224,180,0.55)' }}>
+                      {drink === 'vinho' ? 'Vinho' : 'Frisante'}
+                    </p>
+                    <p className="text-[10px] mt-0.5" style={{ color: t.labelColor }}>
+                      {drink === 'vinho' ? 'Tinto ou Branco' : 'Espumante leve'}
+                    </p>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+
+          <button
+            onClick={confirmWithDrink}
+            disabled={!selectedDrink}
+            className="w-full py-3.5 rounded-xl text-sm font-semibold tracking-wide text-black transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
+            style={selectedDrink ? { background: t.badgeBg } : { background: `${t.dividerColor}30` }}
+          >
+            {selectedDrink
+              ? `Continuar com ${selectedDrink === 'vinho' ? 'Vinho' : 'Frisante'} →`
+              : 'Escolha uma bebida para continuar'}
+          </button>
+        </div>
+      )}
+
       {/* Detail Modal */}
       {detailId && detailPkg && (
         <PackageModal
@@ -261,7 +357,7 @@ export default function StepPacote() {
           detail={DETAIL[detailId]}
           visible={visible}
           onClose={closeDetail}
-          onSelect={() => { closeDetail(); choose(detailPkg) }}
+          onSelect={() => { closeDetail(); selectPkg(detailPkg) }}
         />
       )}
     </div>

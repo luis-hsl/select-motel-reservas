@@ -20,7 +20,7 @@ type PixSettings = { key: string; merchantName: string; city: string }
 
 export default function StepPagamento() {
   const {
-    package: pkg, type, suite, checkIn, checkOut,
+    package: pkg, drink, type, suite, checkIn, checkOut,
     customerName, customerPhone, customerEmail,
     totalAmount, prevStep,
   } = useStore()
@@ -127,6 +127,7 @@ export default function StepPagamento() {
       ``,
       `🛏️ *Suíte:* ${suite?.name ?? ''}`,
       `📦 *Pacote:* ${pkg?.label ?? ''}`,
+      ...(drink ? [`🍷 *Bebida:* ${drink === 'vinho' ? 'Vinho' : 'Frisante'}`] : []),
       `⏱️ *Modalidade:* ${type === 'period' ? 'Período' : 'Pernoite'}`,
       ``,
       `🟢 *Check-in:* ${checkIn ? fmtDt(checkIn) : ''}`,
@@ -157,6 +158,7 @@ export default function StepPagamento() {
           <div className="px-6 py-5 space-y-3">
             <SummaryRow label="Código" value={reservationId.slice(0, 8).toUpperCase()} mono />
             <SummaryRow label="Suíte" value={suite?.name ?? ''} />
+            {drink && <SummaryRow label="Bebida" value={drink === 'vinho' ? '🍷 Vinho' : '🥂 Frisante'} />}
             <SummaryRow label="Check-in" value={checkIn ? fmtDt(checkIn) : ''} />
             <SummaryRow label="Check-out" value={checkout ? fmtDt(checkout) : ''} />
             <div className="border-t border-gold-900/40 pt-3 flex items-baseline justify-between">
@@ -213,6 +215,7 @@ export default function StepPagamento() {
               <SummaryRow label="Cliente" value={customerName} />
               <SummaryRow label="Suíte" value={suite?.name ?? '—'} />
               <SummaryRow label="Pacote" value={pkg?.label ?? '—'} />
+              {drink && <SummaryRow label="Bebida" value={drink === 'vinho' ? '🍷 Vinho' : '🥂 Frisante'} />}
               <SummaryRow label="Modalidade" value={type === 'period' ? 'Período' : 'Pernoite'} />
               <SummaryRow label="Check-in" value={checkIn ? fmtDt(checkIn) : '—'} />
               <SummaryRow label="Check-out" value={checkout ? fmtDt(checkout) : '—'} highlight />

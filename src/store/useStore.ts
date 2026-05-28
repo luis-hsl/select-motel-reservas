@@ -4,6 +4,7 @@ import type { Package, Suite, ReservationType } from '../types'
 interface StoreState {
   currentStep: number
   package: Package | null
+  drink: 'vinho' | 'frisante' | null
   type: ReservationType | null
   suite: Suite | null
   checkIn: Date | null
@@ -13,6 +14,7 @@ interface StoreState {
 
   setStep: (step: number) => void
   setPackage: (pkg: Package) => void
+  setDrink: (drink: 'vinho' | 'frisante') => void
   setType: (type: ReservationType) => void
   setSuite: (suite: Suite) => void
   setCheckIn: (date: Date) => void
@@ -26,6 +28,7 @@ interface StoreState {
 export const useStore = create<StoreState>((set, get) => ({
   currentStep: 1,
   package: null,
+  drink: null,
   type: null,
   suite: null,
   checkIn: null,
@@ -35,6 +38,7 @@ export const useStore = create<StoreState>((set, get) => ({
 
   setStep: (step) => set({ currentStep: step }),
   setPackage: (pkg) => set({ package: pkg }),
+  setDrink: (drink) => set({ drink }),
   setType: (type) => set({ type }),
   setSuite: (suite) => set({ suite }),
   setCheckIn: (date) => set({ checkIn: date, suite: null }),
