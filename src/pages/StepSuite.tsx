@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { SUITES, calcCheckOut } from '../data'
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
@@ -253,6 +253,9 @@ function SuiteGallery({ suite, photos, occupied, selected, onChoose, onClose }: 
   onChoose: () => void; onClose: () => void
 }) {
   const [visible, setVisible] = useState(false)
+  const [currentIdx, setCurrentIdx] = useState(0)
+  const carouselRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
     document.body.style.overflow = 'hidden'
     requestAnimationFrame(() => setTimeout(() => setVisible(true), 10))
@@ -264,8 +267,17 @@ function SuiteGallery({ suite, photos, occupied, selected, onChoose, onClose }: 
     setTimeout(onClose, 360)
   }
 
-  const coverUrl = photos[0]
-  const extraPhotos = photos.slice(1)
+  function handleScroll() {
+    const el = carouselRef.current
+    if (!el) return
+    setCurrentIdx(Math.round(el.scrollLeft / el.clientWidth))
+  }
+
+  function goTo(idx: number) {
+    const el = carouselRef.current
+    if (!el) return
+    el.scrollTo({ left: idx * el.clientWidth, behavior: 'smooth' })
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" style={{ pointerEvents: visible ? 'auto' : 'none' }}>
@@ -293,22 +305,51 @@ function SuiteGallery({ suite, photos, occupied, selected, onChoose, onClose }: 
           <div className="w-10 h-1 rounded-full bg-gold-800/40" />
         </div>
 
-        {/* Cover photo */}
-        <div
-          className="relative w-full"
-          style={{
-            aspectRatio: '4 / 3',
-            backgroundColor: '#1a0f02',
-            backgroundImage: [
-              'radial-gradient(ellipse at 50% 110%, rgba(180,90,15,0.6) 0%, transparent 55%)',
-              'radial-gradient(ellipse at 15% 85%, rgba(130,65,10,0.45) 0%, transparent 48%)',
-              'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.6) 100%)',
-              ...(coverUrl ? [`url(${coverUrl})`] : []),
-            ].join(', '),
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        >
+        {/* Photo area */}
+        <div className="relative overflow-hidden" style={{ aspectRatio: '4 / 3' }}>
+          {photos.length > 0 ? (
+            /* ── Swipeable carousel ── */
+            <div
+              ref={carouselRef}
+              className="flex h-full overflow-x-auto scrollbar-hide"
+              style={{ scrollSnapType: 'x mandatory' }}
+              onScroll={handleScroll}
+            >
+              {photos.map((url, i) => (
+                <div key={i} className="shrink-0 w-full h-full" style={{ scrollSnapAlign: 'start' }}>
+                  <img src={url} alt="" className="w-full h-full object-cover" draggable={false} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            /* ── Placeholder with suite number ── */
+            <div
+              className="w-full h-full flex flex-col items-center justify-center"
+              style={{
+                backgroundColor: '#1a0f02',
+                backgroundImage: [
+                  'radial-gradient(ellipse at 50% 110%, rgba(180,90,15,0.6) 0%, transparent 55%)',
+                  'radial-gradient(ellipse at 15% 85%, rgba(130,65,10,0.45) 0%, transparent 48%)',
+                ].join(', '),
+              }}
+            >
+              <p className="text-[9px] tracking-[0.5em] uppercase mb-2" style={{ color: 'rgba(220,185,100,0.7)' }}>
+                S U Í T E
+              </p>
+              <div className="h-px w-10 mb-3" style={{ background: 'linear-gradient(to right, transparent, #c9a84c, transparent)' }} />
+              <span
+                className="font-serif font-bold text-transparent bg-clip-text"
+                style={{
+                  fontSize: 'clamp(5rem, 22vw, 8rem)',
+                  backgroundImage: 'linear-gradient(160deg, #fce8a8 0%, #d4a017 35%, #8b6010 70%, #c9a84c 100%)',
+                  lineHeight: 1,
+                }}
+              >
+                {suite.room_number}
+              </span>
+            </div>
+          )}
+
           {/* Close button */}
           <button
             onClick={close}
@@ -318,37 +359,53 @@ function SuiteGallery({ suite, photos, occupied, selected, onChoose, onClose }: 
             ✕
           </button>
 
-          {/* Suite label overlay */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <p className="text-[9px] tracking-[0.5em] uppercase mb-2" style={{ color: 'rgba(220,185,100,0.7)' }}>
-              S U Í T E
-            </p>
-            <div className="h-px w-10 mb-3" style={{ background: 'linear-gradient(to right, transparent, #c9a84c, transparent)', boxShadow: '0 0 6px rgba(200,160,50,0.8)' }} />
-            <span
-              className="font-serif font-bold text-transparent bg-clip-text"
-              style={{
-                fontSize: 'clamp(5rem, 22vw, 8rem)',
-                backgroundImage: 'linear-gradient(160deg, #fce8a8 0%, #d4a017 35%, #8b6010 70%, #c9a84c 100%)',
-                lineHeight: 1,
-              }}
-            >
-              {suite.room_number}
-            </span>
-          </div>
-        </div>
+          {/* Prev / Next arrows (apenas com múltiplas fotos) */}
+          {photos.length > 1 && (
+            <>
+              <button
+                onClick={() => goTo(currentIdx - 1)}
+                disabled={currentIdx === 0}
+                className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full flex items-center justify-center text-lg transition-all disabled:opacity-0"
+                style={{ background: 'rgba(0,0,0,0.55)', color: 'rgba(220,185,100,0.85)' }}
+              >
+                ‹
+              </button>
+              <button
+                onClick={() => goTo(currentIdx + 1)}
+                disabled={currentIdx === photos.length - 1}
+                className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full flex items-center justify-center text-lg transition-all disabled:opacity-0"
+                style={{ background: 'rgba(0,0,0,0.55)', color: 'rgba(220,185,100,0.85)' }}
+              >
+                ›
+              </button>
+            </>
+          )}
 
-        {/* Extra photos grid */}
-        {extraPhotos.length > 0 && (
-          <div className="grid grid-cols-3 gap-1 p-1">
-            {extraPhotos.map((url, i) => (
-              <div
-                key={i}
-                className="rounded-lg overflow-hidden"
-                style={{ aspectRatio: '1 / 1', backgroundImage: `url(${url})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: '#1a0f02' }}
-              />
-            ))}
-          </div>
-        )}
+          {/* Dot indicators */}
+          {photos.length > 1 && (
+            <div className="absolute bottom-3 left-0 right-0 flex gap-1.5 justify-center">
+              {photos.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => goTo(i)}
+                  className={`rounded-full transition-all duration-250 ${
+                    i === currentIdx ? 'w-4 h-1.5 bg-gold-400' : 'w-1.5 h-1.5 bg-white/35 hover:bg-white/60'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Counter */}
+          {photos.length > 1 && (
+            <div
+              className="absolute top-3 left-3 z-10 text-[10px] text-white/70 px-2 py-0.5 rounded-full tabular-nums"
+              style={{ background: 'rgba(0,0,0,0.5)' }}
+            >
+              {currentIdx + 1} / {photos.length}
+            </div>
+          )}
+        </div>
 
         {/* Suite info */}
         <div className="px-6 py-5 space-y-5">
