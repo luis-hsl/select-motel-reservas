@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { PACKAGES } from '../data'
 import { useStore } from '../store/useStore'
 import type { Package } from '../types'
@@ -253,8 +254,8 @@ export default function StepPacote() {
         })}
       </div>
 
-      {/* Detail Modal */}
-      {detailId && detailPkg && (
+      {/* Detail Modal — portal ao body para não ser afetado por transforms de ancestrais */}
+      {detailId && detailPkg && createPortal(
         <PackageModal
           id={detailId}
           pkg={detailPkg}
@@ -262,7 +263,8 @@ export default function StepPacote() {
           visible={visible}
           onClose={closeDetail}
           onSelect={() => { closeDetail(); choose(detailPkg) }}
-        />
+        />,
+        document.body
       )}
     </div>
   )
