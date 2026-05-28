@@ -61,13 +61,6 @@ export default function SuitesTab() {
   }
 
   async function uploadVideo(suiteId: string, file: File) {
-    const MAX_MB = 400
-    if (file.size > MAX_MB * 1024 * 1024) {
-      const fileMB = (file.size / (1024 * 1024)).toFixed(0)
-      alert(`Vídeo muito grande: ${fileMB}MB. Grave em 1080p ou reduza para até 40 segundos.`)
-      return
-    }
-
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) {
       alert('Sessão expirada. Faça login novamente.')
