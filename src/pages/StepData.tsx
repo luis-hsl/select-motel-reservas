@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { getAvailableDates, calcCheckOut, PERIOD_SLOTS, OVERNIGHT_CHECKIN } from '../data'
 import { useStore } from '../store/useStore'
 
-const AVAILABLE_DATES = getAvailableDates(60)
+const AVAILABLE_DATES = getAvailableDates()
 const AVAILABLE_SET = new Set(AVAILABLE_DATES.map(d => d.toDateString()))
 
 const DAY_LETTERS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
