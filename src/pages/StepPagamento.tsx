@@ -140,6 +140,7 @@ export default function StepPagamento() {
       `📱 *Telefone:* ${customerPhone}`,
       ``,
       `🛏️ *Suíte:* ${suite?.name ?? ''}`,
+      `🌹 *Decoração:* Incluída`,
       `📦 *Pacote:* ${pkg?.label ?? ''}`,
       ...(food ? [`🍽️ *Refeição:* ${food === 'jantar' ? 'Jantar' : food === 'sushi' ? 'Sushi' : 'Pizza'}`] : []),
       ...(drink ? [`🍹 *Bebida:* ${drink === 'vinho' ? 'Vinho' : drink === 'frisante' ? 'Frisante' : 'Drink'}`] : []),
@@ -173,7 +174,7 @@ export default function StepPagamento() {
 
           <div className="px-6 py-5 space-y-3">
             <SummaryRow label="Código" value={reservationId.slice(0, 8).toUpperCase()} mono />
-            <SummaryRow label="Suíte" value={suite?.name ?? ''} />
+            <SummaryRow label="Suíte" value={suite ? `${suite.name} + Decoração` : ''} />
             {foodLabel(food) && <SummaryRow label="Refeição" value={foodLabel(food)!} />}
             {drinkLabel(drink) && <SummaryRow label="Bebida" value={drinkLabel(drink)!} />}
             <SummaryRow label="Fondue" value="🍫 Incluído" />
@@ -231,7 +232,7 @@ export default function StepPagamento() {
             </div>
             <div className="px-5 py-4 space-y-2.5">
               <SummaryRow label="Cliente" value={customerName} />
-              <SummaryRow label="Suíte" value={suite?.name ?? '—'} />
+              <SummaryRow label="Suíte" value={suite ? `${suite.name} + Decoração` : '—'} />
               <SummaryRow label="Pacote" value={pkg?.label ?? '—'} />
               {foodLabel(food) && <SummaryRow label="Refeição" value={foodLabel(food)!} />}
               {drinkLabel(drink) && <SummaryRow label="Bebida" value={drinkLabel(drink)!} />}
