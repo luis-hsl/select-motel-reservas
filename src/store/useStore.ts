@@ -5,7 +5,7 @@ interface StoreState {
   currentStep: number
   package: Package | null
   drink: 'vinho' | 'frisante' | null
-  food: 'jantar' | 'sushi' | null
+  food: 'jantar' | 'sushi' | 'pizza' | null
   type: ReservationType | null
   suite: Suite | null
   checkIn: Date | null
@@ -16,7 +16,7 @@ interface StoreState {
   setStep: (step: number) => void
   setPackage: (pkg: Package) => void
   setDrink: (drink: 'vinho' | 'frisante') => void
-  setFood: (food: 'jantar' | 'sushi') => void
+  setFood: (food: 'jantar' | 'sushi' | 'pizza') => void
   setType: (type: ReservationType) => void
   setSuite: (suite: Suite) => void
   setCheckIn: (date: Date) => void
@@ -65,20 +65,14 @@ export const useStore = create<StoreState>((set, get) => ({
 
   nextStep: () => set((s) => {
     const next = s.currentStep + 1
-    // Refeição (5): só Ouro — Prata vai para Bebida (6), Bronze pula para Presente (7)
-    if (next === 5 && s.package?.id !== 'ouro') {
-      return { currentStep: s.package?.id === 'bronze' ? 7 : 6 }
-    }
-    // Bebida (6): Bronze pula para Presente (7)
+    // Bebida (6): Bronze pula para Presente (7) — Bronze não tem bebida incluída
     if (next === 6 && s.package?.id === 'bronze') return { currentStep: 7 }
     return { currentStep: next }
   }),
   prevStep: () => set((s) => {
     const prev = s.currentStep - 1
-    // Voltando de Bebida (6): Prata pula Refeição → vai para Suíte (4)
-    if (prev === 5 && s.package?.id === 'prata') return { currentStep: 4 }
-    // Voltando de Presente (7): Bronze pula Bebida e Refeição → vai para Suíte (4)
-    if (prev === 6 && s.package?.id === 'bronze') return { currentStep: 4 }
+    // Voltando de Presente (7): Bronze pula Bebida → vai para Refeição (5)
+    if (prev === 6 && s.package?.id === 'bronze') return { currentStep: 5 }
     return { currentStep: Math.max(1, prev) }
   }),
 }))
