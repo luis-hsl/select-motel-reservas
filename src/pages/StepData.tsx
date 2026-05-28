@@ -237,10 +237,7 @@ export default function StepData() {
                 <span className="text-gold-700/40">→</span>
                 <span className="text-gold-300 font-semibold">
                   Check-out:{' '}
-                  {selectedCheckOut.toLocaleString('pt-BR', {
-                    weekday: 'short',
-                    day: '2-digit',
-                    month: '2-digit',
+                  {selectedCheckOut.toLocaleTimeString('pt-BR', {
                     hour: '2-digit',
                     minute: '2-digit',
                   })}
