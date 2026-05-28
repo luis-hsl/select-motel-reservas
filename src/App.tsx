@@ -3,8 +3,9 @@ import ProgressBar from './components/ProgressBar'
 import ReservaSidebar from './components/ReservaSidebar'
 import StepPacote from './pages/StepPacote'
 import StepTipo from './pages/StepTipo'
-import StepSuite from './pages/StepSuite'
 import StepData from './pages/StepData'
+import StepSuite from './pages/StepSuite'
+import StepBebida from './pages/StepBebida'
 import StepDados from './pages/StepDados'
 import StepPagamento from './pages/StepPagamento'
 import { useStore } from './store/useStore'
@@ -14,8 +15,9 @@ const STEPS: Record<number, React.ComponentType> = {
   2: StepTipo,
   3: StepData,
   4: StepSuite,
-  5: StepDados,
-  6: StepPagamento,
+  5: StepBebida,
+  6: StepDados,
+  7: StepPagamento,
 }
 
 export default function App() {

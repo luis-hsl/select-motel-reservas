@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { PACKAGES } from '../data'
 import { useStore } from '../store/useStore'
 import type { Package } from '../types'
@@ -123,42 +123,14 @@ const DETAIL: Record<PkgId, PackageDetail> = {
   },
 }
 
-const DRINK_HAS_CHOICE: Record<PkgId, boolean> = {
-  ouro: true,
-  prata: true,
-  bronze: false,
-}
-
 export default function StepPacote() {
-  const { package: selected, setPackage, setDrink, nextStep } = useStore()
-  const [pendingPkg, setPendingPkg] = useState<Package | null>(null)
-  const [selectedDrink, setSelectedDrink] = useState<'vinho' | 'frisante' | null>(null)
+  const { package: selected, setPackage, nextStep } = useStore()
   const [detailId, setDetailId] = useState<PkgId | null>(null)
   const [visible, setVisible] = useState(false)
-  const drinkRef = useRef<HTMLDivElement>(null)
 
-  const needsDrinkChoice = pendingPkg ? DRINK_HAS_CHOICE[pendingPkg.id as PkgId] : false
-
-  function selectPkg(pkg: Package) {
-    if (DRINK_HAS_CHOICE[pkg.id as PkgId]) {
-      setPendingPkg(pkg)
-      setSelectedDrink(null)
-      setTimeout(() => {
-        drinkRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 80)
-    } else {
-      // Bronze: segue direto sem escolha de bebida
-      setPackage(pkg)
-      setDrink('vinho') // reset
-      setTimeout(nextStep, 300)
-    }
-  }
-
-  function confirmWithDrink() {
-    if (!pendingPkg || !selectedDrink) return
-    setPackage(pendingPkg)
-    setDrink(selectedDrink)
-    nextStep()
+  function choose(pkg: Package) {
+    setPackage(pkg)
+    setTimeout(nextStep, 300)
   }
 
   function openDetail(id: PkgId, e: React.MouseEvent) {
@@ -179,8 +151,6 @@ export default function StepPacote() {
   }, [detailId])
 
   const detailPkg = detailId ? PACKAGES.find(p => p.id === detailId) : null
-
-  const t = pendingPkg ? THEME[pendingPkg.id as PkgId] : null
 
   return (
     <div>
@@ -283,72 +253,6 @@ export default function StepPacote() {
         })}
       </div>
 
-      {/* Escolha de bebida — aparece após selecionar Ouro ou Prata */}
-      {needsDrinkChoice && pendingPkg && t && (
-        <div
-          ref={drinkRef}
-          className="mt-8 rounded-2xl border p-6"
-          style={{ borderColor: t.border, background: `${t.dividerColor}08`, scrollMarginTop: '5rem' }}
-        >
-          <p className="text-[10px] tracking-widests uppercase mb-1" style={{ color: t.labelColor }}>
-            Incluído no Pacote {pendingPkg.id.charAt(0).toUpperCase() + pendingPkg.id.slice(1)}
-          </p>
-          <p className="font-serif text-lg font-light mb-5" style={{ color: t.priceColor }}>
-            Qual bebida o casal prefere?
-          </p>
-
-          <div className="grid grid-cols-2 gap-3 mb-6">
-            {(['vinho', 'frisante'] as const).map((drink) => {
-              const isSel = selectedDrink === drink
-              return (
-                <button
-                  key={drink}
-                  onClick={() => setSelectedDrink(drink)}
-                  className="relative flex flex-col items-center gap-3 py-6 px-4 rounded-xl border transition-all duration-200"
-                  style={{
-                    borderColor: isSel ? t.accentColor : `${t.dividerColor}40`,
-                    background: isSel ? `${t.dividerColor}18` : `${t.dividerColor}08`,
-                  }}
-                >
-                  {isSel && (
-                    <div
-                      className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full flex items-center justify-center"
-                      style={{ background: t.accentColor }}
-                    >
-                      <svg className="w-2.5 h-2.5 text-black" fill="none" viewBox="0 0 10 10">
-                        <path d="M2 5l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </div>
-                  )}
-                  <span className="text-2xl">
-                    {drink === 'vinho' ? '🍷' : '🥂'}
-                  </span>
-                  <div className="text-center">
-                    <p className="text-sm font-semibold" style={{ color: isSel ? t.priceColor : 'rgba(245,224,180,0.55)' }}>
-                      {drink === 'vinho' ? 'Vinho' : 'Frisante'}
-                    </p>
-                    <p className="text-[10px] mt-0.5" style={{ color: t.labelColor }}>
-                      {drink === 'vinho' ? 'Tinto ou Branco' : 'Espumante leve'}
-                    </p>
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-
-          <button
-            onClick={confirmWithDrink}
-            disabled={!selectedDrink}
-            className="w-full py-3.5 rounded-xl text-sm font-semibold tracking-wide text-black transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
-            style={selectedDrink ? { background: t.badgeBg } : { background: `${t.dividerColor}30` }}
-          >
-            {selectedDrink
-              ? `Continuar com ${selectedDrink === 'vinho' ? 'Vinho' : 'Frisante'} →`
-              : 'Escolha uma bebida para continuar'}
-          </button>
-        </div>
-      )}
-
       {/* Detail Modal */}
       {detailId && detailPkg && (
         <PackageModal
@@ -357,7 +261,7 @@ export default function StepPacote() {
           detail={DETAIL[detailId]}
           visible={visible}
           onClose={closeDetail}
-          onSelect={() => { closeDetail(); selectPkg(detailPkg) }}
+          onSelect={() => { closeDetail(); choose(detailPkg) }}
         />
       )}
     </div>

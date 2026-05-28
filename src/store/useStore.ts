@@ -59,8 +59,18 @@ export const useStore = create<StoreState>((set, get) => ({
     return out
   },
 
-  nextStep: () => set((s) => ({ currentStep: s.currentStep + 1 })),
-  prevStep: () => set((s) => ({ currentStep: Math.max(1, s.currentStep - 1) })),
+  nextStep: () => set((s) => {
+    const next = s.currentStep + 1
+    // Etapa 5 = Bebida: pular para Bronze (sem bebida incluída)
+    if (next === 5 && s.package?.id === 'bronze') return { currentStep: 6 }
+    return { currentStep: next }
+  }),
+  prevStep: () => set((s) => {
+    const prev = s.currentStep - 1
+    // Etapa 5 = Bebida: pular para Bronze ao voltar também
+    if (prev === 5 && s.package?.id === 'bronze') return { currentStep: 4 }
+    return { currentStep: Math.max(1, prev) }
+  }),
 }))
 
-export const TOTAL_STEPS = 6
+export const TOTAL_STEPS = 7
