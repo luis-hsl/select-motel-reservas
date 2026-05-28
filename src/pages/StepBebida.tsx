@@ -53,7 +53,7 @@ export default function StepBebida() {
         Incluída no seu pacote. Escolha a que mais combina com o clima.
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl xl:max-w-4xl">
+      <div className="grid grid-cols-2 gap-3 max-w-xl">
         {OPCOES.map((opt) => {
           const isSel = selected === opt.id
           return (
@@ -66,7 +66,7 @@ export default function StepBebida() {
                 boxShadow: isSel
                   ? `0 0 0 2px ${opt.ring}, 0 4px 40px ${opt.glow}, inset 0 0 40px rgba(0,0,0,0.3)`
                   : `inset 0 0 40px rgba(0,0,0,0.5)`,
-                minHeight: '340px',
+                minHeight: '220px',
               }}
             >
               {/* Foto de fundo */}
@@ -89,33 +89,33 @@ export default function StepBebida() {
               {/* Anel de seleção */}
               {isSel && (
                 <div
-                  className="absolute top-4 right-4 w-6 h-6 rounded-full flex items-center justify-center z-10"
+                  className="absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center z-10"
                   style={{ background: opt.accent, boxShadow: `0 0 12px ${opt.glow}` }}
                 >
-                  <svg className="w-3.5 h-3.5 text-black" fill="none" viewBox="0 0 12 12">
+                  <svg className="w-3 h-3 text-black" fill="none" viewBox="0 0 12 12">
                     <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
               )}
 
               {/* Conteúdo sobre a foto */}
-              <div className="relative z-10 flex flex-col justify-end h-full p-7" style={{ minHeight: '340px' }}>
+              <div className="relative z-10 flex flex-col justify-end h-full p-4" style={{ minHeight: '220px' }}>
                 {/* Linha decorativa */}
-                <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-2 mb-2">
                   <div
-                    className="h-px w-8"
+                    className="h-px w-6"
                     style={{ background: opt.accent, boxShadow: `0 0 6px ${opt.accent}` }}
                   />
                 </div>
 
                 <h2
-                  className="font-serif font-bold tracking-widest mb-2 text-transparent bg-clip-text leading-none"
-                  style={{ fontSize: 'clamp(2rem,6vw,2.6rem)', backgroundImage: opt.nameCss }}
+                  className="font-serif font-bold tracking-widest mb-1 text-transparent bg-clip-text leading-none"
+                  style={{ fontSize: 'clamp(1.4rem,4vw,1.9rem)', backgroundImage: opt.nameCss }}
                 >
                   {opt.label.toUpperCase()}
                 </h2>
                 <p
-                  className="text-[11px] tracking-wider uppercase"
+                  className="text-[10px] tracking-wider uppercase"
                   style={{ color: 'rgba(245,220,180,0.55)' }}
                 >
                   {opt.sub}
