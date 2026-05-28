@@ -17,8 +17,8 @@ const STEPS: Record<number, React.ComponentType> = {
   2: StepTipo,
   3: StepData,
   4: StepSuite,
-  5: StepBebida,
-  6: StepRefeicao,
+  5: StepRefeicao,
+  6: StepBebida,
   7: StepDados,
   8: StepPagamento,
 }
