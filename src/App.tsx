@@ -12,8 +12,8 @@ import { useStore } from './store/useStore'
 const STEPS: Record<number, React.ComponentType> = {
   1: StepPacote,
   2: StepTipo,
-  3: StepSuite,
-  4: StepData,
+  3: StepData,
+  4: StepSuite,
   5: StepDados,
   6: StepPagamento,
 }

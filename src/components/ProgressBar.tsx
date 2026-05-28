@@ -1,6 +1,6 @@
 import { TOTAL_STEPS } from '../store/useStore'
 
-const STEP_LABELS = ['Pacote', 'Tipo', 'Suíte', 'Data', 'Dados', 'Pagamento']
+const STEP_LABELS = ['Pacote', 'Tipo', 'Data', 'Suíte', 'Dados', 'Pagamento']
 
 interface Props { currentStep: number }
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { SUITES } from '../data'
+import { SUITES, calcCheckOut } from '../data'
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
 import type { Suite, SuiteCategory } from '../types'
@@ -21,39 +21,45 @@ const GALLERY: Record<string, string[]> = {
 }
 
 export default function StepSuite() {
-  const { package: pkg, suite: selected, setSuite, nextStep, prevStep } = useStore()
+  const { package: pkg, suite: selected, checkIn, type, setSuite, nextStep, prevStep } = useStore()
   const [loading, setLoading] = useState(true)
   const [galleryFor, setGalleryFor] = useState<Suite | null>(null)
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({})
   const [whatsappNum, setWhatsappNum] = useState('5543999999999')
+  const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set())
 
   const packageSuites = SUITES.filter(s => pkg && s.packageIds.includes(pkg.id as never))
 
-  // Fetch photo URLs and WhatsApp number from Supabase
   useEffect(() => {
-    supabase
-      .from('suites')
-      .select('id, photo_url')
-      .not('photo_url', 'is', null)
-      .then(({ data }) => {
-        if (data) {
-          const urls: Record<string, string> = {}
-          data.forEach(s => { if (s.photo_url) urls[s.id] = s.photo_url })
-          setPhotoUrls(urls)
-        }
-      })
+    const checkOut = checkIn && type ? calcCheckOut(checkIn, type) : null
 
-    supabase
-      .from('settings')
-      .select('value')
-      .eq('key', 'whatsapp_number')
-      .single()
-      .then(({ data }) => { if (data?.value) setWhatsappNum(data.value) })
+    Promise.all([
+      supabase.from('suites').select('id,photo_url').not('photo_url', 'is', null),
+      supabase.from('settings').select('value').eq('key', 'whatsapp_number').single(),
+      checkIn && checkOut
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ? (supabase as any).rpc('get_occupied_suite_ids', {
+            p_check_in: checkIn.toISOString(),
+            p_check_out: checkOut.toISOString(),
+          })
+        : Promise.resolve({ data: [] }),
+    ]).then(([suiteRes, waRes, occRes]) => {
+      if (suiteRes.data) {
+        const urls: Record<string, string> = {}
+        suiteRes.data.forEach((s: { id: string; photo_url: string | null }) => {
+          if (s.photo_url) urls[s.id] = s.photo_url
+        })
+        setPhotoUrls(urls)
+      }
+      if (waRes.data?.value) setWhatsappNum(waRes.data.value)
+      if (occRes.data) {
+        setOccupiedIds(new Set((occRes.data as { suite_id: string }[]).map(r => r.suite_id)))
+      }
+      setLoading(false)
+    })
+  }, [checkIn, type])
 
-    setLoading(false)
-  }, [])
-
-  const allOccupied = false // availability is checked per-slot in StepData
+  const allOccupied = packageSuites.length > 0 && packageSuites.every(s => occupiedIds.has(s.id))
 
   function choose(suite: Suite) {
     setSuite(suite)
@@ -74,7 +80,11 @@ export default function StepSuite() {
       </h1>
       <p className="text-gold-700/70 text-sm mb-6 sm:mb-8">
         Suítes disponíveis para o{' '}
-        <strong className="text-gold-500 font-medium">{pkg?.label}</strong>.
+        <strong className="text-gold-500 font-medium">{pkg?.label}</strong>
+        {checkIn && (
+          <> no horário escolhido.</>
+        )}
+        {!checkIn && <>.{/* fallback */}</>}
       </p>
 
       {loading ? (
@@ -109,7 +119,7 @@ export default function StepSuite() {
                       key={suite.id}
                       suite={suite}
                       photoUrl={photoUrls[suite.id]}
-                      occupied={false}
+                      occupied={occupiedIds.has(suite.id)}
                       selected={selected?.id === suite.id}
                       onChoose={() => choose(suite)}
                       onViewMore={() => setGalleryFor(suite)}
@@ -127,7 +137,7 @@ export default function StepSuite() {
         <SuiteGallery
           suite={galleryFor}
           photoUrl={photoUrls[galleryFor.id]}
-          occupied={false}
+          occupied={occupiedIds.has(galleryFor.id)}
           selected={selected?.id === galleryFor.id}
           onChoose={() => { choose(galleryFor); setGalleryFor(null) }}
           onClose={() => setGalleryFor(null)}

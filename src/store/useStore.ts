@@ -37,7 +37,7 @@ export const useStore = create<StoreState>((set, get) => ({
   setPackage: (pkg) => set({ package: pkg }),
   setType: (type) => set({ type }),
   setSuite: (suite) => set({ suite }),
-  setCheckIn: (date) => set({ checkIn: date }),
+  setCheckIn: (date) => set({ checkIn: date, suite: null }),
   setCustomer: (customerName, customerPhone, customerEmail) =>
     set({ customerName, customerPhone, customerEmail }),
 
