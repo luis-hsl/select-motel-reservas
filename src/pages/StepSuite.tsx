@@ -225,9 +225,11 @@ function SuiteCard({ suite, photoUrl, occupied, selected, onChoose, onViewMore }
 
         {/* Bottom: category + buttons */}
         <div className="space-y-2">
-          <p className="text-[9px] tracking-widest uppercase text-center" style={{ color: 'rgba(200,165,80,0.5)' }}>
-            {CATEGORY_LABEL[suite.category]}
-          </p>
+          {!photoUrl && (
+            <p className="text-[9px] tracking-widest uppercase text-center" style={{ color: 'rgba(200,165,80,0.5)' }}>
+              {CATEGORY_LABEL[suite.category]}
+            </p>
+          )}
 
           {occupied ? (
             <div className="w-full text-center py-1.5 rounded-lg border border-red-900/50 text-[10px] tracking-widest uppercase text-red-400/70">
@@ -318,14 +320,14 @@ function SuiteGallery({ suite, photos, videoUrl, occupied, selected, onChoose, o
 
         {/* Video hero — when available, show ONLY video (no photos) */}
         {videoUrl && (
-          <div className="relative bg-black">
+          <div className="relative bg-black flex items-center justify-center">
             <video
               src={videoUrl}
               autoPlay
               muted
               loop
               playsInline
-              className="w-full block"
+              className="block w-auto max-h-[58vh]"
             />
             {/* Close button */}
             <button
