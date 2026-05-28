@@ -55,14 +55,56 @@ export default function SuitesTab() {
     }
 
     const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(path)
-    if (kind === 'photo') {
-      await supabase.from('suites').update({ photo_url: publicUrl }).eq('id', suiteId)
-      setSuites(prev => prev.map(s => s.id === suiteId ? { ...s, photo_url: publicUrl } : s))
-    } else {
+
+    if (kind === 'video') {
       await supabase.from('suites').update({ video_url: publicUrl }).eq('id', suiteId)
       setSuites(prev => prev.map(s => s.id === suiteId ? { ...s, video_url: publicUrl } : s))
+
+      // Auto-generate cover thumbnail from first frame if no photo yet
+      const current = suites.find(s => s.id === suiteId)
+      if (!current?.photo_url) {
+        const thumb = await captureVideoThumbnail(file)
+        if (thumb) {
+          const thumbPath = `${suiteId}.jpg`
+          const { error: tErr } = await supabase.storage
+            .from('suite-photos')
+            .upload(thumbPath, thumb, { upsert: true, contentType: 'image/jpeg' })
+          if (!tErr) {
+            const { data: { publicUrl: thumbUrl } } = supabase.storage
+              .from('suite-photos').getPublicUrl(thumbPath)
+            await supabase.from('suites').update({ photo_url: thumbUrl }).eq('id', suiteId)
+            setSuites(prev => prev.map(s => s.id === suiteId ? { ...s, photo_url: thumbUrl } : s))
+          }
+        }
+      }
+    } else {
+      await supabase.from('suites').update({ photo_url: publicUrl }).eq('id', suiteId)
+      setSuites(prev => prev.map(s => s.id === suiteId ? { ...s, photo_url: publicUrl } : s))
     }
+
     setUploading(null)
+  }
+
+  async function captureVideoThumbnail(file: File): Promise<Blob | null> {
+    return new Promise(resolve => {
+      const video = document.createElement('video')
+      const url = URL.createObjectURL(file)
+      video.src = url
+      video.muted = true
+      video.playsInline = true
+      video.currentTime = 0.5
+      video.onloadeddata = () => {
+        try {
+          const canvas = document.createElement('canvas')
+          canvas.width = video.videoWidth || 1280
+          canvas.height = video.videoHeight || 720
+          canvas.getContext('2d')?.drawImage(video, 0, 0)
+          canvas.toBlob(blob => { URL.revokeObjectURL(url); resolve(blob) }, 'image/jpeg', 0.88)
+        } catch { URL.revokeObjectURL(url); resolve(null) }
+      }
+      video.onerror = () => { URL.revokeObjectURL(url); resolve(null) }
+      video.load()
+    })
   }
 
   if (loading) return <div className="text-white/30 py-16 text-center text-sm">Carregando...</div>

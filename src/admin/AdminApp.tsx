@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import type { User } from '@supabase/supabase-js'
+import AdminLogin from './AdminLogin'
 import AdminDashboard from './AdminDashboard'
 
 export default function AdminApp() {
@@ -12,11 +13,9 @@ export default function AdminApp() {
       setUser(session?.user ?? null)
       setLoading(false)
     })
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
     })
-
     return () => subscription.unsubscribe()
   }, [])
 
@@ -31,9 +30,5 @@ export default function AdminApp() {
     )
   }
 
-  // BYPASS TEMPORÁRIO — remover antes de ir para produção
-  return <AdminDashboard user={{ email: 'preview@selectmotel.com' } as User} />
-
-  void user; void setUser
-  return null
+  return user ? <AdminDashboard user={user} /> : <AdminLogin onLogin={setUser} />
 }
