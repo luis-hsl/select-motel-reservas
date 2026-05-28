@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useStore } from '../store/useStore'
 
 const OPCOES = [
@@ -24,6 +24,14 @@ const GOLD_NAME = 'linear-gradient(180deg,#f5e0a0 0%,#d4a017 45%,#8b6010 100%)'
 export default function StepRefeicao() {
   const { setFood, nextStep, prevStep } = useStore()
   const [selected, setSelected] = useState<'jantar' | 'sushi' | null>(null)
+  const ctaRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (!selected) return
+    requestAnimationFrame(() => {
+      ctaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
+  }, [selected])
 
   function confirm() {
     if (!selected) return
@@ -120,6 +128,7 @@ export default function StepRefeicao() {
 
       <div className="mt-6">
         <button
+          ref={ctaRef}
           onClick={confirm}
           disabled={!selected}
           className={[
