@@ -20,6 +20,7 @@ export default function StepSuite() {
   const [loading, setLoading] = useState(true)
   const [galleryFor, setGalleryFor] = useState<Suite | null>(null)
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({})
+  const [videoUrls, setVideoUrls] = useState<Record<string, string>>({})
   const [allPhotos, setAllPhotos] = useState<Record<string, string[]>>({})
   const [whatsappNum, setWhatsappNum] = useState('5543999999999')
   const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set())
@@ -30,7 +31,7 @@ export default function StepSuite() {
     const checkOut = checkIn && type ? calcCheckOut(checkIn, type) : null
 
     Promise.all([
-      supabase.from('suites').select('id,photo_url').not('photo_url', 'is', null),
+      supabase.from('suites').select('id,photo_url,video_url'),
       (supabase as any).from('suite_photos').select('suite_id,url').order('sort_order'),
       supabase.from('settings').select('value').eq('key', 'whatsapp_number').single(),
       checkIn && checkOut
@@ -42,11 +43,14 @@ export default function StepSuite() {
         : Promise.resolve({ data: [] }),
     ]).then(([suiteRes, photosRes, waRes, occRes]) => {
       if (suiteRes.data) {
-        const urls: Record<string, string> = {}
-        suiteRes.data.forEach((s: { id: string; photo_url: string | null }) => {
-          if (s.photo_url) urls[s.id] = s.photo_url
+        const photos: Record<string, string> = {}
+        const videos: Record<string, string> = {}
+        suiteRes.data.forEach((s: { id: string; photo_url: string | null; video_url: string | null }) => {
+          if (s.photo_url) photos[s.id] = s.photo_url
+          if (s.video_url) videos[s.id] = s.video_url
         })
-        setPhotoUrls(urls)
+        setPhotoUrls(photos)
+        setVideoUrls(videos)
       }
       if (photosRes.data) {
         const grouped: Record<string, string[]> = {}
@@ -142,6 +146,7 @@ export default function StepSuite() {
         <SuiteGallery
           suite={galleryFor}
           photos={allPhotos[galleryFor.id] ?? (photoUrls[galleryFor.id] ? [photoUrls[galleryFor.id]] : [])}
+          videoUrl={videoUrls[galleryFor.id]}
           occupied={occupiedIds.has(galleryFor.id)}
           selected={selected?.id === galleryFor.id}
           onChoose={() => { choose(galleryFor); setGalleryFor(null) }}
@@ -250,8 +255,8 @@ function SuiteCard({ suite, photoUrl, occupied, selected, onChoose, onViewMore }
 
 // ── Suite Gallery Modal ────────────────────────────────────
 
-function SuiteGallery({ suite, photos, occupied, selected, onChoose, onClose }: {
-  suite: Suite; photos: string[]; occupied: boolean; selected: boolean
+function SuiteGallery({ suite, photos, videoUrl, occupied, selected, onChoose, onClose }: {
+  suite: Suite; photos: string[]; videoUrl?: string; occupied: boolean; selected: boolean
   onChoose: () => void; onClose: () => void
 }) {
   const [visible, setVisible] = useState(false)
@@ -307,42 +312,31 @@ function SuiteGallery({ suite, photos, occupied, selected, onChoose, onClose }: 
           <div className="w-10 h-1 rounded-full bg-gold-800/40" />
         </div>
 
-        {/* Photo area */}
-        <div className="relative overflow-hidden" style={{ aspectRatio: '4 / 3' }}>
-          {photos.length > 0 ? (
-            /* ── Swipeable carousel ── */
+        {/* Video hero (when available) */}
+        {videoUrl && (
+          <div className="relative overflow-hidden" style={{ aspectRatio: '4 / 3' }}>
+            <video
+              src={videoUrl}
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="w-full h-full object-cover"
+            />
+            {/* Gradient overlay */}
             <div
-              ref={carouselRef}
-              className="flex h-full overflow-x-auto scrollbar-hide"
-              style={{ scrollSnapType: 'x mandatory' }}
-              onScroll={handleScroll}
-            >
-              {photos.map((url, i) => (
-                <div key={i} className="shrink-0 w-full h-full" style={{ scrollSnapAlign: 'start' }}>
-                  <img src={url} alt="" className="w-full h-full object-cover" draggable={false} />
-                </div>
-              ))}
-            </div>
-          ) : (
-            /* ── Placeholder with suite number ── */
-            <div
-              className="w-full h-full flex flex-col items-center justify-center"
-              style={{
-                backgroundColor: '#1a0f02',
-                backgroundImage: [
-                  'radial-gradient(ellipse at 50% 110%, rgba(180,90,15,0.6) 0%, transparent 55%)',
-                  'radial-gradient(ellipse at 15% 85%, rgba(130,65,10,0.45) 0%, transparent 48%)',
-                ].join(', '),
-              }}
-            >
-              <p className="text-[9px] tracking-[0.5em] uppercase mb-2" style={{ color: 'rgba(220,185,100,0.7)' }}>
+              className="absolute inset-0 pointer-events-none"
+              style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, transparent 35%, rgba(0,0,0,0.75) 100%)' }}
+            />
+            {/* Suite number overlay bottom-left */}
+            <div className="absolute bottom-4 left-5 z-10">
+              <p className="text-[8px] tracking-[0.45em] uppercase mb-0.5" style={{ color: 'rgba(220,185,100,0.7)' }}>
                 S U Í T E
               </p>
-              <div className="h-px w-10 mb-3" style={{ background: 'linear-gradient(to right, transparent, #c9a84c, transparent)' }} />
               <span
-                className="font-serif font-bold text-transparent bg-clip-text"
+                className="font-serif font-bold text-transparent bg-clip-text block"
                 style={{
-                  fontSize: 'clamp(5rem, 22vw, 8rem)',
+                  fontSize: 'clamp(2.5rem, 11vw, 4rem)',
                   backgroundImage: 'linear-gradient(160deg, #fce8a8 0%, #d4a017 35%, #8b6010 70%, #c9a84c 100%)',
                   lineHeight: 1,
                 }}
@@ -350,64 +344,122 @@ function SuiteGallery({ suite, photos, occupied, selected, onChoose, onClose }: 
                 {suite.room_number}
               </span>
             </div>
-          )}
-
-          {/* Close button */}
-          <button
-            onClick={close}
-            className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center text-sm transition-opacity hover:opacity-80"
-            style={{ background: 'rgba(0,0,0,0.6)', color: 'rgba(220,185,100,0.8)', border: '1px solid rgba(201,168,76,0.3)' }}
-          >
-            ✕
-          </button>
-
-          {/* Prev / Next arrows (apenas com múltiplas fotos) */}
-          {photos.length > 1 && (
-            <>
-              <button
-                onClick={() => goTo(currentIdx - 1)}
-                disabled={currentIdx === 0}
-                className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full flex items-center justify-center text-lg transition-all disabled:opacity-0"
-                style={{ background: 'rgba(0,0,0,0.55)', color: 'rgba(220,185,100,0.85)' }}
-              >
-                ‹
-              </button>
-              <button
-                onClick={() => goTo(currentIdx + 1)}
-                disabled={currentIdx === photos.length - 1}
-                className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full flex items-center justify-center text-lg transition-all disabled:opacity-0"
-                style={{ background: 'rgba(0,0,0,0.55)', color: 'rgba(220,185,100,0.85)' }}
-              >
-                ›
-              </button>
-            </>
-          )}
-
-          {/* Dot indicators */}
-          {photos.length > 1 && (
-            <div className="absolute bottom-3 left-0 right-0 flex gap-1.5 justify-center">
-              {photos.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => goTo(i)}
-                  className={`rounded-full transition-all duration-250 ${
-                    i === currentIdx ? 'w-4 h-1.5 bg-gold-400' : 'w-1.5 h-1.5 bg-white/35 hover:bg-white/60'
-                  }`}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Counter */}
-          {photos.length > 1 && (
-            <div
-              className="absolute top-3 left-3 z-10 text-[10px] text-white/70 px-2 py-0.5 rounded-full tabular-nums"
-              style={{ background: 'rgba(0,0,0,0.5)' }}
+            {/* Close button */}
+            <button
+              onClick={close}
+              className="absolute top-3 right-3 z-20 w-9 h-9 rounded-full flex items-center justify-center text-base font-bold transition-all hover:scale-110 active:scale-95"
+              style={{ background: 'rgba(0,0,0,0.72)', color: 'rgba(255,255,255,0.9)', border: '1px solid rgba(201,168,76,0.5)', boxShadow: '0 2px 12px rgba(0,0,0,0.6)' }}
             >
-              {currentIdx + 1} / {photos.length}
-            </div>
-          )}
-        </div>
+              ✕
+            </button>
+          </div>
+        )}
+
+        {/* Photo area (carousel or placeholder) — hidden when video is shown and no extra photos */}
+        {(!videoUrl || photos.length > 0) && (
+          <div className="relative overflow-hidden" style={{ aspectRatio: videoUrl ? '21 / 9' : '4 / 3' }}>
+            {photos.length > 0 ? (
+              /* ── Swipeable carousel ── */
+              <div
+                ref={carouselRef}
+                className="flex h-full overflow-x-auto scrollbar-hide"
+                style={{ scrollSnapType: 'x mandatory' }}
+                onScroll={handleScroll}
+              >
+                {photos.map((url, i) => (
+                  <div key={i} className="shrink-0 w-full h-full" style={{ scrollSnapAlign: 'start' }}>
+                    <img src={url} alt="" className="w-full h-full object-cover" draggable={false} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              /* ── Placeholder with suite number ── */
+              <div
+                className="w-full h-full flex flex-col items-center justify-center"
+                style={{
+                  backgroundColor: '#1a0f02',
+                  backgroundImage: [
+                    'radial-gradient(ellipse at 50% 110%, rgba(180,90,15,0.6) 0%, transparent 55%)',
+                    'radial-gradient(ellipse at 15% 85%, rgba(130,65,10,0.45) 0%, transparent 48%)',
+                  ].join(', '),
+                }}
+              >
+                <p className="text-[9px] tracking-[0.5em] uppercase mb-2" style={{ color: 'rgba(220,185,100,0.7)' }}>
+                  S U Í T E
+                </p>
+                <div className="h-px w-10 mb-3" style={{ background: 'linear-gradient(to right, transparent, #c9a84c, transparent)' }} />
+                <span
+                  className="font-serif font-bold text-transparent bg-clip-text"
+                  style={{
+                    fontSize: 'clamp(5rem, 22vw, 8rem)',
+                    backgroundImage: 'linear-gradient(160deg, #fce8a8 0%, #d4a017 35%, #8b6010 70%, #c9a84c 100%)',
+                    lineHeight: 1,
+                  }}
+                >
+                  {suite.room_number}
+                </span>
+              </div>
+            )}
+
+            {/* Close button (only when no video hero) */}
+            {!videoUrl && (
+              <button
+                onClick={close}
+                className="absolute top-3 right-3 z-20 w-9 h-9 rounded-full flex items-center justify-center text-base font-bold transition-all hover:scale-110 active:scale-95"
+                style={{ background: 'rgba(0,0,0,0.72)', color: 'rgba(255,255,255,0.9)', border: '1px solid rgba(201,168,76,0.5)', boxShadow: '0 2px 12px rgba(0,0,0,0.6)' }}
+              >
+                ✕
+              </button>
+            )}
+
+            {/* Prev / Next arrows (apenas com múltiplas fotos) */}
+            {photos.length > 1 && (
+              <>
+                <button
+                  onClick={() => goTo(currentIdx - 1)}
+                  disabled={currentIdx === 0}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full flex items-center justify-center text-lg transition-all disabled:opacity-0"
+                  style={{ background: 'rgba(0,0,0,0.55)', color: 'rgba(220,185,100,0.85)' }}
+                >
+                  ‹
+                </button>
+                <button
+                  onClick={() => goTo(currentIdx + 1)}
+                  disabled={currentIdx === photos.length - 1}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full flex items-center justify-center text-lg transition-all disabled:opacity-0"
+                  style={{ background: 'rgba(0,0,0,0.55)', color: 'rgba(220,185,100,0.85)' }}
+                >
+                  ›
+                </button>
+              </>
+            )}
+
+            {/* Dot indicators */}
+            {photos.length > 1 && (
+              <div className="absolute bottom-3 left-0 right-0 flex gap-1.5 justify-center">
+                {photos.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => goTo(i)}
+                    className={`rounded-full transition-all duration-250 ${
+                      i === currentIdx ? 'w-4 h-1.5 bg-gold-400' : 'w-1.5 h-1.5 bg-white/35 hover:bg-white/60'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Counter */}
+            {photos.length > 1 && (
+              <div
+                className="absolute top-3 left-3 z-10 text-[10px] text-white/70 px-2 py-0.5 rounded-full tabular-nums"
+                style={{ background: 'rgba(0,0,0,0.5)' }}
+              >
+                {currentIdx + 1} / {photos.length}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Suite info */}
         <div className="px-6 py-5 space-y-5">
