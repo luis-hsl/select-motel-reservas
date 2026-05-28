@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import * as tus from 'tus-js-client'
 import { supabase } from '../../lib/supabase'
 
 type Suite = {
@@ -18,6 +19,7 @@ export default function SuitesTab() {
   const [suites, setSuites] = useState<Suite[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState<Uploading>(null)
+  const [videoProgress, setVideoProgress] = useState<Record<string, number>>({})
   const photoRefs = useRef<Record<string, HTMLInputElement | null>>({})
   const videoRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
@@ -37,34 +39,75 @@ export default function SuitesTab() {
     setSuites(prev => prev.map(s => s.id === id ? { ...s, active: !current } : s))
   }
 
-  async function uploadFile(suiteId: string, file: File, kind: 'photo' | 'video') {
-    setUploading({ id: suiteId, kind })
-
-    const bucket = kind === 'photo' ? 'suite-photos' : 'suite-videos'
-    const ext = file.name.split('.').pop() ?? (kind === 'photo' ? 'jpg' : 'mp4')
+  async function uploadPhoto(suiteId: string, file: File) {
+    setUploading({ id: suiteId, kind: 'photo' })
+    const ext = file.name.split('.').pop() ?? 'jpg'
     const path = `${suiteId}.${ext}`
 
-    const { error: upErr } = await supabase.storage
-      .from(bucket)
+    const { error } = await supabase.storage
+      .from('suite-photos')
       .upload(path, file, { upsert: true, contentType: file.type })
 
-    if (upErr) {
-      alert(`Erro no upload: ${upErr.message}`)
+    if (error) {
+      alert(`Erro no upload: ${error.message}`)
       setUploading(null)
       return
     }
 
-    const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(path)
+    const { data: { publicUrl } } = supabase.storage.from('suite-photos').getPublicUrl(path)
+    await supabase.from('suites').update({ photo_url: publicUrl }).eq('id', suiteId)
+    setSuites(prev => prev.map(s => s.id === suiteId ? { ...s, photo_url: publicUrl } : s))
+    setUploading(null)
+  }
 
-    if (kind === 'video') {
-      await supabase.from('suites').update({ video_url: publicUrl }).eq('id', suiteId)
-      setSuites(prev => prev.map(s => s.id === suiteId ? { ...s, video_url: publicUrl } : s))
-    } else {
-      await supabase.from('suites').update({ photo_url: publicUrl }).eq('id', suiteId)
-      setSuites(prev => prev.map(s => s.id === suiteId ? { ...s, photo_url: publicUrl } : s))
+  async function uploadVideo(suiteId: string, file: File) {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      alert('Sessão expirada. Faça login novamente.')
+      return
     }
 
-    setUploading(null)
+    setUploading({ id: suiteId, kind: 'video' })
+    setVideoProgress(prev => ({ ...prev, [suiteId]: 0 }))
+
+    const ext = file.name.split('.').pop() ?? 'mp4'
+    const path = `${suiteId}.${ext}`
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+
+    const upload = new tus.Upload(file, {
+      endpoint: `${supabaseUrl}/storage/v1/upload/resumable`,
+      retryDelays: [0, 3000, 5000, 10000, 20000],
+      headers: {
+        authorization: `Bearer ${session.access_token}`,
+        'x-upsert': 'true',
+      },
+      uploadDataDuringCreation: true,
+      removeFingerprintOnSuccess: true,
+      metadata: {
+        bucketName: 'suite-videos',
+        objectName: path,
+        contentType: file.type,
+        cacheControl: '3600',
+      },
+      chunkSize: 6 * 1024 * 1024,
+      onError: (err: Error) => {
+        alert(`Erro no upload: ${err.message}`)
+        setUploading(null)
+        setVideoProgress(prev => { const n = { ...prev }; delete n[suiteId]; return n })
+      },
+      onProgress: (uploaded: number, total: number) => {
+        setVideoProgress(prev => ({ ...prev, [suiteId]: Math.round((uploaded / total) * 100) }))
+      },
+      onSuccess: async () => {
+        const { data: { publicUrl } } = supabase.storage.from('suite-videos').getPublicUrl(path)
+        await supabase.from('suites').update({ video_url: publicUrl }).eq('id', suiteId)
+        setSuites(prev => prev.map(s => s.id === suiteId ? { ...s, video_url: publicUrl } : s))
+        setUploading(null)
+        setVideoProgress(prev => { const n = { ...prev }; delete n[suiteId]; return n })
+      },
+    })
+
+    upload.start()
   }
 
   if (loading) return <div className="text-white/30 py-16 text-center text-sm">Carregando...</div>
@@ -81,6 +124,7 @@ export default function SuitesTab() {
           const uploadingPhoto = uploading?.id === suite.id && uploading.kind === 'photo'
           const uploadingVideo = uploading?.id === suite.id && uploading.kind === 'video'
           const busy = uploadingPhoto || uploadingVideo
+          const pct = videoProgress[suite.id]
 
           return (
             <div key={suite.id} className="bg-white/[0.03] border border-white/8 rounded-xl overflow-hidden">
@@ -118,6 +162,19 @@ export default function SuitesTab() {
                 </div>
               )}
 
+              {/* ── Barra de progresso do vídeo ── */}
+              {uploadingVideo && (
+                <div className="px-3 pt-2">
+                  <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-blue-500 transition-all duration-300 rounded-full"
+                      style={{ width: `${pct ?? 0}%` }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-blue-400/70 text-center mt-1">{pct ?? 0}% enviado</p>
+                </div>
+              )}
+
               {/* ── Info + botões ── */}
               <div className="p-3">
                 <div className="flex items-start justify-between gap-2 mb-3">
@@ -146,7 +203,7 @@ export default function SuitesTab() {
                     className="hidden"
                     onChange={e => {
                       const file = e.target.files?.[0]
-                      if (file) uploadFile(suite.id, file, 'photo')
+                      if (file) uploadPhoto(suite.id, file)
                       e.target.value = ''
                     }}
                   />
@@ -166,7 +223,7 @@ export default function SuitesTab() {
                     className="hidden"
                     onChange={e => {
                       const file = e.target.files?.[0]
-                      if (file) uploadFile(suite.id, file, 'video')
+                      if (file) uploadVideo(suite.id, file)
                       e.target.value = ''
                     }}
                   />
@@ -175,7 +232,7 @@ export default function SuitesTab() {
                     disabled={busy}
                     className="py-2 rounded-lg text-xs font-medium border border-blue-500/30 text-blue-400/80 hover:bg-blue-500/10 hover:text-blue-400 transition-colors disabled:opacity-40"
                   >
-                    {uploadingVideo ? '↑ Enviando...' : suite.video_url ? '▶ Trocar vídeo' : '▶ + Vídeo'}
+                    {uploadingVideo ? `↑ ${pct ?? 0}%` : suite.video_url ? '▶ Trocar vídeo' : '▶ + Vídeo'}
                   </button>
                 </div>
               </div>
