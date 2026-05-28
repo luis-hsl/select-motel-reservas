@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { SUITES, calcCheckOut } from '../data'
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
@@ -137,7 +138,7 @@ export default function StepSuite() {
         </div>
       )}
 
-      {galleryFor && (
+      {galleryFor && createPortal(
         <SuiteGallery
           suite={galleryFor}
           photos={allPhotos[galleryFor.id] ?? (photoUrls[galleryFor.id] ? [photoUrls[galleryFor.id]] : [])}
@@ -145,7 +146,9 @@ export default function StepSuite() {
           selected={selected?.id === galleryFor.id}
           onChoose={() => { choose(galleryFor); setGalleryFor(null) }}
           onClose={() => setGalleryFor(null)}
-        />
+        />,
+        document.body
+      )
       )}
     </div>
   )
@@ -290,7 +293,7 @@ function SuiteGallery({ suite, photos, occupied, selected, onChoose, onClose }: 
 
       {/* Sheet */}
       <div
-        className="relative w-full sm:max-w-md max-h-[94vh] sm:max-h-[88vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl scrollbar-hide transition-all duration-380"
+        className="relative w-full sm:max-w-md max-h-[82vh] sm:max-h-[88vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl scrollbar-hide transition-all duration-380"
         style={{
           backgroundColor: '#0c0702',
           border: '1px solid rgba(201,168,76,0.3)',
