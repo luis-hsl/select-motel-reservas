@@ -81,7 +81,7 @@ export default function SuitesTab() {
         authorization: `Bearer ${session.access_token}`,
         'x-upsert': 'true',
       },
-      uploadDataDuringCreation: true,
+      uploadDataDuringCreation: false,
       removeFingerprintOnSuccess: true,
       metadata: {
         bucketName: 'suite-videos',
@@ -108,6 +108,14 @@ export default function SuitesTab() {
     })
 
     upload.start()
+  }
+
+  async function deleteVideo(suiteId: string, videoUrl: string) {
+    if (!confirm('Remover o vídeo desta suíte?')) return
+    const fileName = videoUrl.split('/').pop()?.split('?')[0] ?? ''
+    await supabase.storage.from('suite-videos').remove([fileName])
+    await supabase.from('suites').update({ video_url: null }).eq('id', suiteId)
+    setSuites(prev => prev.map(s => s.id === suiteId ? { ...s, video_url: null } : s))
   }
 
   if (loading) return <div className="text-white/30 py-16 text-center text-sm">Carregando...</div>
@@ -235,6 +243,16 @@ export default function SuitesTab() {
                     {uploadingVideo ? `↑ ${pct ?? 0}%` : suite.video_url ? '▶ Trocar vídeo' : '▶ + Vídeo'}
                   </button>
                 </div>
+
+                {/* Apagar vídeo */}
+                {suite.video_url && !busy && (
+                  <button
+                    onClick={() => deleteVideo(suite.id, suite.video_url!)}
+                    className="mt-2 w-full py-2 rounded-lg text-xs font-medium border border-red-500/25 text-red-400/60 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+                  >
+                    ✕ Remover vídeo
+                  </button>
+                )}
               </div>
 
             </div>
