@@ -9,7 +9,7 @@ interface CardItem {
 
 const ITEMS: CardItem[] = [
   { key: 'pizza_photo_url',  label: 'Pizza',   hint: 'Aparece no card de refeição (Prata e Bronze)' },
-  { key: 'drinque_photo_url',label: 'Drinque', hint: 'Aparece no card de bebida (Bronze — 2 drinques por casal)' },
+  { key: 'drinque_photo_url',label: 'Drink',   hint: 'Aparece no card de bebida (Bronze — 2 drinks por casal)' },
 ]
 
 export default function CardapioTab() {

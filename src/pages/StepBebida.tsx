@@ -14,7 +14,7 @@ interface Opcao {
 
 const VINHO:   Opcao = { id: 'vinho',   label: 'Vinho',   sub: 'Tinto ou Branco',              imgKey: null,               imgFallback: '/vinho.webp'   }
 const FRISANTE:Opcao = { id: 'frisante',label: 'Frisante',sub: 'Espumante leve',                imgKey: null,               imgFallback: '/frisante.webp'}
-const DRINQUE: Opcao = { id: 'drinque', label: 'Drinque', sub: '2 drinques — um para cada um', imgKey: 'drinque_photo_url', imgFallback: ''              }
+const DRINQUE: Opcao = { id: 'drinque', label: 'Drink',   sub: '2 drinks — um para cada um',  imgKey: 'drinque_photo_url', imgFallback: ''              }
 
 const OPCOES_POR_PACOTE: Record<string, Opcao[]> = {
   ouro:   [VINHO, FRISANTE],
@@ -25,7 +25,7 @@ const OPCOES_POR_PACOTE: Record<string, Opcao[]> = {
 const SUBTITULO: Record<string, string> = {
   ouro:   'Incluída no Pacote Ouro. Escolha a que mais combina com o clima.',
   prata:  'Incluída no Pacote Prata. Escolha a que mais combina com o clima.',
-  bronze: 'Incluído no Pacote Bronze. Um drinque especial para cada um do casal.',
+  bronze: 'Incluído no Pacote Bronze. Um drink especial para cada um do casal.',
 }
 
 const GOLD_BORDER = 'rgba(180,140,40,0.5)'
@@ -36,7 +36,7 @@ const GOLD_NAME   = 'linear-gradient(180deg,#f5e0a0 0%,#d4a017 45%,#8b6010 100%)
 const LABEL_CTA: Record<DrinkId, string> = {
   vinho:    'Continuar com Vinho →',
   frisante: 'Continuar com Frisante →',
-  drinque:  'Confirmar meu drinque →',
+  drinque:  'Confirmar meu drink →',
 }
 
 export default function StepBebida() {
