@@ -77,13 +77,6 @@ export default function StepBebida() {
                   className="w-full h-full object-cover"
                   draggable={false}
                 />
-                {/* Gradiente escurecendo de baixo pra cima */}
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    background: 'linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.15) 100%)',
-                  }}
-                />
               </div>
 
               {/* Anel de seleção */}
