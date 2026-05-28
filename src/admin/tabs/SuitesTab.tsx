@@ -91,7 +91,16 @@ export default function SuitesTab() {
       },
       chunkSize: 6 * 1024 * 1024,
       onError: (err: Error) => {
-        alert(`Erro no upload: ${err.message}`)
+        const is413 = err.message.includes('413') || err.message.includes('Maximum size')
+        if (is413) {
+          alert(
+            'Vídeo muito grande para o plano atual do Supabase.\n\n' +
+            'Para resolver: acesse supabase.com → seu projeto → Storage → Settings → aumente o "Global file upload size limit".\n\n' +
+            'No plano gratuito o limite é 50 MB. Comprima o vídeo ou faça upgrade para o plano Pro.'
+          )
+        } else {
+          alert(`Erro no upload: ${err.message}`)
+        }
         setUploading(null)
         setVideoProgress(prev => { const n = { ...prev }; delete n[suiteId]; return n })
       },
