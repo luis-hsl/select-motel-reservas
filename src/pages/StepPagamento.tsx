@@ -15,12 +15,26 @@ function fmtDt(d: Date) {
   })
 }
 
+function foodLabel(f: string | null): string | null {
+  if (f === 'jantar') return '🍽️ Jantar'
+  if (f === 'sushi')  return '🍣 Sushi'
+  if (f === 'pizza')  return '🍕 Pizza'
+  return null
+}
+
+function drinkLabel(d: string | null): string | null {
+  if (d === 'vinho')    return '🍷 Vinho'
+  if (d === 'frisante') return '🥂 Frisante'
+  if (d === 'drinque')  return '🍹 Drink'
+  return null
+}
+
 type Method = 'pix' | 'card'
 type PixSettings = { key: string; merchantName: string; city: string }
 
 export default function StepPagamento() {
   const {
-    package: pkg, drink, type, suite, checkIn, checkOut,
+    package: pkg, drink, food, type, suite, checkIn, checkOut,
     customerName, customerPhone, customerEmail,
     totalAmount, prevStep,
   } = useStore()
@@ -127,7 +141,9 @@ export default function StepPagamento() {
       ``,
       `🛏️ *Suíte:* ${suite?.name ?? ''}`,
       `📦 *Pacote:* ${pkg?.label ?? ''}`,
-      ...(drink ? [`🍷 *Bebida:* ${drink === 'vinho' ? 'Vinho' : 'Frisante'}`] : []),
+      ...(food ? [`🍽️ *Refeição:* ${food === 'jantar' ? 'Jantar' : food === 'sushi' ? 'Sushi' : 'Pizza'}`] : []),
+      ...(drink ? [`🍹 *Bebida:* ${drink === 'vinho' ? 'Vinho' : drink === 'frisante' ? 'Frisante' : 'Drink'}`] : []),
+      `🍫 *Fondue:* Incluído`,
       `⏱️ *Modalidade:* ${type === 'period' ? 'Período' : 'Pernoite'}`,
       ``,
       `🟢 *Check-in:* ${checkIn ? fmtDt(checkIn) : ''}`,
@@ -158,7 +174,9 @@ export default function StepPagamento() {
           <div className="px-6 py-5 space-y-3">
             <SummaryRow label="Código" value={reservationId.slice(0, 8).toUpperCase()} mono />
             <SummaryRow label="Suíte" value={suite?.name ?? ''} />
-            {drink && <SummaryRow label="Bebida" value={drink === 'vinho' ? '🍷 Vinho' : '🥂 Frisante'} />}
+            {foodLabel(food) && <SummaryRow label="Refeição" value={foodLabel(food)!} />}
+            {drinkLabel(drink) && <SummaryRow label="Bebida" value={drinkLabel(drink)!} />}
+            <SummaryRow label="Fondue" value="🍫 Incluído" />
             <SummaryRow label="Check-in" value={checkIn ? fmtDt(checkIn) : ''} />
             <SummaryRow label="Check-out" value={checkout ? fmtDt(checkout) : ''} />
             <div className="border-t border-gold-900/40 pt-3 flex items-baseline justify-between">
@@ -215,7 +233,9 @@ export default function StepPagamento() {
               <SummaryRow label="Cliente" value={customerName} />
               <SummaryRow label="Suíte" value={suite?.name ?? '—'} />
               <SummaryRow label="Pacote" value={pkg?.label ?? '—'} />
-              {drink && <SummaryRow label="Bebida" value={drink === 'vinho' ? '🍷 Vinho' : '🥂 Frisante'} />}
+              {foodLabel(food) && <SummaryRow label="Refeição" value={foodLabel(food)!} />}
+              {drinkLabel(drink) && <SummaryRow label="Bebida" value={drinkLabel(drink)!} />}
+              <SummaryRow label="Fondue" value="🍫 Incluído" />
               <SummaryRow label="Modalidade" value={type === 'period' ? 'Período' : 'Pernoite'} />
               <SummaryRow label="Check-in" value={checkIn ? fmtDt(checkIn) : '—'} />
               <SummaryRow label="Check-out" value={checkout ? fmtDt(checkout) : '—'} highlight />
