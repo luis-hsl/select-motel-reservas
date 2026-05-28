@@ -98,18 +98,27 @@ export default function StepRefeicao() {
                 >
                   {opt.label.toUpperCase()}
                 </h2>
-                {opt.id === 'sushi' && (
-                  <p className="text-[9px] tracking-wide mt-1.5" style={{ color: 'rgba(255,200,150,0.65)' }}>
-                    ⚠ Entrada não inclusa
-                  </p>
-                )}
               </div>
             </button>
           )
         })}
       </div>
 
-      <div className="mt-8">
+      {selected && (
+        <div className="mt-4 max-w-xl px-4 py-3 rounded-xl border border-gold-800/30 bg-gold-900/10">
+          {selected === 'jantar' ? (
+            <p className="text-xs text-gold-300/80">
+              ✦ O jantar inclui <strong className="text-gold-300">entrada</strong> — couvert servido antes do prato principal.
+            </p>
+          ) : (
+            <p className="text-xs text-gold-300/80">
+              ⚠ O sushi <strong className="text-gold-300">não inclui entrada</strong> — o combinado premium é servido diretamente.
+            </p>
+          )}
+        </div>
+      )}
+
+      <div className="mt-6">
         <button
           onClick={confirm}
           disabled={!selected}
