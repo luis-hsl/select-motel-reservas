@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useStore } from '../store/useStore'
+import { supabase } from '../lib/supabase'
 
 type DrinkId = 'vinho' | 'frisante' | 'drinque'
 
@@ -7,12 +8,13 @@ interface Opcao {
   id: DrinkId
   label: string
   sub: string
-  img: string
+  imgKey: string | null
+  imgFallback: string
 }
 
-const VINHO:   Opcao = { id: 'vinho',   label: 'Vinho',   sub: 'Tinto ou Branco',               img: '/vinho.webp'   }
-const FRISANTE:Opcao = { id: 'frisante',label: 'Frisante',sub: 'Espumante leve',                 img: '/frisante.webp'}
-const DRINQUE: Opcao = { id: 'drinque', label: 'Drinque', sub: '2 drinques — um para cada um',  img: '/drinque.webp' }
+const VINHO:   Opcao = { id: 'vinho',   label: 'Vinho',   sub: 'Tinto ou Branco',              imgKey: null,               imgFallback: '/vinho.webp'   }
+const FRISANTE:Opcao = { id: 'frisante',label: 'Frisante',sub: 'Espumante leve',                imgKey: null,               imgFallback: '/frisante.webp'}
+const DRINQUE: Opcao = { id: 'drinque', label: 'Drinque', sub: '2 drinques — um para cada um', imgKey: 'drinque_photo_url', imgFallback: ''              }
 
 const OPCOES_POR_PACOTE: Record<string, Opcao[]> = {
   ouro:   [VINHO, FRISANTE],
@@ -42,10 +44,20 @@ export default function StepBebida() {
   const pkgId = pkg?.id ?? 'ouro'
   const opcoes = OPCOES_POR_PACOTE[pkgId] ?? OPCOES_POR_PACOTE.ouro
 
-  const [selected, setSelected] = useState<DrinkId | null>(null)
+  const [selected, setSelected]     = useState<DrinkId | null>(null)
+  const [remoteUrls, setRemoteUrls] = useState<Record<string, string>>({})
   const ctaRef = useRef<HTMLButtonElement>(null)
 
-  // Bronze tem só drinque — pré-seleciona automaticamente
+  useEffect(() => {
+    const keys = opcoes.filter(o => o.imgKey).map(o => o.imgKey as string)
+    if (keys.length === 0) return
+    supabase.from('settings').select('key, value').in('key', keys).then(({ data }) => {
+      const v: Record<string, string> = {}
+      data?.forEach(r => { if (r.value) v[r.key] = r.value })
+      setRemoteUrls(v)
+    })
+  }, [pkgId])
+
   useEffect(() => {
     if (opcoes.length === 1) setSelected(opcoes[0].id)
   }, [pkgId])
@@ -56,6 +68,11 @@ export default function StepBebida() {
       ctaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     })
   }, [selected])
+
+  function imgFor(opt: Opcao) {
+    if (opt.imgKey && remoteUrls[opt.imgKey]) return remoteUrls[opt.imgKey]
+    return opt.imgFallback
+  }
 
   function confirm() {
     if (!selected) return
@@ -88,6 +105,7 @@ export default function StepBebida() {
       <div className={`grid gap-3 max-w-xl ${isSingle ? 'grid-cols-1 max-w-xs' : 'grid-cols-2'}`}>
         {opcoes.map((opt) => {
           const isSel = selected === opt.id
+          const img   = imgFor(opt)
           return (
             <button
               key={opt.id}
@@ -102,12 +120,12 @@ export default function StepBebida() {
               }}
             >
               <div className="absolute inset-0">
-                <img
-                  src={opt.img}
+                {img && <img
+                  src={img}
                   alt={opt.label}
                   className="w-full h-full object-cover"
                   draggable={false}
-                />
+                />}
                 <div
                   className="absolute inset-0"
                   style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.15) 60%, rgba(0,0,0,0) 100%)' }}

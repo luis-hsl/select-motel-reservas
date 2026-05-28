@@ -7,14 +7,16 @@ import SuitesTab from './tabs/SuitesTab'
 import PacotesTab from './tabs/PacotesTab'
 import ConfigTab from './tabs/ConfigTab'
 import PresenteTab from './tabs/PresenteTab'
+import CardapioTab from './tabs/CardapioTab'
 
-type Tab = 'visao-geral' | 'reservas' | 'suites' | 'pacotes' | 'presente' | 'config'
+type Tab = 'visao-geral' | 'reservas' | 'suites' | 'pacotes' | 'cardapio' | 'presente' | 'config'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'visao-geral', label: 'Visão Geral' },
   { id: 'reservas',    label: 'Reservas' },
   { id: 'suites',      label: 'Suítes' },
   { id: 'pacotes',     label: 'Pacotes' },
+  { id: 'cardapio',    label: 'Cardápio' },
   { id: 'presente',    label: 'Presente' },
   { id: 'config',      label: 'Configurações' },
 ]
@@ -71,6 +73,7 @@ export default function AdminDashboard({ user }: { user: User }) {
         {tab === 'reservas'    && <ReservasTab />}
         {tab === 'suites'      && <SuitesTab />}
         {tab === 'pacotes'     && <PacotesTab />}
+        {tab === 'cardapio'    && <CardapioTab />}
         {tab === 'presente'    && <PresenteTab />}
         {tab === 'config'      && <ConfigTab />}
       </main>
