@@ -166,12 +166,12 @@ export default function StepPacote() {
         {PACKAGES.map((pkg) => {
           const id = pkg.id as PkgId
           const th = THEME[id]
-          const isSel = (pendingPkg?.id ?? selected?.id) === pkg.id
+          const isSel = selected?.id === pkg.id
 
           return (
             <button
               key={pkg.id}
-              onClick={() => selectPkg(pkg)}
+              onClick={() => choose(pkg)}
               className="relative text-left rounded-2xl overflow-hidden outline-none transition-all duration-300"
               style={{
                 background: th.bg,
