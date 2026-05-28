@@ -26,8 +26,8 @@ function Calendar({
     return t
   }, [])
 
-  const [vy, setVy] = useState(today.getFullYear())
-  const [vm, setVm] = useState(today.getMonth())
+  const [vy, setVy] = useState(AVAILABLE_DATES[0].getFullYear())
+  const [vm, setVm] = useState(AVAILABLE_DATES[0].getMonth())
 
   const cells = useMemo(() => {
     const firstDow = new Date(vy, vm, 1).getDay()
