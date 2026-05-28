@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { getAvailableDates, calcCheckOut, PERIOD_SLOTS, OVERNIGHT_CHECKIN } from '../data'
 import { useStore } from '../store/useStore'
 
@@ -151,6 +151,21 @@ export default function StepData() {
 
   const canContinue = !!(selectedDate && selectedSlot)
 
+  useEffect(() => {
+    if (!selectedDate) return
+    const t = setTimeout(() => {
+      slotsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 80)
+    return () => clearTimeout(t)
+  }, [selectedDate])
+
+  useEffect(() => {
+    if (!selectedSlot) return
+    requestAnimationFrame(() => {
+      ctaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    })
+  }, [selectedSlot])
+
   return (
     <div>
       <button
@@ -177,9 +192,6 @@ export default function StepData() {
             onSelect={(d) => {
               setSelectedDate(d)
               setSelectedSlot(null)
-              setTimeout(() => {
-                slotsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-              }, 80)
             }}
           />
         </div>
@@ -194,12 +206,7 @@ export default function StepData() {
 
               {type === 'overnight' ? (
                 <button
-                  onClick={() => {
-                    setSelectedSlot(OVERNIGHT_CHECKIN)
-                    setTimeout(() => {
-                      ctaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-                    }, 80)
-                  }}
+                  onClick={() => setSelectedSlot(OVERNIGHT_CHECKIN)}
                   className={[
                     'w-full py-4 rounded-xl border text-sm font-medium transition-all duration-200',
                     selectedSlot
@@ -218,12 +225,7 @@ export default function StepData() {
                     return (
                       <button
                         key={slot}
-                        onClick={() => {
-                          setSelectedSlot(slot)
-                          setTimeout(() => {
-                            ctaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-                          }, 80)
-                        }}
+                        onClick={() => setSelectedSlot(slot)}
                         className={[
                           'py-3 rounded-xl border text-sm font-medium transition-all duration-200 outline-none flex flex-col items-center gap-0.5',
                           sel
