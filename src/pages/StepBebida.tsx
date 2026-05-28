@@ -77,10 +77,6 @@ export default function StepBebida() {
                   className="w-full h-full object-cover"
                   draggable={false}
                 />
-                <div
-                  className="absolute inset-0"
-                  style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.05) 100%)' }}
-                />
               </div>
 
               {/* Anel de seleção */}
@@ -95,29 +91,7 @@ export default function StepBebida() {
                 </div>
               )}
 
-              {/* Conteúdo sobre a foto */}
-              <div className="relative z-10 flex flex-col justify-end h-full p-4" style={{ minHeight: '220px' }}>
-                {/* Linha decorativa */}
-                <div className="flex items-center gap-2 mb-2">
-                  <div
-                    className="h-px w-6"
-                    style={{ background: opt.accent, boxShadow: `0 0 6px ${opt.accent}` }}
-                  />
-                </div>
-
-                <h2
-                  className="font-serif font-bold tracking-widest mb-1 text-transparent bg-clip-text leading-none"
-                  style={{ fontSize: 'clamp(1.1rem,3vw,1.5rem)', backgroundImage: opt.nameCss }}
-                >
-                  {opt.label.toUpperCase()}
-                </h2>
-                <p
-                  className="text-[10px] tracking-wider uppercase"
-                  style={{ color: 'rgba(245,220,180,0.55)' }}
-                >
-                  {opt.sub}
-                </p>
-              </div>
+              <div style={{ minHeight: '220px' }} />
             </button>
           )
         })}
