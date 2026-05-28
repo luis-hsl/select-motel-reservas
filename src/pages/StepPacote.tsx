@@ -136,7 +136,7 @@ export default function StepPacote() {
   function openDetail(id: PkgId, e: React.MouseEvent) {
     e.stopPropagation()
     setDetailId(id)
-    requestAnimationFrame(() => setTimeout(() => setVisible(true), 10))
+    requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)))
   }
 
   function closeDetail() {
@@ -305,8 +305,9 @@ function PackageModal({ id, pkg, detail, visible, onClose, onSelect }: ModalProp
           background: t.bg,
           border: `1px solid ${t.border}`,
           boxShadow: `0 -20px 80px rgba(0,0,0,0.8), inset 0 0 60px rgba(0,0,0,0.5)`,
-          transform: visible ? 'translateY(0) scale(1)' : 'translateY(100%) scale(0.98)',
+          transform: visible ? 'translateY(0) scale(1)' : 'translateY(40px) scale(0.97)',
           opacity: visible ? 1 : 0,
+          willChange: 'transform, opacity',
         }}
         onClick={e => e.stopPropagation()}
       >
