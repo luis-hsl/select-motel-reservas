@@ -65,11 +65,11 @@ export const useStore = create<StoreState>((set, get) => ({
 
   nextStep: () => set((s) => {
     const next = s.currentStep + 1
-    // Refeição (5): só Ouro — Prata vai para Bebida (6), Bronze vai para Dados (7)
+    // Refeição (5): só Ouro — Prata vai para Bebida (6), Bronze pula para Presente (7)
     if (next === 5 && s.package?.id !== 'ouro') {
       return { currentStep: s.package?.id === 'bronze' ? 7 : 6 }
     }
-    // Bebida (6): Bronze pula para Dados (7)
+    // Bebida (6): Bronze pula para Presente (7)
     if (next === 6 && s.package?.id === 'bronze') return { currentStep: 7 }
     return { currentStep: next }
   }),
@@ -77,10 +77,10 @@ export const useStore = create<StoreState>((set, get) => ({
     const prev = s.currentStep - 1
     // Voltando de Bebida (6): Prata pula Refeição → vai para Suíte (4)
     if (prev === 5 && s.package?.id === 'prata') return { currentStep: 4 }
-    // Voltando de Dados (7): Bronze pula Bebida e Refeição → vai para Suíte (4)
+    // Voltando de Presente (7): Bronze pula Bebida e Refeição → vai para Suíte (4)
     if (prev === 6 && s.package?.id === 'bronze') return { currentStep: 4 }
     return { currentStep: Math.max(1, prev) }
   }),
 }))
 
-export const TOTAL_STEPS = 8
+export const TOTAL_STEPS = 9

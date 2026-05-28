@@ -8,6 +8,7 @@ import StepData from './pages/StepData'
 import StepSuite from './pages/StepSuite'
 import StepBebida from './pages/StepBebida'
 import StepRefeicao from './pages/StepRefeicao'
+import StepPresente from './pages/StepPresente'
 import StepDados from './pages/StepDados'
 import StepPagamento from './pages/StepPagamento'
 import { useStore } from './store/useStore'
@@ -19,8 +20,9 @@ const STEPS: Record<number, React.ComponentType> = {
   4: StepSuite,
   5: StepRefeicao,
   6: StepBebida,
-  7: StepDados,
-  8: StepPagamento,
+  7: StepPresente,
+  8: StepDados,
+  9: StepPagamento,
 }
 
 export default function App() {
