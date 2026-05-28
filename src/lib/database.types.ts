@@ -150,6 +150,7 @@ export type Database = {
           room_number: number | null
           size: string
           sort_order: number
+          video_url: string | null
         }
         Insert: {
           active?: boolean
@@ -163,6 +164,7 @@ export type Database = {
           room_number?: number | null
           size: string
           sort_order: number
+          video_url?: string | null
         }
         Update: {
           active?: boolean
@@ -176,6 +178,7 @@ export type Database = {
           room_number?: number | null
           size?: string
           sort_order?: number
+          video_url?: string | null
         }
         Relationships: []
       }
