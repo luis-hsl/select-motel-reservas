@@ -162,7 +162,7 @@ export default function StepData() {
   useEffect(() => {
     if (!selectedSlot) return
     requestAnimationFrame(() => {
-      ctaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      ctaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     })
   }, [selectedSlot])
 
