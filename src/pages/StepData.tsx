@@ -211,7 +211,7 @@ export default function StepData() {
                     'w-full py-4 rounded-xl border text-sm font-medium transition-all duration-200',
                     selectedSlot
                       ? 'border-gold-500 bg-gold-900/20 text-gold-300'
-                      : 'border-gold-900/40 text-gold-700/60 hover:border-gold-700/50 hover:text-gold-400',
+                      : 'border-gold-700/50 text-gold-500/80 hover:border-gold-500/70 hover:text-gold-300',
                   ].join(' ')}
                 >
                   00:00 — entrada à meia-noite
@@ -230,11 +230,11 @@ export default function StepData() {
                           'py-3 rounded-xl border text-sm font-medium transition-all duration-200 outline-none flex flex-col items-center gap-0.5',
                           sel
                             ? 'border-gold-500 bg-gold-900/20 text-gold-300'
-                            : 'border-gold-900/40 text-gold-700/60 hover:border-gold-700/50 hover:text-gold-400',
+                            : 'border-gold-700/50 text-gold-500/80 hover:border-gold-500/70 hover:text-gold-300',
                         ].join(' ')}
                       >
                         <span>{slot}</span>
-                        <span className={['text-[9px] tracking-widest', sel ? 'text-gold-500/60' : 'text-gold-800/60'].join(' ')}>{period}</span>
+                        <span className={['text-[9px] tracking-widest', sel ? 'text-gold-500/60' : 'text-gold-600/80'].join(' ')}>{period}</span>
                       </button>
                     )
                   })}
