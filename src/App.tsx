@@ -1,6 +1,8 @@
 import './index.css'
+import { useMemo } from 'react'
 import ProgressBar from './components/ProgressBar'
 import ReservaSidebar from './components/ReservaSidebar'
+import CardPaymentReturn from './components/CardPaymentReturn'
 import StepPacote from './pages/StepPacote'
 import StepTipo from './pages/StepTipo'
 import StepSuite from './pages/StepSuite'
@@ -20,6 +22,18 @@ const STEPS: Record<number, React.ComponentType> = {
 
 export default function App() {
   const { currentStep } = useStore()
+
+  // Detect return from AbacatePay card payment page
+  const paymentReturn = useMemo(() => {
+    const p = new URLSearchParams(window.location.search)
+    const ref = p.get('ref')
+    return p.get('payment') === 'ok' && ref ? ref : null
+  }, [])
+
+  if (paymentReturn) {
+    return <CardPaymentReturn reservationId={paymentReturn} />
+  }
+
   const StepComponent = STEPS[currentStep] ?? StepPacote
 
   return (
@@ -28,12 +42,9 @@ export default function App() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 xl:px-10 pt-20 sm:pt-24 pb-20 sm:pb-16">
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 xl:gap-16 items-start">
-          {/* Main content */}
           <main className="flex-1 min-w-0 w-full">
             <StepComponent />
           </main>
-
-          {/* Sidebar — desktop only */}
           <ReservaSidebar />
         </div>
       </div>

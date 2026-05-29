@@ -109,56 +109,42 @@ export default function StepPagamento() {
     })
   }
 
-  async function createCardReservation() {
+  async function handleCardPayment() {
     if (!pkg || !type || !suite || !checkIn || !checkout) return
     setCardLoading(true)
     setError(null)
 
-    const { data, error: sbError } = await supabase
-      .from('reservations')
-      .insert({
-        package_id: pkg.id,
-        type,
-        suite_id: suite.id,
-        check_in: checkIn.toISOString(),
-        check_out: checkout.toISOString(),
-        customer_name: customerName,
-        customer_phone: customerPhone,
-        customer_email: customerEmail,
-        total_amount: total,
-        status: 'pending',
-      })
-      .select('id')
-      .single()
+    const { data, error: fnError } = await supabase.functions.invoke(
+      'abacatepay-create-charge',
+      {
+        body: {
+          packageId: pkg.id,
+          type,
+          suiteId: suite.id,
+          checkIn: checkIn.toISOString(),
+          checkOut: checkout.toISOString(),
+          customerName,
+          customerPhone,
+          customerEmail,
+          totalAmount: total,
+          appOrigin: window.location.origin,
+          paymentMethod: 'card',
+        },
+      },
+    )
 
     setCardLoading(false)
 
-    if (sbError) {
-      setError(
-        sbError.message.includes('não está disponível')
-          ? 'Esta suíte já está reservada neste horário. Volte e escolha outro horário ou suíte.'
-          : 'Ocorreu um erro ao registrar sua reserva. Tente novamente.',
-      )
+    if (fnError || data?.error) {
+      setError(data?.error ?? fnError?.message ?? 'Erro ao processar pagamento. Tente novamente.')
       return
     }
 
-    setPaymentSource('card')
-    setReservationId(data.id)
-
-    supabase.functions.invoke('send-reservation-whatsapp', {
-      body: {
-        reservationId: data.id,
-        customerName, customerPhone,
-        motelPhone: whatsappNum,
-        packageLabel: pkg.label,
-        suiteName: suite.name,
-        type,
-        checkIn: checkIn.toISOString(),
-        checkOut: checkout.toISOString(),
-        total,
-        paymentMethod: 'card',
-      },
-    }).catch(err => console.warn('WhatsApp notification error:', err))
+    if (data?.billingUrl) {
+      window.location.href = data.billingUrl
+    } else {
+      setError('Link de pagamento não recebido. Tente novamente.')
+    }
   }
 
   function copyPix() {
@@ -382,11 +368,29 @@ export default function StepPagamento() {
 
           {/* Card panel */}
           {method === 'card' && (
-            <div className="mb-6 p-5 rounded-xl border border-gold-800/30 bg-gold-900/10 text-center space-y-3">
-              <p className="text-gold-400/80 text-sm font-medium">Pagamento via cartão</p>
-              <p className="text-gold-700/60 text-xs leading-relaxed">
-                Finalize sua reserva abaixo. Nossa equipe entrará em contato pelo WhatsApp para processar o pagamento com cartão.
-              </p>
+            <div className="mb-6 rounded-xl border border-gold-800/30 bg-gold-900/10 overflow-hidden">
+              <div className="px-5 py-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.25)' }}>
+                    <svg viewBox="0 0 20 20" className="w-4 h-4 text-gold-500" fill="none">
+                      <rect x="2" y="5" width="16" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
+                      <path d="M2 9h16" stroke="currentColor" strokeWidth="1.4" />
+                    </svg>
+                  </div>
+                  <p className="text-sm text-gold-300 font-medium">Cartão de crédito</p>
+                </div>
+                <p className="text-xs text-gold-700/60 leading-relaxed">
+                  Você será direcionado para a página segura de pagamento. Após concluir, voltará automaticamente com a confirmação.
+                </p>
+              </div>
+              <div className="px-5 pb-1 flex items-center gap-2 text-[10px] text-gold-800/50">
+                <svg viewBox="0 0 12 12" className="w-3 h-3 shrink-0" fill="none">
+                  <rect x="1" y="3" width="10" height="7" rx="1" stroke="currentColor" strokeWidth="1" />
+                  <path d="M4 3V2.5a2 2 0 014 0V3" stroke="currentColor" strokeWidth="1" />
+                </svg>
+                Ambiente seguro SSL — seus dados ficam protegidos
+              </div>
+              <div className="h-3" />
             </div>
           )}
 
@@ -398,12 +402,19 @@ export default function StepPagamento() {
 
           {method === 'card' && (
             <button
-              onClick={createCardReservation}
+              onClick={handleCardPayment}
               disabled={cardLoading}
-              className="w-full py-4 rounded-xl font-semibold text-sm tracking-wide text-black transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-4 rounded-xl font-semibold text-sm tracking-wide text-black transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               style={{ background: 'linear-gradient(135deg, #c8a035 0%, #e8c060 50%, #c8a035 100%)' }}
             >
-              {cardLoading ? 'Registrando…' : `Confirmar reserva — ${fmt(total)}`}
+              {cardLoading ? (
+                <>
+                  <span className="w-4 h-4 rounded-full border-2 border-black/30 border-t-black animate-spin" />
+                  Redirecionando…
+                </>
+              ) : (
+                `Pagar ${fmt(total)} com Cartão →`
+              )}
             </button>
           )}
         </div>
