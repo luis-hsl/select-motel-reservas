@@ -1,8 +1,17 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { SUITES } from '../data'
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
 import type { Suite, SuiteCategory } from '../types'
+
+function toWebP(url: string, width = 600): string {
+  if (!url || url.startsWith('/')) return url
+  const match = url.match(/\/storage\/v1\/object\/public\/(.+)$/)
+  if (!match) return url
+  const base = url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/')
+  return `${base}?format=webp&quality=82&width=${width}`
+}
 
 const WHATSAPP_MSG = encodeURIComponent('Olá! Gostaria de verificar disponibilidade de suítes para o Dia dos Namorados.')
 
@@ -123,7 +132,7 @@ export default function StepSuite() {
         </div>
       )}
 
-      {galleryFor && (
+      {galleryFor && createPortal(
         <SuiteGallery
           suite={galleryFor}
           photoUrl={photoUrls[galleryFor.id]}
@@ -131,7 +140,8 @@ export default function StepSuite() {
           selected={selected?.id === galleryFor.id}
           onChoose={() => { choose(galleryFor); setGalleryFor(null) }}
           onClose={() => setGalleryFor(null)}
-        />
+        />,
+        document.body
       )}
     </div>
   )
@@ -154,20 +164,25 @@ function SuiteCard({ suite, photoUrl, occupied, selected, onChoose, onViewMore }
       style={{ aspectRatio: '1 / 1' }}
     >
       {/* Background: photo + gradient overlay */}
-      <div
-        className="absolute inset-0"
-        style={{
-          backgroundColor: '#120a02',
-          backgroundImage: [
-            'radial-gradient(ellipse at 50% 110%, rgba(180,90,15,0.55) 0%, transparent 55%)',
-            'radial-gradient(ellipse at 20% 85%, rgba(130,65,10,0.4) 0%, transparent 45%)',
-            'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.65) 100%)',
-            `url(${coverUrl})`,
-          ].join(', '),
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      />
+      <div className="absolute inset-0" style={{ backgroundColor: '#120a02' }}>
+        <img
+          src={toWebP(coverUrl)}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: [
+              'radial-gradient(ellipse at 50% 110%, rgba(180,90,15,0.55) 0%, transparent 55%)',
+              'radial-gradient(ellipse at 20% 85%, rgba(130,65,10,0.4) 0%, transparent 45%)',
+              'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.65) 100%)',
+            ].join(', '),
+          }}
+        />
+      </div>
 
       {/* Gold frame border inner glow */}
       <div className="absolute inset-0 rounded-2xl" style={{ boxShadow: 'inset 0 0 30px rgba(0,0,0,0.6)' }} />
@@ -267,7 +282,7 @@ function SuiteGallery({ suite, photoUrl, occupied, selected, onChoose, onClose }
 
       {/* Sheet */}
       <div
-        className="relative w-full sm:max-w-md max-h-[94vh] sm:max-h-[88vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl scrollbar-hide transition-all duration-380"
+        className="relative w-full sm:max-w-md max-h-[82vh] sm:max-h-[88vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl scrollbar-hide transition-all duration-380"
         style={{
           backgroundColor: '#0c0702',
           border: '1px solid rgba(201,168,76,0.3)',
@@ -284,20 +299,26 @@ function SuiteGallery({ suite, photoUrl, occupied, selected, onChoose, onClose }
 
         {/* Cover photo */}
         <div
-          className="relative w-full"
-          style={{
-            aspectRatio: '4 / 3',
-            backgroundColor: '#1a0f02',
-            backgroundImage: [
-              'radial-gradient(ellipse at 50% 110%, rgba(180,90,15,0.6) 0%, transparent 55%)',
-              'radial-gradient(ellipse at 15% 85%, rgba(130,65,10,0.45) 0%, transparent 48%)',
-              'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.6) 100%)',
-              `url(${coverUrl})`,
-            ].join(', '),
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
+          className="relative w-full overflow-hidden"
+          style={{ aspectRatio: '4 / 3', backgroundColor: '#1a0f02' }}
         >
+          <img
+            src={toWebP(coverUrl, 800)}
+            alt=""
+            loading="eager"
+            decoding="async"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: [
+                'radial-gradient(ellipse at 50% 110%, rgba(180,90,15,0.6) 0%, transparent 55%)',
+                'radial-gradient(ellipse at 15% 85%, rgba(130,65,10,0.45) 0%, transparent 48%)',
+                'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.6) 100%)',
+              ].join(', '),
+            }}
+          />
           {/* Close button */}
           <button
             onClick={close}
@@ -334,8 +355,16 @@ function SuiteGallery({ suite, photoUrl, occupied, selected, onChoose, onClose }
               <div
                 key={i}
                 className="rounded-lg overflow-hidden"
-                style={{ aspectRatio: '1 / 1', backgroundImage: `url(${url})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: '#1a0f02' }}
-              />
+                style={{ aspectRatio: '1 / 1', backgroundColor: '#1a0f02' }}
+              >
+                <img
+                  src={toWebP(url, 400)}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-full object-cover"
+                />
+              </div>
             ))}
           </div>
         )}
