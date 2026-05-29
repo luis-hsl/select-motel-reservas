@@ -107,6 +107,23 @@ export default function StepPagamento() {
     }
 
     setReservationId(data.id)
+
+  // Fire WhatsApp notifications in background — don't block success screen
+  supabase.functions.invoke('send-reservation-whatsapp', {
+    body: {
+      reservationId: data.id,
+      customerName,
+      customerPhone,
+      motelPhone: whatsappNum,
+      packageLabel: pkg.label,
+      suiteName: suite.name,
+      type,
+      checkIn: checkIn.toISOString(),
+      checkOut: checkout.toISOString(),
+      total,
+      paymentMethod: method,
+    },
+  }).catch(err => console.warn('WhatsApp notification error:', err))
   }
 
   function copyPix() {
