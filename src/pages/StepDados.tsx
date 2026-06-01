@@ -8,6 +8,15 @@ function maskCPF(v: string) {
     .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
 }
 
+function maskPhone(v: string) {
+  const d = v.replace(/\D/g, '').slice(0, 11)
+  if (!d) return ''
+  if (d.length <= 2) return `(${d}`
+  if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`
+  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
+}
+
 export default function StepDados() {
   const { setCustomer, nextStep, prevStep } = useStore()
   const [name, setName] = useState('')
@@ -16,7 +25,8 @@ export default function StepDados() {
   const [taxId, setTaxId] = useState('')
 
   const rawCPF = taxId.replace(/\D/g, '')
-  const canContinue = name.trim() && phone.trim() && email.includes('@') && rawCPF.length === 11
+  const rawPhone = phone.replace(/\D/g, '')
+  const canContinue = name.trim() && rawPhone.length >= 10 && email.includes('@') && rawCPF.length === 11
 
   function confirm() {
     if (!canContinue) return
@@ -66,8 +76,9 @@ export default function StepDados() {
           <Field label="WhatsApp">
             <input
               type="tel"
+              inputMode="numeric"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => setPhone(maskPhone(e.target.value))}
               placeholder="(00) 00000-0000"
               className="w-full bg-black/60 border border-gold-900/40 rounded-lg px-4 py-3 text-sm text-gold-200 placeholder-gold-900/50 outline-none focus:border-gold-600/60 transition-colors"
             />
