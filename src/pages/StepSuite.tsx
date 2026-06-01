@@ -87,7 +87,7 @@ export default function StepSuite() {
       </p>
 
       {loading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
           {[1, 2].map(i => (
             <div key={i} className="aspect-square rounded-2xl border border-gold-900/30 bg-gold-900/10 animate-pulse" />
           ))}
@@ -112,7 +112,7 @@ export default function StepSuite() {
                   </p>
                   <div className="h-px flex-1 bg-gradient-to-r from-gold-800/40 to-transparent" />
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
                   {catSuites.map(suite => (
                     <SuiteCard
                       key={suite.id}
@@ -206,7 +206,7 @@ function SuiteCard({ suite, photoUrl, occupied, selected, onChoose, onViewMore }
           <span
             className="font-serif font-bold text-transparent bg-clip-text select-none"
             style={{
-              fontSize: 'clamp(4rem, 16vw, 6rem)',
+              fontSize: 'clamp(3rem, 12vw, 5rem)',
               backgroundImage: 'linear-gradient(160deg, #fce8a8 0%, #d4a017 35%, #8b6010 70%, #c9a84c 100%)',
               lineHeight: 1,
               filter: 'drop-shadow(0 2px 16px rgba(200,150,30,0.5))',

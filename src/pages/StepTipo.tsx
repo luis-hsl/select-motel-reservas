@@ -141,7 +141,7 @@ export default function StepTipo() {
                   <h2
                     className="font-serif font-bold tracking-widest mb-3 text-transparent bg-clip-text leading-none"
                     style={{
-                      fontSize: 'clamp(2.2rem, 7vw, 2.8rem)',
+                      fontSize: 'clamp(2rem, 5vw, 2.8rem)',
                       backgroundImage: opt.titleColor,
                     }}
                   >
