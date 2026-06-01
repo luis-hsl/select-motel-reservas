@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { SUITES } from '../data'
 import { useStore } from '../store/useStore'
@@ -11,6 +11,11 @@ function toWebP(url: string, width = 600): string {
   if (!match) return url
   const base = url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/')
   return `${base}?format=webp&quality=82&width=${width}`
+}
+
+function buildSlotLabel(cin: Date, cout: Date): string {
+  const fmt = (d: Date) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  return `${fmt(cin)} – ${fmt(cout)}`
 }
 
 const WHATSAPP_MSG = encodeURIComponent('Olá! Gostaria de verificar disponibilidade de suítes para o Dia dos Namorados.')
@@ -30,39 +35,77 @@ const GALLERY: Record<string, string[]> = {
 }
 
 export default function StepSuite() {
-  const { package: pkg, suite: selected, setSuite, nextStep, prevStep } = useStore()
+  const { package: pkg, suite: selected, setSuite, nextStep, prevStep, checkIn, checkOut } = useStore()
   const [loading, setLoading] = useState(true)
+  const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set())
   const [galleryFor, setGalleryFor] = useState<Suite | null>(null)
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({})
   const [whatsappNum, setWhatsappNum] = useState('5543999999999')
 
   const packageSuites = SUITES.filter(s => pkg && s.packageIds.includes(pkg.id as never))
 
-  // Fetch photo URLs and WhatsApp number from Supabase
+  const slotLabel = useMemo(() => {
+    const cin = checkIn
+    const cout = checkOut()
+    if (!cin || !cout) return ''
+    return buildSlotLabel(cin, cout)
+  }, [checkIn, checkOut])
+
   useEffect(() => {
-    supabase
-      .from('suites')
-      .select('id, photo_url')
-      .not('photo_url', 'is', null)
-      .then(({ data }) => {
-        if (data) {
-          const urls: Record<string, string> = {}
-          data.forEach(s => { if (s.photo_url) urls[s.id] = s.photo_url })
-          setPhotoUrls(urls)
-        }
-      })
+    const promises: Promise<unknown>[] = []
 
-    supabase
-      .from('settings')
-      .select('value')
-      .eq('key', 'whatsapp_number')
-      .single()
-      .then(({ data }) => { if (data?.value) setWhatsappNum(data.value) })
+    promises.push(
+      supabase
+        .from('suites')
+        .select('id, photo_url')
+        .not('photo_url', 'is', null)
+        .then(({ data }) => {
+          if (data) {
+            const urls: Record<string, string> = {}
+            data.forEach(s => { if (s.photo_url) urls[s.id] = s.photo_url })
+            setPhotoUrls(urls)
+          }
+        })
+    )
 
-    setLoading(false)
-  }, [])
+    promises.push(
+      supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'whatsapp_number')
+        .single()
+        .then(({ data }) => { if (data?.value) setWhatsappNum(data.value) })
+    )
 
-  const allOccupied = false // availability is checked per-slot in StepData
+    const cin = checkIn
+    const cout = checkOut()
+    if (cin && cout) {
+      const cinIso = cin.toISOString()
+      const coutIso = cout.toISOString()
+      promises.push(
+        supabase
+          .rpc('get_occupied_suite_ids', { p_check_in: cinIso, p_check_out: coutIso })
+          .then(async ({ data, error }) => {
+            if (!error && data) {
+              setOccupiedIds(new Set(data.map((r: { suite_id: string }) => r.suite_id)))
+              return
+            }
+            // Fallback: direct query se a função RPC ainda não existir no banco
+            const { data: rows } = await supabase
+              .from('reservations')
+              .select('suite_id')
+              .in('status', ['paid', 'pending'])
+              .lt('check_in', coutIso)
+              .gt('check_out', cinIso)
+            if (rows) setOccupiedIds(new Set(rows.map(r => r.suite_id as string)))
+          })
+      )
+    }
+
+    Promise.all(promises).finally(() => setLoading(false))
+  }, [checkIn, checkOut])
+
+  const allOccupied = packageSuites.length > 0 && packageSuites.every(s => occupiedIds.has(s.id))
 
   function choose(suite: Suite) {
     setSuite(suite)
@@ -118,7 +161,8 @@ export default function StepSuite() {
                       key={suite.id}
                       suite={suite}
                       photoUrl={photoUrls[suite.id]}
-                      occupied={false}
+                      occupied={occupiedIds.has(suite.id)}
+                      slotLabel={slotLabel}
                       selected={selected?.id === suite.id}
                       onChoose={() => choose(suite)}
                       onViewMore={() => setGalleryFor(suite)}
@@ -136,7 +180,8 @@ export default function StepSuite() {
         <SuiteGallery
           suite={galleryFor}
           photoUrl={photoUrls[galleryFor.id]}
-          occupied={false}
+          occupied={occupiedIds.has(galleryFor.id)}
+          slotLabel={slotLabel}
           selected={selected?.id === galleryFor.id}
           onChoose={() => { choose(galleryFor); setGalleryFor(null) }}
           onClose={() => setGalleryFor(null)}
@@ -149,8 +194,8 @@ export default function StepSuite() {
 
 // ── Suite Card ─────────────────────────────────────────────
 
-function SuiteCard({ suite, photoUrl, occupied, selected, onChoose, onViewMore }: {
-  suite: Suite; photoUrl?: string; occupied: boolean; selected: boolean
+function SuiteCard({ suite, photoUrl, occupied, slotLabel, selected, onChoose, onViewMore }: {
+  suite: Suite; photoUrl?: string; occupied: boolean; slotLabel: string; selected: boolean
   onChoose: () => void; onViewMore: () => void
 }) {
   const coverUrl = photoUrl ?? `/suites/${suite.id}.jpg`
@@ -159,7 +204,11 @@ function SuiteCard({ suite, photoUrl, occupied, selected, onChoose, onViewMore }
     <div
       className={[
         'relative rounded-2xl overflow-hidden border transition-all duration-300',
-        occupied ? 'border-gold-900/20 opacity-60' : selected ? 'border-gold-500 ring-2 ring-gold-500/30' : 'border-gold-800/40',
+        occupied
+          ? 'border-red-900/40'
+          : selected
+          ? 'border-gold-500 ring-2 ring-gold-500/30'
+          : 'border-gold-800/40',
       ].join(' ')}
       style={{ aspectRatio: '1 / 1' }}
     >
@@ -170,7 +219,10 @@ function SuiteCard({ suite, photoUrl, occupied, selected, onChoose, onViewMore }
           alt=""
           loading="lazy"
           decoding="async"
-          className="absolute inset-0 w-full h-full object-cover"
+          className={[
+            'absolute inset-0 w-full h-full object-cover transition-all duration-300',
+            occupied ? 'grayscale-[60%] brightness-[0.55]' : '',
+          ].join(' ')}
         />
         <div
           className="absolute inset-0"
@@ -187,17 +239,64 @@ function SuiteCard({ suite, photoUrl, occupied, selected, onChoose, onViewMore }
       {/* Gold frame border inner glow */}
       <div className="absolute inset-0 rounded-2xl" style={{ boxShadow: 'inset 0 0 30px rgba(0,0,0,0.6)' }} />
 
+      {/* RESERVADO diagonal ribbon */}
+      {occupied && (
+        <div
+          className="absolute inset-0 flex items-center justify-center pointer-events-none z-20"
+          style={{ transform: 'rotate(-35deg)' }}
+        >
+          <div
+            className="flex flex-col items-center gap-0.5 px-8 py-2 select-none"
+            style={{
+              background: 'linear-gradient(135deg, rgba(90,8,22,0.97) 0%, rgba(120,12,30,1) 100%)',
+              border: '1px solid rgba(200,150,60,0.5)',
+              borderLeft: 'none',
+              borderRight: 'none',
+              boxShadow: '0 0 24px rgba(120,0,20,0.6), inset 0 1px 0 rgba(255,200,100,0.15)',
+              width: '180%',
+            }}
+          >
+            <div className="flex items-center gap-2">
+              {/* Lock icon */}
+              <svg width="10" height="12" viewBox="0 0 10 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0 opacity-80">
+                <rect x="1" y="5" width="8" height="7" rx="1.2" fill="rgba(200,150,60,0.9)" />
+                <path d="M2.5 5V3.5a2.5 2.5 0 0 1 5 0V5" stroke="rgba(200,150,60,0.9)" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+              </svg>
+              <span
+                className="font-bold tracking-[0.3em] uppercase"
+                style={{ fontSize: '0.6rem', color: 'rgba(240,200,100,0.95)', textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}
+              >
+                Reservado
+              </span>
+            </div>
+            {slotLabel && (
+              <span
+                className="tracking-widest"
+                style={{ fontSize: '0.5rem', color: 'rgba(200,150,80,0.7)' }}
+              >
+                {slotLabel}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Content */}
       <div className="relative z-10 h-full flex flex-col p-4">
 
         {/* Top: SUÍTE label + line */}
         <div className="text-center">
-          <p className="text-[9px] tracking-[0.45em] uppercase font-medium mb-1.5" style={{ color: 'rgba(220,185,100,0.75)' }}>
+          <p className="text-[9px] tracking-[0.45em] uppercase font-medium mb-1.5" style={{ color: occupied ? 'rgba(180,150,100,0.5)' : 'rgba(220,185,100,0.75)' }}>
             S U Í T E
           </p>
           <div
             className="h-px mx-auto w-12"
-            style={{ background: 'linear-gradient(to right, transparent, #c9a84c, transparent)', boxShadow: '0 0 6px rgba(200,160,50,0.7)' }}
+            style={{
+              background: occupied
+                ? 'linear-gradient(to right, transparent, rgba(150,100,60,0.6), transparent)'
+                : 'linear-gradient(to right, transparent, #c9a84c, transparent)',
+              boxShadow: occupied ? 'none' : '0 0 6px rgba(200,160,50,0.7)',
+            }}
           />
         </div>
 
@@ -207,9 +306,13 @@ function SuiteCard({ suite, photoUrl, occupied, selected, onChoose, onViewMore }
             className="font-serif font-bold text-transparent bg-clip-text select-none"
             style={{
               fontSize: 'clamp(4rem, 16vw, 6rem)',
-              backgroundImage: 'linear-gradient(160deg, #fce8a8 0%, #d4a017 35%, #8b6010 70%, #c9a84c 100%)',
+              backgroundImage: occupied
+                ? 'linear-gradient(160deg, #a08060 0%, #7a5a30 35%, #5a3a10 70%, #8a6030 100%)'
+                : 'linear-gradient(160deg, #fce8a8 0%, #d4a017 35%, #8b6010 70%, #c9a84c 100%)',
               lineHeight: 1,
-              filter: 'drop-shadow(0 2px 16px rgba(200,150,30,0.5))',
+              filter: occupied
+                ? 'drop-shadow(0 2px 8px rgba(80,50,20,0.3))'
+                : 'drop-shadow(0 2px 16px rgba(200,150,30,0.5))',
             }}
           >
             {suite.room_number}
@@ -218,13 +321,13 @@ function SuiteCard({ suite, photoUrl, occupied, selected, onChoose, onViewMore }
 
         {/* Bottom: category + buttons */}
         <div className="space-y-2">
-          <p className="text-[9px] tracking-widest uppercase text-center" style={{ color: 'rgba(200,165,80,0.5)' }}>
+          <p className="text-[9px] tracking-widest uppercase text-center" style={{ color: occupied ? 'rgba(160,120,60,0.4)' : 'rgba(200,165,80,0.5)' }}>
             {CATEGORY_LABEL[suite.category]}
           </p>
 
           {occupied ? (
-            <div className="w-full text-center py-1.5 rounded-lg border border-red-900/50 text-[10px] tracking-widest uppercase text-red-400/70">
-              Esgotado
+            <div className="w-full text-center py-1.5 rounded-lg border border-red-900/50 text-[10px] tracking-widest uppercase text-red-400/60">
+              Reservado
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-1.5">
@@ -246,14 +349,22 @@ function SuiteCard({ suite, photoUrl, occupied, selected, onChoose, onViewMore }
           )}
         </div>
       </div>
+
+      {/* Corner accent dot */}
+      {occupied && (
+        <div
+          className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full z-30"
+          style={{ background: 'rgba(180,30,50,0.9)', boxShadow: '0 0 6px rgba(200,20,40,0.7)' }}
+        />
+      )}
     </div>
   )
 }
 
 // ── Suite Gallery Modal ────────────────────────────────────
 
-function SuiteGallery({ suite, photoUrl, occupied, selected, onChoose, onClose }: {
-  suite: Suite; photoUrl?: string; occupied: boolean; selected: boolean
+function SuiteGallery({ suite, photoUrl, occupied, slotLabel, selected, onChoose, onClose }: {
+  suite: Suite; photoUrl?: string; occupied: boolean; slotLabel: string; selected: boolean
   onChoose: () => void; onClose: () => void
 }) {
   const [visible, setVisible] = useState(false)
@@ -307,7 +418,10 @@ function SuiteGallery({ suite, photoUrl, occupied, selected, onChoose, onClose }
             alt=""
             loading="eager"
             decoding="async"
-            className="absolute inset-0 w-full h-full object-cover"
+            className={[
+              'absolute inset-0 w-full h-full object-cover transition-all duration-300',
+              occupied ? 'grayscale-[60%] brightness-[0.5]' : '',
+            ].join(' ')}
           />
           <div
             className="absolute inset-0"
@@ -330,22 +444,72 @@ function SuiteGallery({ suite, photoUrl, occupied, selected, onChoose, onClose }
 
           {/* Suite label overlay */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <p className="text-[9px] tracking-[0.5em] uppercase mb-2" style={{ color: 'rgba(220,185,100,0.7)' }}>
+            <p className="text-[9px] tracking-[0.5em] uppercase mb-2" style={{ color: occupied ? 'rgba(180,150,100,0.5)' : 'rgba(220,185,100,0.7)' }}>
               S U Í T E
             </p>
-            <div className="h-px w-10 mb-3" style={{ background: 'linear-gradient(to right, transparent, #c9a84c, transparent)', boxShadow: '0 0 6px rgba(200,160,50,0.8)' }} />
+            <div className="h-px w-10 mb-3" style={{
+              background: occupied
+                ? 'linear-gradient(to right, transparent, rgba(150,100,60,0.5), transparent)'
+                : 'linear-gradient(to right, transparent, #c9a84c, transparent)',
+              boxShadow: occupied ? 'none' : '0 0 6px rgba(200,160,50,0.8)',
+            }} />
             <span
               className="font-serif font-bold text-transparent bg-clip-text"
               style={{
                 fontSize: 'clamp(5rem, 22vw, 8rem)',
-                backgroundImage: 'linear-gradient(160deg, #fce8a8 0%, #d4a017 35%, #8b6010 70%, #c9a84c 100%)',
+                backgroundImage: occupied
+                  ? 'linear-gradient(160deg, #a08060 0%, #7a5a30 35%, #5a3a10 70%, #8a6030 100%)'
+                  : 'linear-gradient(160deg, #fce8a8 0%, #d4a017 35%, #8b6010 70%, #c9a84c 100%)',
                 lineHeight: 1,
-                filter: 'drop-shadow(0 4px 20px rgba(200,150,30,0.6))',
+                filter: occupied
+                  ? 'drop-shadow(0 2px 8px rgba(80,50,20,0.3))'
+                  : 'drop-shadow(0 4px 20px rgba(200,150,30,0.6))',
               }}
             >
               {suite.room_number}
             </span>
           </div>
+
+          {/* RESERVADO ribbon over gallery cover */}
+          {occupied && (
+            <div
+              className="absolute inset-0 flex items-center justify-center pointer-events-none z-20"
+              style={{ transform: 'rotate(-20deg)' }}
+            >
+              <div
+                className="flex flex-col items-center gap-1 px-12 py-3 select-none"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(90,8,22,0.97) 0%, rgba(120,12,30,1) 100%)',
+                  border: '1px solid rgba(200,150,60,0.5)',
+                  borderLeft: 'none',
+                  borderRight: 'none',
+                  boxShadow: '0 0 32px rgba(120,0,20,0.7), inset 0 1px 0 rgba(255,200,100,0.15)',
+                  width: '120%',
+                }}
+              >
+                <div className="flex items-center gap-2.5">
+                  <svg width="12" height="14" viewBox="0 0 10 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0 opacity-80">
+                    <rect x="1" y="5" width="8" height="7" rx="1.2" fill="rgba(200,150,60,0.9)" />
+                    <path d="M2.5 5V3.5a2.5 2.5 0 0 1 5 0V5" stroke="rgba(200,150,60,0.9)" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+                  </svg>
+                  <span
+                    className="font-bold tracking-[0.35em] uppercase"
+                    style={{ fontSize: '0.75rem', color: 'rgba(240,200,100,0.95)', textShadow: '0 1px 8px rgba(0,0,0,0.8)' }}
+                  >
+                    Reservado
+                  </span>
+                </div>
+                {slotLabel && (
+                  <span
+                    className="tracking-widest"
+                    style={{ fontSize: '0.6rem', color: 'rgba(200,150,80,0.75)' }}
+                  >
+                    {slotLabel}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Extra photos grid */}
@@ -385,6 +549,25 @@ function SuiteGallery({ suite, photoUrl, occupied, selected, onChoose, onClose }
             <p className="text-sm text-gold-700/60">{suite.description}</p>
           </div>
 
+          {/* Occupied notice */}
+          {occupied && (
+            <div
+              className="rounded-xl px-4 py-3 flex items-center gap-3"
+              style={{ background: 'rgba(90,8,22,0.35)', border: '1px solid rgba(180,30,50,0.4)' }}
+            >
+              <svg width="16" height="18" viewBox="0 0 10 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
+                <rect x="1" y="5" width="8" height="7" rx="1.2" fill="rgba(200,100,100,0.9)" />
+                <path d="M2.5 5V3.5a2.5 2.5 0 0 1 5 0V5" stroke="rgba(200,100,100,0.9)" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+              </svg>
+              <div>
+                <p className="text-xs font-semibold text-red-400/90">Suíte reservada para este período</p>
+                {slotLabel && (
+                  <p className="text-[10px] text-red-500/60 mt-0.5">{slotLabel}</p>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Details */}
           <div className="grid grid-cols-2 gap-3">
             <DetailChip label="Tamanho" value={suite.size === 'large' ? 'Grande' : 'Compacta'} />
@@ -402,7 +585,7 @@ function SuiteGallery({ suite, photoUrl, occupied, selected, onChoose, onClose }
             </button>
           ) : (
             <div className="w-full py-4 rounded-xl text-center text-sm border border-red-900/40 text-red-400/60">
-              Suíte esgotada para este período
+              Suíte reservada para este período
             </div>
           )}
         </div>
