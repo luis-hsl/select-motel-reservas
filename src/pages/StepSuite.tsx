@@ -1,10 +1,19 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { SUITES, calcCheckOut } from '../data'
+import { SUITES } from '../data'
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
 import type { Suite, SuiteCategory } from '../types'
 
+function toWebP(url: string, width = 600): string {
+  if (!url || url.startsWith('/')) return url
+  const match = url.match(/\/storage\/v1\/object\/public\/(.+)$/)
+  if (!match) return url
+  const base = url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/')
+  return `${base}?format=webp&quality=82&width=${width}`
+}
+
+const WHATSAPP_MSG = encodeURIComponent('Olá! Gostaria de verificar disponibilidade de suítes para o Dia dos Namorados.')
 
 const CATEGORY_LABEL: Record<SuiteCategory, string> = {
   'VIP Piscina': 'VIP · Piscina',
@@ -13,58 +22,47 @@ const CATEGORY_LABEL: Record<SuiteCategory, string> = {
   'Standard': 'Standard',
 }
 
+// Galeria de cada suíte — adicione mais URLs conforme disponível
+const GALLERY: Record<string, string[]> = {
+  'suite-11': [], 'suite-12': [], 'suite-13': [], 'suite-14': [],
+  'suite-15': [], 'suite-16': [], 'suite-17': [], 'suite-18': [],
+  'suite-22': [], 'suite-23': [], 'suite-24': [], 'suite-25': [], 'suite-26': [],
+}
 
 export default function StepSuite() {
-  const { package: pkg, suite: selected, checkIn, type, setSuite, nextStep, prevStep } = useStore()
+  const { package: pkg, suite: selected, setSuite, nextStep, prevStep } = useStore()
   const [loading, setLoading] = useState(true)
   const [galleryFor, setGalleryFor] = useState<Suite | null>(null)
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({})
-  const [videoUrls, setVideoUrls] = useState<Record<string, string>>({})
-  const [allPhotos, setAllPhotos] = useState<Record<string, string[]>>({})
-const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set())
+  const [whatsappNum, setWhatsappNum] = useState('5543999999999')
 
   const packageSuites = SUITES.filter(s => pkg && s.packageIds.includes(pkg.id as never))
 
+  // Fetch photo URLs and WhatsApp number from Supabase
   useEffect(() => {
-    const checkOut = checkIn && type ? calcCheckOut(checkIn, type) : null
+    supabase
+      .from('suites')
+      .select('id, photo_url')
+      .not('photo_url', 'is', null)
+      .then(({ data }) => {
+        if (data) {
+          const urls: Record<string, string> = {}
+          data.forEach(s => { if (s.photo_url) urls[s.id] = s.photo_url })
+          setPhotoUrls(urls)
+        }
+      })
 
-    Promise.all([
-      supabase.from('suites').select('id,photo_url,video_url'),
-      (supabase as any).from('suite_photos').select('suite_id,url').order('sort_order'),
-      checkIn && checkOut
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ? (supabase as any).rpc('get_occupied_suite_ids', {
-            p_check_in: checkIn.toISOString(),
-            p_check_out: checkOut.toISOString(),
-          })
-        : Promise.resolve({ data: [] }),
-    ]).then(([suiteRes, photosRes, occRes]) => {
-      if (suiteRes.data) {
-        const photos: Record<string, string> = {}
-        const videos: Record<string, string> = {}
-        suiteRes.data.forEach((s: { id: string; photo_url: string | null; video_url: string | null }) => {
-          if (s.photo_url) photos[s.id] = s.photo_url
-          if (s.video_url) videos[s.id] = s.video_url
-        })
-        setPhotoUrls(photos)
-        setVideoUrls(videos)
-      }
-      if (photosRes.data) {
-        const grouped: Record<string, string[]> = {}
-        ;(photosRes.data as { suite_id: string; url: string }[]).forEach(p => {
-          if (!grouped[p.suite_id]) grouped[p.suite_id] = []
-          grouped[p.suite_id].push(p.url)
-        })
-        setAllPhotos(grouped)
-      }
-      if (occRes.data) {
-        setOccupiedIds(new Set((occRes.data as { suite_id: string }[]).map(r => r.suite_id)))
-      }
-      setLoading(false)
-    })
-  }, [checkIn, type])
+    supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'whatsapp_number')
+      .single()
+      .then(({ data }) => { if (data?.value) setWhatsappNum(data.value) })
 
-  const allOccupied = packageSuites.length > 0 && packageSuites.every(s => occupiedIds.has(s.id))
+    setLoading(false)
+  }, [])
+
+  const allOccupied = false // availability is checked per-slot in StepData
 
   function choose(suite: Suite) {
     setSuite(suite)
@@ -85,11 +83,7 @@ const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set())
       </h1>
       <p className="text-gold-700/70 text-sm mb-6 sm:mb-8">
         Suítes disponíveis para o{' '}
-        <strong className="text-gold-500 font-medium">{pkg?.label}</strong>
-        {checkIn && (
-          <> no horário escolhido.</>
-        )}
-        {!checkIn && <>.{/* fallback */}</>}
+        <strong className="text-gold-500 font-medium">{pkg?.label}</strong>.
       </p>
 
       {loading ? (
@@ -104,6 +98,7 @@ const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set())
             <p className="text-sm text-red-400/80 mb-1">Todas as suítes do {pkg?.label} estão ocupadas para este período.</p>
             <p className="text-xs text-gold-800/50">Entre em contato com nosso suporte.</p>
           </div>
+          <SupportCard highlight whatsappNum={whatsappNum} />
         </div>
       ) : (
         <div className="space-y-8">
@@ -123,7 +118,7 @@ const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set())
                       key={suite.id}
                       suite={suite}
                       photoUrl={photoUrls[suite.id]}
-                      occupied={occupiedIds.has(suite.id)}
+                      occupied={false}
                       selected={selected?.id === suite.id}
                       onChoose={() => choose(suite)}
                       onViewMore={() => setGalleryFor(suite)}
@@ -133,15 +128,15 @@ const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set())
               </div>
             )
           })}
+          <SupportCard highlight={false} whatsappNum={whatsappNum} />
         </div>
       )}
 
       {galleryFor && createPortal(
         <SuiteGallery
           suite={galleryFor}
-          photos={allPhotos[galleryFor.id] ?? (photoUrls[galleryFor.id] ? [photoUrls[galleryFor.id]] : [])}
-          videoUrl={videoUrls[galleryFor.id]}
-          occupied={occupiedIds.has(galleryFor.id)}
+          photoUrl={photoUrls[galleryFor.id]}
+          occupied={false}
           selected={selected?.id === galleryFor.id}
           onChoose={() => { choose(galleryFor); setGalleryFor(null) }}
           onClose={() => setGalleryFor(null)}
@@ -158,6 +153,8 @@ function SuiteCard({ suite, photoUrl, occupied, selected, onChoose, onViewMore }
   suite: Suite; photoUrl?: string; occupied: boolean; selected: boolean
   onChoose: () => void; onViewMore: () => void
 }) {
+  const coverUrl = photoUrl ?? `/suites/${suite.id}.jpg`
+
   return (
     <div
       className={[
@@ -167,20 +164,25 @@ function SuiteCard({ suite, photoUrl, occupied, selected, onChoose, onViewMore }
       style={{ aspectRatio: '1 / 1' }}
     >
       {/* Background: photo + gradient overlay */}
-      <div
-        className="absolute inset-0"
-        style={{
-          backgroundColor: '#120a02',
-          backgroundImage: [
-            'radial-gradient(ellipse at 50% 110%, rgba(180,90,15,0.55) 0%, transparent 55%)',
-            'radial-gradient(ellipse at 20% 85%, rgba(130,65,10,0.4) 0%, transparent 45%)',
-            'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.65) 100%)',
-            ...(photoUrl ? [`url(${photoUrl})`] : []),
-          ].join(', '),
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      />
+      <div className="absolute inset-0" style={{ backgroundColor: '#120a02' }}>
+        <img
+          src={toWebP(coverUrl)}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: [
+              'radial-gradient(ellipse at 50% 110%, rgba(180,90,15,0.55) 0%, transparent 55%)',
+              'radial-gradient(ellipse at 20% 85%, rgba(130,65,10,0.4) 0%, transparent 45%)',
+              'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.65) 100%)',
+            ].join(', '),
+          }}
+        />
+      </div>
 
       {/* Gold frame border inner glow */}
       <div className="absolute inset-0 rounded-2xl" style={{ boxShadow: 'inset 0 0 30px rgba(0,0,0,0.6)' }} />
@@ -188,42 +190,37 @@ function SuiteCard({ suite, photoUrl, occupied, selected, onChoose, onViewMore }
       {/* Content */}
       <div className="relative z-10 h-full flex flex-col p-4">
 
-        {/* Top: SUÍTE label + line — only when no cover photo */}
-        {!photoUrl && (
-          <div className="text-center">
-            <p className="text-[9px] tracking-[0.45em] uppercase font-medium mb-1.5" style={{ color: 'rgba(220,185,100,0.75)' }}>
-              S U Í T E
-            </p>
-            <div
-              className="h-px mx-auto w-12"
-              style={{ background: 'linear-gradient(to right, transparent, #c9a84c, transparent)', boxShadow: '0 0 6px rgba(200,160,50,0.7)' }}
-            />
-          </div>
-        )}
+        {/* Top: SUÍTE label + line */}
+        <div className="text-center">
+          <p className="text-[9px] tracking-[0.45em] uppercase font-medium mb-1.5" style={{ color: 'rgba(220,185,100,0.75)' }}>
+            S U Í T E
+          </p>
+          <div
+            className="h-px mx-auto w-12"
+            style={{ background: 'linear-gradient(to right, transparent, #c9a84c, transparent)', boxShadow: '0 0 6px rgba(200,160,50,0.7)' }}
+          />
+        </div>
 
-        {/* Center: Room number — only when no cover photo */}
+        {/* Center: Room number */}
         <div className="flex-1 flex items-center justify-center">
-          {!photoUrl && (
-            <span
-              className="font-serif font-bold text-transparent bg-clip-text select-none"
-              style={{
-                fontSize: 'clamp(4rem, 16vw, 6rem)',
-                backgroundImage: 'linear-gradient(160deg, #fce8a8 0%, #d4a017 35%, #8b6010 70%, #c9a84c 100%)',
-                lineHeight: 1,
-              }}
-            >
-              {suite.room_number}
-            </span>
-          )}
+          <span
+            className="font-serif font-bold text-transparent bg-clip-text select-none"
+            style={{
+              fontSize: 'clamp(4rem, 16vw, 6rem)',
+              backgroundImage: 'linear-gradient(160deg, #fce8a8 0%, #d4a017 35%, #8b6010 70%, #c9a84c 100%)',
+              lineHeight: 1,
+              filter: 'drop-shadow(0 2px 16px rgba(200,150,30,0.5))',
+            }}
+          >
+            {suite.room_number}
+          </span>
         </div>
 
         {/* Bottom: category + buttons */}
         <div className="space-y-2">
-          {!photoUrl && (
-            <p className="text-[9px] tracking-widest uppercase text-center" style={{ color: 'rgba(200,165,80,0.5)' }}>
-              {CATEGORY_LABEL[suite.category]}
-            </p>
-          )}
+          <p className="text-[9px] tracking-widest uppercase text-center" style={{ color: 'rgba(200,165,80,0.5)' }}>
+            {CATEGORY_LABEL[suite.category]}
+          </p>
 
           {occupied ? (
             <div className="w-full text-center py-1.5 rounded-lg border border-red-900/50 text-[10px] tracking-widest uppercase text-red-400/70">
@@ -255,14 +252,11 @@ function SuiteCard({ suite, photoUrl, occupied, selected, onChoose, onViewMore }
 
 // ── Suite Gallery Modal ────────────────────────────────────
 
-function SuiteGallery({ suite, photos, videoUrl, occupied, selected, onChoose, onClose }: {
-  suite: Suite; photos: string[]; videoUrl?: string; occupied: boolean; selected: boolean
+function SuiteGallery({ suite, photoUrl, occupied, selected, onChoose, onClose }: {
+  suite: Suite; photoUrl?: string; occupied: boolean; selected: boolean
   onChoose: () => void; onClose: () => void
 }) {
   const [visible, setVisible] = useState(false)
-  const [currentIdx, setCurrentIdx] = useState(0)
-  const carouselRef = useRef<HTMLDivElement>(null)
-
   useEffect(() => {
     document.body.style.overflow = 'hidden'
     requestAnimationFrame(() => setTimeout(() => setVisible(true), 10))
@@ -274,17 +268,8 @@ function SuiteGallery({ suite, photos, videoUrl, occupied, selected, onChoose, o
     setTimeout(onClose, 360)
   }
 
-  function handleScroll() {
-    const el = carouselRef.current
-    if (!el) return
-    setCurrentIdx(Math.round(el.scrollLeft / el.clientWidth))
-  }
-
-  function goTo(idx: number) {
-    const el = carouselRef.current
-    if (!el) return
-    el.scrollTo({ left: idx * el.clientWidth, behavior: 'smooth' })
-  }
+  const coverUrl = photoUrl ?? `/suites/${suite.id}.jpg`
+  const extraPhotos = GALLERY[suite.id] ?? []
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" style={{ pointerEvents: visible ? 'auto' : 'none' }}>
@@ -312,131 +297,75 @@ function SuiteGallery({ suite, photos, videoUrl, occupied, selected, onChoose, o
           <div className="w-10 h-1 rounded-full bg-gold-800/40" />
         </div>
 
-        {/* Video hero — when available, show ONLY video (no photos) */}
-        {videoUrl && (
-          <div className="relative bg-black flex items-center justify-center">
-            <video
-              src={videoUrl}
-              autoPlay
-              muted
-              loop
-              playsInline
-              className="block w-auto max-h-[58vh]"
-            />
-            {/* Close button */}
-            <button
-              onClick={close}
-              className="absolute top-3 right-3 z-20 w-9 h-9 rounded-full flex items-center justify-center text-base font-bold transition-all hover:scale-110 active:scale-95"
-              style={{ background: 'rgba(0,0,0,0.72)', color: 'rgba(255,255,255,0.9)', border: '1px solid rgba(201,168,76,0.5)', boxShadow: '0 2px 12px rgba(0,0,0,0.6)' }}
+        {/* Cover photo */}
+        <div
+          className="relative w-full overflow-hidden"
+          style={{ aspectRatio: '4 / 3', backgroundColor: '#1a0f02' }}
+        >
+          <img
+            src={toWebP(coverUrl, 800)}
+            alt=""
+            loading="eager"
+            decoding="async"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: [
+                'radial-gradient(ellipse at 50% 110%, rgba(180,90,15,0.6) 0%, transparent 55%)',
+                'radial-gradient(ellipse at 15% 85%, rgba(130,65,10,0.45) 0%, transparent 48%)',
+                'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.6) 100%)',
+              ].join(', '),
+            }}
+          />
+          {/* Close button */}
+          <button
+            onClick={close}
+            className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center text-sm transition-opacity hover:opacity-80"
+            style={{ background: 'rgba(0,0,0,0.6)', color: 'rgba(220,185,100,0.8)', border: '1px solid rgba(201,168,76,0.3)' }}
+          >
+            ✕
+          </button>
+
+          {/* Suite label overlay */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <p className="text-[9px] tracking-[0.5em] uppercase mb-2" style={{ color: 'rgba(220,185,100,0.7)' }}>
+              S U Í T E
+            </p>
+            <div className="h-px w-10 mb-3" style={{ background: 'linear-gradient(to right, transparent, #c9a84c, transparent)', boxShadow: '0 0 6px rgba(200,160,50,0.8)' }} />
+            <span
+              className="font-serif font-bold text-transparent bg-clip-text"
+              style={{
+                fontSize: 'clamp(5rem, 22vw, 8rem)',
+                backgroundImage: 'linear-gradient(160deg, #fce8a8 0%, #d4a017 35%, #8b6010 70%, #c9a84c 100%)',
+                lineHeight: 1,
+                filter: 'drop-shadow(0 4px 20px rgba(200,150,30,0.6))',
+              }}
             >
-              ✕
-            </button>
+              {suite.room_number}
+            </span>
           </div>
-        )}
+        </div>
 
-        {/* Photo area — only when there is no video */}
-        {!videoUrl && (
-          <div className="relative overflow-hidden" style={{ aspectRatio: '4 / 3' }}>
-            {photos.length > 0 ? (
-              /* ── Swipeable carousel ── */
+        {/* Extra photos grid */}
+        {extraPhotos.length > 0 && (
+          <div className="grid grid-cols-3 gap-1 p-1">
+            {extraPhotos.map((url, i) => (
               <div
-                ref={carouselRef}
-                className="flex h-full overflow-x-auto scrollbar-hide"
-                style={{ scrollSnapType: 'x mandatory' }}
-                onScroll={handleScroll}
+                key={i}
+                className="rounded-lg overflow-hidden"
+                style={{ aspectRatio: '1 / 1', backgroundColor: '#1a0f02' }}
               >
-                {photos.map((url, i) => (
-                  <div key={i} className="shrink-0 w-full h-full" style={{ scrollSnapAlign: 'start' }}>
-                    <img src={url} alt="" className="w-full h-full object-cover" draggable={false} />
-                  </div>
-                ))}
+                <img
+                  src={toWebP(url, 400)}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-full object-cover"
+                />
               </div>
-            ) : (
-              /* ── Placeholder with suite number ── */
-              <div
-                className="w-full h-full flex flex-col items-center justify-center"
-                style={{
-                  backgroundColor: '#1a0f02',
-                  backgroundImage: [
-                    'radial-gradient(ellipse at 50% 110%, rgba(180,90,15,0.6) 0%, transparent 55%)',
-                    'radial-gradient(ellipse at 15% 85%, rgba(130,65,10,0.45) 0%, transparent 48%)',
-                  ].join(', '),
-                }}
-              >
-                <p className="text-[9px] tracking-[0.5em] uppercase mb-2" style={{ color: 'rgba(220,185,100,0.7)' }}>
-                  S U Í T E
-                </p>
-                <div className="h-px w-10 mb-3" style={{ background: 'linear-gradient(to right, transparent, #c9a84c, transparent)' }} />
-                <span
-                  className="font-serif font-bold text-transparent bg-clip-text"
-                  style={{
-                    fontSize: 'clamp(5rem, 22vw, 8rem)',
-                    backgroundImage: 'linear-gradient(160deg, #fce8a8 0%, #d4a017 35%, #8b6010 70%, #c9a84c 100%)',
-                    lineHeight: 1,
-                  }}
-                >
-                  {suite.room_number}
-                </span>
-              </div>
-            )}
-
-            {/* Close button (only when no video hero) */}
-            {!videoUrl && (
-              <button
-                onClick={close}
-                className="absolute top-3 right-3 z-20 w-9 h-9 rounded-full flex items-center justify-center text-base font-bold transition-all hover:scale-110 active:scale-95"
-                style={{ background: 'rgba(0,0,0,0.72)', color: 'rgba(255,255,255,0.9)', border: '1px solid rgba(201,168,76,0.5)', boxShadow: '0 2px 12px rgba(0,0,0,0.6)' }}
-              >
-                ✕
-              </button>
-            )}
-
-            {/* Prev / Next arrows (apenas com múltiplas fotos) */}
-            {photos.length > 1 && (
-              <>
-                <button
-                  onClick={() => goTo(currentIdx - 1)}
-                  disabled={currentIdx === 0}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full flex items-center justify-center text-lg transition-all disabled:opacity-0"
-                  style={{ background: 'rgba(0,0,0,0.55)', color: 'rgba(220,185,100,0.85)' }}
-                >
-                  ‹
-                </button>
-                <button
-                  onClick={() => goTo(currentIdx + 1)}
-                  disabled={currentIdx === photos.length - 1}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full flex items-center justify-center text-lg transition-all disabled:opacity-0"
-                  style={{ background: 'rgba(0,0,0,0.55)', color: 'rgba(220,185,100,0.85)' }}
-                >
-                  ›
-                </button>
-              </>
-            )}
-
-            {/* Dot indicators */}
-            {photos.length > 1 && (
-              <div className="absolute bottom-3 left-0 right-0 flex gap-1.5 justify-center">
-                {photos.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => goTo(i)}
-                    className={`rounded-full transition-all duration-250 ${
-                      i === currentIdx ? 'w-4 h-1.5 bg-gold-400' : 'w-1.5 h-1.5 bg-white/35 hover:bg-white/60'
-                    }`}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Counter */}
-            {photos.length > 1 && (
-              <div
-                className="absolute top-3 left-3 z-10 text-[10px] text-white/70 px-2 py-0.5 rounded-full tabular-nums"
-                style={{ background: 'rgba(0,0,0,0.5)' }}
-              >
-                {currentIdx + 1} / {photos.length}
-              </div>
-            )}
+            ))}
           </div>
         )}
 
@@ -493,3 +422,26 @@ function DetailChip({ label, value }: { label: string; value: string }) {
   )
 }
 
+function SupportCard({ highlight, whatsappNum }: { highlight: boolean; whatsappNum: string }) {
+  return (
+    <a
+      href={`https://wa.me/${whatsappNum}?text=${WHATSAPP_MSG}`}
+      target="_blank" rel="noopener noreferrer"
+      className={[
+        'flex items-center gap-4 w-full rounded-xl border px-5 py-4 transition-all duration-200 hover:opacity-90 active:scale-[0.98]',
+        highlight ? 'border-gold-600/60 bg-gold-900/20' : 'border-gold-900/30 bg-black/30',
+      ].join(' ')}
+    >
+      <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-lg" style={{ background: 'rgba(37,211,102,0.15)', border: '1px solid rgba(37,211,102,0.3)' }}>
+        💬
+      </div>
+      <div className="min-w-0">
+        <p className={['text-sm font-medium', highlight ? 'text-gold-300' : 'text-gold-400/80'].join(' ')}>
+          Falar com o suporte
+        </p>
+        <p className="text-[11px] text-gold-700/50">Dúvidas sobre disponibilidade? Chamamos no WhatsApp.</p>
+      </div>
+      <span className="text-gold-700/40 text-sm ml-auto shrink-0">→</span>
+    </a>
+  )
+}

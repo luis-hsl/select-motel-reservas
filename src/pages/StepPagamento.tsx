@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
-import { buildPixPayload } from '../lib/pix'
 
 function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -15,26 +14,18 @@ function fmtDt(d: Date) {
   })
 }
 
-function foodLabel(f: string | null): string | null {
-  if (f === 'jantar') return '🍽️ Jantar'
-  if (f === 'sushi')  return '🍣 Sushi'
-  if (f === 'pizza')  return '🍕 Pizza'
-  return null
-}
-
-function drinkLabel(d: string | null): string | null {
-  if (d === 'vinho')    return '🍷 Vinho'
-  if (d === 'frisante') return '🥂 Frisante'
-  if (d === 'drinque')  return '🍹 Drink'
-  return null
-}
-
 type Method = 'pix' | 'card'
-type PixSettings = { key: string; merchantName: string; city: string }
+
+interface PixCharge {
+  reservationId: string
+  brCode: string
+  qrCodeImage?: string | null
+  pixUrl?: string | null
+}
 
 export default function StepPagamento() {
   const {
-    package: pkg, drink, food, type, suite, checkIn, checkOut,
+    package: pkg, type, suite, checkIn, checkOut,
     customerName, customerPhone, customerEmail,
     totalAmount, prevStep,
   } = useStore()
@@ -42,142 +33,170 @@ export default function StepPagamento() {
   const checkout = checkOut()
 
   const [method, setMethod] = useState<Method | null>(null)
-  const [pixSettings, setPixSettings] = useState<PixSettings | null>(null)
-  const [pixPayload, setPixPayload] = useState<string | null>(null)
+  const [pixCharge, setPixCharge] = useState<PixCharge | null>(null)
+  const [pixLoading, setPixLoading] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [cardLoading, setCardLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [reservationId, setReservationId] = useState<string | null>(null)
   const [whatsappNum, setWhatsappNum] = useState('5511999999999')
+  const [paymentSource, setPaymentSource] = useState<Method | null>(null)
 
-  // Load Pix settings + WhatsApp number
   useEffect(() => {
     supabase
       .from('settings')
-      .select('key, value')
-      .in('key', ['pix_key', 'pix_merchant_name', 'pix_city', 'whatsapp_number'])
-      .then(({ data }) => {
-        if (!data) return
-        const map = Object.fromEntries(data.map(s => [s.key, s.value]))
-        if (map['whatsapp_number']) setWhatsappNum(map['whatsapp_number'])
-        if (map['pix_key']) {
-          setPixSettings({
-            key: map['pix_key'],
-            merchantName: map['pix_merchant_name'] ?? 'Select Motel',
-            city: map['pix_city'] ?? 'Maringa',
-          })
-        }
-      })
+      .select('value')
+      .eq('key', 'whatsapp_number')
+      .single()
+      .then(({ data }) => { if (data?.value) setWhatsappNum(data.value) })
   }, [])
 
-  // Generate Pix payload when method changes
+  // Poll DB every 3s for PIX payment confirmation
   useEffect(() => {
-    if (method !== 'pix' || !pixSettings) return
-    try {
-      const payload = buildPixPayload({
-        pixKey: pixSettings.key,
-        amount: total,
-        merchantName: pixSettings.merchantName,
-        merchantCity: pixSettings.city,
-        txId: `RESERVA${Date.now()}`,
-      })
-      setPixPayload(payload)
-    } catch {
-      setPixPayload(null)
-    }
-  }, [method, pixSettings, total])
+    if (!pixCharge?.reservationId) return
+    const id = pixCharge.reservationId
+    const interval = setInterval(async () => {
+      const { data } = await supabase
+        .from('reservations')
+        .select('status')
+        .eq('id', id)
+        .single()
+      if (data?.status === 'paid') {
+        clearInterval(interval)
+        setPaymentSource('pix')
+        setReservationId(id)
+        setPixCharge(null)
+      }
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [pixCharge?.reservationId])
 
-  async function createReservation() {
+  async function generatePixCharge() {
     if (!pkg || !type || !suite || !checkIn || !checkout) return
-    setLoading(true)
+    setPixLoading(true)
     setError(null)
 
-    const { data, error: sbError } = await supabase
-      .from('reservations')
-      .insert({
-        package_id: pkg.id,
-        type,
-        suite_id: suite.id,
-        check_in: checkIn.toISOString(),
-        check_out: checkout.toISOString(),
-        customer_name: customerName,
-        customer_phone: customerPhone,
-        customer_email: customerEmail,
-        total_amount: total,
-        status: 'pending',
-      })
-      .select('id')
-      .single()
+    const { data, error: fnError } = await supabase.functions.invoke(
+      'abacatepay-create-charge',
+      {
+        body: {
+          packageId: pkg.id,
+          type,
+          suiteId: suite.id,
+          checkIn: checkIn.toISOString(),
+          checkOut: checkout.toISOString(),
+          customerName,
+          customerPhone,
+          customerEmail,
+          totalAmount: total,
+          appOrigin: window.location.origin,
+        },
+      },
+    )
 
-    setLoading(false)
+    setPixLoading(false)
 
-    if (sbError) {
-      setError(
-        sbError.message.includes('não está disponível')
-          ? 'Esta suíte já está reservada neste horário. Volte e escolha outro horário ou suíte.'
-          : 'Ocorreu um erro ao registrar sua reserva. Tente novamente.',
-      )
+    if (fnError || data?.error) {
+      setError(data?.error ?? fnError?.message ?? 'Erro ao gerar QR Code. Tente novamente.')
       return
     }
 
-    setReservationId(data.id)
+    setPixCharge({
+      reservationId: data.reservationId,
+      brCode: data.brCode,
+      qrCodeImage: data.qrCodeImage,
+      pixUrl: data.pixUrl,
+    })
+  }
+
+  async function handleCardPayment() {
+    if (!pkg || !type || !suite || !checkIn || !checkout) return
+    setCardLoading(true)
+    setError(null)
+
+    const { data, error: fnError } = await supabase.functions.invoke(
+      'abacatepay-create-charge',
+      {
+        body: {
+          packageId: pkg.id,
+          type,
+          suiteId: suite.id,
+          checkIn: checkIn.toISOString(),
+          checkOut: checkout.toISOString(),
+          customerName,
+          customerPhone,
+          customerEmail,
+          totalAmount: total,
+          appOrigin: window.location.origin,
+          paymentMethod: 'card',
+        },
+      },
+    )
+
+    setCardLoading(false)
+
+    if (fnError || data?.error) {
+      setError(data?.error ?? fnError?.message ?? 'Erro ao processar pagamento. Tente novamente.')
+      return
+    }
+
+    if (data?.billingUrl) {
+      window.location.href = data.billingUrl
+    } else {
+      setError('Link de pagamento não recebido. Tente novamente.')
+    }
   }
 
   function copyPix() {
-    if (!pixPayload) return
-    navigator.clipboard.writeText(pixPayload).then(() => {
+    if (!pixCharge?.brCode) return
+    navigator.clipboard.writeText(pixCharge.brCode).then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2500)
     })
   }
 
-  function goWhatsApp(reservationId: string) {
+  function goWhatsApp(id: string) {
     const lines = [
-      `✅ *Reserva Confirmada — Select Motel*`,
+      `✅ *Reserva — Select Motel*`,
       ``,
-      `📋 *Código:* ${reservationId.slice(0, 8).toUpperCase()}`,
+      `📋 *Código:* ${id.slice(0, 8).toUpperCase()}`,
       `👤 *Cliente:* ${customerName}`,
-      `📱 *Telefone:* ${customerPhone}`,
-      ``,
       `🛏️ *Suíte:* ${suite?.name ?? ''}`,
-      `🌹 *Decoração:* Incluída`,
-      `📦 *Pacote:* ${pkg?.label ?? ''}`,
-      ...(food ? [`🍽️ *Refeição:* ${food === 'jantar' ? 'Jantar' : food === 'sushi' ? 'Sushi' : 'Pizza'}`] : []),
-      ...(drink ? [`🍹 *Bebida:* ${drink === 'vinho' ? 'Vinho' : drink === 'frisante' ? 'Frisante' : 'Drink'}`] : []),
-      `🍫 *Fondue:* Incluído`,
-      `⏱️ *Modalidade:* ${type === 'period' ? 'Período' : 'Pernoite'}`,
-      ``,
       `🟢 *Check-in:* ${checkIn ? fmtDt(checkIn) : ''}`,
       `🔴 *Check-out:* ${checkout ? fmtDt(checkout) : ''}`,
-      ``,
       `💰 *Total:* ${fmt(total)}`,
-      `💳 *Pagamento:* ${method === 'pix' ? 'Pix' : 'Cartão'}`,
     ]
-    const msg = encodeURIComponent(lines.join('\n'))
-    window.open(`https://wa.me/${whatsappNum}?text=${msg}`, '_blank')
+    window.open(`https://wa.me/${whatsappNum}?text=${encodeURIComponent(lines.join('\n'))}`, '_blank')
   }
 
   // ── Success screen ──────────────────────────────────────────
   if (reservationId) {
+    const isPix = paymentSource === 'pix'
     return (
       <div className="max-w-lg">
         <div className="border border-gold-700/40 rounded-2xl overflow-hidden">
-          <div className="bg-gold-900/20 px-6 py-4 border-b border-gold-800/30 text-center">
-            <div className="w-10 h-10 rounded-full border border-gold-500/50 flex items-center justify-center mx-auto mb-3"
-              style={{ background: 'linear-gradient(135deg,#c8a035,#e8c060)' }}>
-              <svg className="w-5 h-5 text-black" fill="none" viewBox="0 0 20 20">
+          <div className="bg-gold-900/20 px-6 py-5 border-b border-gold-800/30 text-center">
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3"
+              style={{ background: 'linear-gradient(135deg,#c8a035,#e8c060)' }}
+            >
+              <svg className="w-6 h-6 text-black" fill="none" viewBox="0 0 20 20">
                 <path d="M4 10l4 4 8-8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
-            <h2 className="font-serif text-2xl font-light gold-gradient">Reserva registrada!</h2>
+            <h2 className="font-serif text-2xl font-light gold-gradient">
+              {isPix ? 'Pagamento confirmado!' : 'Reserva registrada!'}
+            </h2>
+            {isPix && (
+              <p className="text-[11px] text-gold-700/50 mt-1">
+                Você receberá uma confirmação pelo WhatsApp em instantes.
+              </p>
+            )}
           </div>
 
           <div className="px-6 py-5 space-y-3">
             <SummaryRow label="Código" value={reservationId.slice(0, 8).toUpperCase()} mono />
-            <SummaryRow label="Suíte" value={suite ? `${suite.name} + Decoração` : ''} />
-            {foodLabel(food) && <SummaryRow label="Refeição" value={foodLabel(food)!} />}
-            {drinkLabel(drink) && <SummaryRow label="Bebida" value={drinkLabel(drink)!} />}
-            <SummaryRow label="Fondue" value="🍫 Incluído" />
+            <SummaryRow label="Suíte" value={suite?.name ?? ''} />
             <SummaryRow label="Check-in" value={checkIn ? fmtDt(checkIn) : ''} />
             <SummaryRow label="Check-out" value={checkout ? fmtDt(checkout) : ''} />
             <div className="border-t border-gold-900/40 pt-3 flex items-baseline justify-between">
@@ -187,19 +206,23 @@ export default function StepPagamento() {
           </div>
         </div>
 
-        <button
-          onClick={() => goWhatsApp(reservationId)}
-          className="mt-5 w-full py-4 rounded-xl font-semibold text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-3"
-          style={{ background: 'linear-gradient(135deg,#128c7e,#25d366)', color: '#fff' }}
-        >
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-          </svg>
-          Ir para o WhatsApp
-        </button>
+        {!isPix && (
+          <button
+            onClick={() => goWhatsApp(reservationId)}
+            className="mt-5 w-full py-4 rounded-xl font-semibold text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-3"
+            style={{ background: 'linear-gradient(135deg,#128c7e,#25d366)', color: '#fff' }}
+          >
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+            </svg>
+            Falar com o atendimento
+          </button>
+        )}
 
         <p className="mt-3 text-[11px] text-gold-800/50 text-center">
-          Enviaremos os detalhes da reserva pelo WhatsApp.
+          {isPix
+            ? 'Mensagens enviadas automaticamente para o WhatsApp informado.'
+            : 'Nossa equipe entrará em contato pelo WhatsApp para confirmar o pagamento.'}
         </p>
       </div>
     )
@@ -224,7 +247,7 @@ export default function StepPagamento() {
       </p>
 
       <div className="lg:grid lg:grid-cols-2 lg:gap-10 xl:gap-14 lg:items-start">
-        {/* Left col: Summary */}
+        {/* Left: Summary */}
         <div>
           <div className="border border-gold-800/40 rounded-xl overflow-hidden mb-6 lg:mb-0">
             <div className="bg-gold-900/20 px-5 py-3 border-b border-gold-800/30">
@@ -232,11 +255,8 @@ export default function StepPagamento() {
             </div>
             <div className="px-5 py-4 space-y-2.5">
               <SummaryRow label="Cliente" value={customerName} />
-              <SummaryRow label="Suíte" value={suite ? `${suite.name} + Decoração` : '—'} />
+              <SummaryRow label="Suíte" value={suite?.name ?? '—'} />
               <SummaryRow label="Pacote" value={pkg?.label ?? '—'} />
-              {foodLabel(food) && <SummaryRow label="Refeição" value={foodLabel(food)!} />}
-              {drinkLabel(drink) && <SummaryRow label="Bebida" value={drinkLabel(drink)!} />}
-              <SummaryRow label="Fondue" value="🍫 Incluído" />
               <SummaryRow label="Modalidade" value={type === 'period' ? 'Período' : 'Pernoite'} />
               <SummaryRow label="Check-in" value={checkIn ? fmtDt(checkIn) : '—'} />
               <SummaryRow label="Check-out" value={checkout ? fmtDt(checkout) : '—'} highlight />
@@ -248,81 +268,129 @@ export default function StepPagamento() {
           </div>
         </div>
 
-        {/* Right col: Payment */}
+        {/* Right: Payment */}
         <div>
-          {/* Payment method */}
-          <div className="mb-6">
-            <p className="text-[10px] tracking-widest uppercase text-gold-600/60 mb-3">
-              Forma de pagamento
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              <MethodCard
-                id="pix"
-                selected={method === 'pix'}
-                onClick={() => setMethod('pix')}
-                icon={
-                  <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none">
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                }
-                label="Pix"
-                sub="Aprovação imediata"
-              />
-              <MethodCard
-                id="card"
-                selected={method === 'card'}
-                onClick={() => setMethod('card')}
-                icon={
-                  <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none">
-                    <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
-                    <path d="M2 10h20" stroke="currentColor" strokeWidth="1.5" />
-                  </svg>
-                }
-                label="Cartão"
-                sub="Crédito ou débito"
-              />
+          {/* Method selector */}
+          {!pixCharge && (
+            <div className="mb-6">
+              <p className="text-[10px] tracking-widest uppercase text-gold-600/60 mb-3">
+                Forma de pagamento
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <MethodCard
+                  id="pix"
+                  selected={method === 'pix'}
+                  onClick={() => { setMethod('pix'); setError(null) }}
+                  icon={
+                    <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none">
+                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  }
+                  label="Pix"
+                  sub="Confirmação imediata"
+                />
+                <MethodCard
+                  id="card"
+                  selected={method === 'card'}
+                  onClick={() => { setMethod('card'); setError(null) }}
+                  icon={
+                    <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none">
+                      <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
+                      <path d="M2 10h20" stroke="currentColor" strokeWidth="1.5" />
+                    </svg>
+                  }
+                  label="Cartão"
+                  sub="Crédito ou débito"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Pix panel */}
+          {/* PIX panel */}
           {method === 'pix' && (
             <div className="mb-6 space-y-4">
-              {!pixSettings ? (
-                <div className="p-4 rounded-xl border border-yellow-700/30 bg-yellow-900/10 text-yellow-400/70 text-sm">
-                  Chave Pix não configurada. Acesse o painel admin → Configurações e adicione a chave <code className="font-mono text-xs">pix_key</code>.
-                </div>
-              ) : pixPayload ? (
+              {!pixCharge ? (
+                /* Step 1: generate charge */
+                <button
+                  onClick={generatePixCharge}
+                  disabled={pixLoading}
+                  className="w-full py-4 rounded-xl font-semibold text-sm tracking-wide text-black transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  style={{ background: 'linear-gradient(135deg, #c8a035 0%, #e8c060 50%, #c8a035 100%)' }}
+                >
+                  {pixLoading ? (
+                    <>
+                      <span className="w-4 h-4 rounded-full border-2 border-black/30 border-t-black animate-spin" />
+                      Gerando QR Code…
+                    </>
+                  ) : (
+                    `Gerar QR Code PIX — ${fmt(total)}`
+                  )}
+                </button>
+              ) : (
+                /* Step 2: show QR + waiting */
                 <>
                   <div className="flex justify-center">
-                    <div className="p-4 bg-white rounded-2xl">
-                      <QRCodeSVG value={pixPayload} size={220} level="M" />
+                    <div className="p-4 bg-white rounded-2xl shadow-lg">
+                      {pixCharge.qrCodeImage ? (
+                        <img src={pixCharge.qrCodeImage} alt="QR Code PIX" className="w-52 h-52" />
+                      ) : (
+                        <QRCodeSVG value={pixCharge.brCode} size={208} level="M" />
+                      )}
                     </div>
                   </div>
+
                   <button
                     onClick={copyPix}
                     className="w-full py-3 rounded-xl text-sm font-medium border border-gold-700/40 text-gold-400 hover:bg-gold-900/20 transition-colors flex items-center justify-center gap-2"
                   >
-                    {copied ? '✓ Copiado!' : 'Copiar código Pix'}
+                    {copied ? (
+                      <><span className="text-green-400">✓</span> Copiado!</>
+                    ) : (
+                      'Copiar código Pix'
+                    )}
                   </button>
-                  <p className="text-[11px] text-gold-800/50 text-center">
-                    Escaneie o QR Code ou copie o código no app do seu banco.
+
+                  {/* Waiting indicator */}
+                  <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gold-800/30 bg-gold-900/10">
+                    <span className="w-2 h-2 rounded-full bg-gold-400 animate-pulse shrink-0" />
+                    <p className="text-xs text-gold-500/70 leading-relaxed">
+                      Aguardando confirmação… A tela muda automaticamente quando o pagamento for aprovado.
+                    </p>
+                  </div>
+
+                  <p className="text-[11px] text-gold-800/40 text-center">
+                    Escaneie no app do banco ou cole o código Pix Copia e Cola.
                   </p>
                 </>
-              ) : (
-                <div className="p-4 rounded-xl border border-gold-800/30 bg-gold-900/10 text-gold-600/50 text-sm text-center">
-                  Gerando QR Code…
-                </div>
               )}
             </div>
           )}
 
           {/* Card panel */}
           {method === 'card' && (
-            <div className="mb-6 p-5 rounded-xl border border-gold-800/30 bg-gold-900/10 text-center space-y-3">
-              <p className="text-gold-400/80 text-sm font-medium">Pagamento via cartão</p>
-              <p className="text-gold-700/60 text-xs leading-relaxed">
-                Para pagamentos com cartão, finalize sua reserva abaixo e nosso atendimento entrará em contato pelo WhatsApp para processar o pagamento.
-              </p>
+            <div className="mb-6 rounded-xl border border-gold-800/30 bg-gold-900/10 overflow-hidden">
+              <div className="px-5 py-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.25)' }}>
+                    <svg viewBox="0 0 20 20" className="w-4 h-4 text-gold-500" fill="none">
+                      <rect x="2" y="5" width="16" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
+                      <path d="M2 9h16" stroke="currentColor" strokeWidth="1.4" />
+                    </svg>
+                  </div>
+                  <p className="text-sm text-gold-300 font-medium">Cartão de crédito</p>
+                </div>
+                <p className="text-xs text-gold-700/60 leading-relaxed">
+                  Você será direcionado para a página segura de pagamento. Após concluir, voltará automaticamente com a confirmação.
+                </p>
+              </div>
+              <div className="px-5 pb-1 flex items-center gap-2 text-[10px] text-gold-800/50">
+                <svg viewBox="0 0 12 12" className="w-3 h-3 shrink-0" fill="none">
+                  <rect x="1" y="3" width="10" height="7" rx="1" stroke="currentColor" strokeWidth="1" />
+                  <path d="M4 3V2.5a2 2 0 014 0V3" stroke="currentColor" strokeWidth="1" />
+                </svg>
+                Ambiente seguro SSL — seus dados ficam protegidos
+              </div>
+              <div className="h-3" />
             </div>
           )}
 
@@ -332,18 +400,21 @@ export default function StepPagamento() {
             </p>
           )}
 
-          {method && (
+          {method === 'card' && (
             <button
-              onClick={createReservation}
-              disabled={loading}
-              className="w-full py-4 rounded-xl font-semibold text-sm tracking-wide text-black transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleCardPayment}
+              disabled={cardLoading}
+              className="w-full py-4 rounded-xl font-semibold text-sm tracking-wide text-black transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               style={{ background: 'linear-gradient(135deg, #c8a035 0%, #e8c060 50%, #c8a035 100%)' }}
             >
-              {loading
-                ? 'Registrando…'
-                : method === 'pix'
-                ? 'Já efetuei o pagamento'
-                : `Confirmar reserva — ${fmt(total)}`}
+              {cardLoading ? (
+                <>
+                  <span className="w-4 h-4 rounded-full border-2 border-black/30 border-t-black animate-spin" />
+                  Redirecionando…
+                </>
+              ) : (
+                `Pagar ${fmt(total)} com Cartão →`
+              )}
             </button>
           )}
         </div>
@@ -386,8 +457,10 @@ function MethodCard({ selected, onClick, icon, label, sub }: {
       ].join(' ')}
     >
       {selected && (
-        <div className="absolute top-2 right-2 w-4 h-4 rounded-full flex items-center justify-center"
-          style={{ background: 'linear-gradient(135deg,#c8a035,#e8c060)' }}>
+        <div
+          className="absolute top-2 right-2 w-4 h-4 rounded-full flex items-center justify-center"
+          style={{ background: 'linear-gradient(135deg,#c8a035,#e8c060)' }}
+        >
           <svg className="w-2.5 h-2.5 text-black" fill="none" viewBox="0 0 10 10">
             <path d="M2 5l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
