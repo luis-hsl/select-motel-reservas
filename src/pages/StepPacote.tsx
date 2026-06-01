@@ -201,7 +201,7 @@ export default function StepPacote() {
                 <GlowDivider color={th.dividerColor} />
                 <h2
                   className="font-serif font-bold tracking-widest my-5 text-transparent bg-clip-text"
-                  style={{ fontSize: 'clamp(2.8rem,8vw,3.5rem)', backgroundImage: th.nameCss, lineHeight: 1 }}
+                  style={{ fontSize: 'clamp(1.8rem,4vw,2.4rem)', backgroundImage: th.nameCss, lineHeight: 1 }}
                 >
                   {id.toUpperCase()}
                 </h2>
