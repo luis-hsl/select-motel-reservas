@@ -5,8 +5,11 @@ import ReservaSidebar from './components/ReservaSidebar'
 import CardPaymentReturn from './components/CardPaymentReturn'
 import StepPacote from './pages/StepPacote'
 import StepTipo from './pages/StepTipo'
-import StepSuite from './pages/StepSuite'
 import StepData from './pages/StepData'
+import StepSuite from './pages/StepSuite'
+import StepRefeicao from './pages/StepRefeicao'
+import StepBebida from './pages/StepBebida'
+import StepPresente from './pages/StepPresente'
 import StepDados from './pages/StepDados'
 import StepPagamento from './pages/StepPagamento'
 import { useStore } from './store/useStore'
@@ -14,10 +17,13 @@ import { useStore } from './store/useStore'
 const STEPS: Record<number, React.ComponentType> = {
   1: StepPacote,
   2: StepTipo,
-  3: StepSuite,
-  4: StepData,
-  5: StepDados,
-  6: StepPagamento,
+  3: StepData,
+  4: StepSuite,
+  5: StepRefeicao,
+  6: StepBebida,
+  7: StepPresente,
+  8: StepDados,
+  9: StepPagamento,
 }
 
 export default function App() {
