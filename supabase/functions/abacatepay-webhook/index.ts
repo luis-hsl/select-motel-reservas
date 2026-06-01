@@ -1,20 +1,38 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
-const PAID_EVENTS = new Set(['checkout.completed', 'transparent.completed'])
+// All known AbacatePay v2 events that indicate payment confirmed
+const PAID_EVENTS = new Set([
+  'checkout.completed',
+  'checkout.paid',
+  'checkout.approved',
+  'transparent.completed',
+  'transparent.paid',
+  'transparent.approved',
+  'billing.paid',
+  'billing.completed',
+  'payment.paid',
+  'payment.completed',
+])
+
+// Status values inside the payload that mean paid
+const PAID_STATUSES = new Set([
+  'PAID', 'paid', 'COMPLETED', 'completed',
+  'APPROVED', 'approved', 'ACTIVE', 'active',
+])
 
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') {
     return new Response('Method Not Allowed', { status: 405 })
   }
 
-  // Verify webhook secret sent by AbacatePay in the Authorization header
+  // Verify webhook secret (optional — only checked if env var is set)
   const webhookSecret = Deno.env.get('ABACATEPAY_WEBHOOK_SECRET')
   if (webhookSecret) {
     const authHeader = req.headers.get('Authorization') ?? ''
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader
     if (token !== webhookSecret) {
-      console.warn('Webhook secret mismatch')
+      console.warn('Webhook secret mismatch, header:', authHeader)
       return new Response('Unauthorized', { status: 401 })
     }
   }
@@ -26,28 +44,36 @@ Deno.serve(async (req: Request) => {
     return new Response('Bad Request', { status: 400 })
   }
 
-  const event: string = payload?.event ?? ''
-  console.log('AbacatePay webhook received:', event, JSON.stringify(payload))
+  const event: string = payload?.event ?? payload?.type ?? ''
+  console.log('AbacatePay webhook received event:', event)
+  console.log('Full payload:', JSON.stringify(payload))
 
-  // Only act on payment completion events
-  if (!PAID_EVENTS.has(event)) {
-    return new Response(JSON.stringify({ received: true }), {
+  // Extract billing/data object — AbacatePay nests differently per event
+  const data = payload?.data ?? {}
+  const billing = data?.billing ?? data ?? {}
+
+  // Check if this event indicates payment by event name OR by status field
+  const statusInPayload: string =
+    billing?.status ?? data?.status ?? payload?.status ?? ''
+
+  const isKnownPaidEvent = PAID_EVENTS.has(event)
+  const hasKnownPaidStatus = PAID_STATUSES.has(statusInPayload)
+
+  if (!isKnownPaidEvent && !hasKnownPaidStatus) {
+    console.log(`Ignoring event "${event}" with status "${statusInPayload}"`)
+    return new Response(JSON.stringify({ received: true, ignored: true }), {
       headers: { 'Content-Type': 'application/json' },
     })
   }
 
-  // Extract billing object — AbacatePay can nest it differently per event type
-  const billing =
-    payload?.data?.billing ??
-    payload?.data ??
-    payload?.billing ??
-    {}
-
-  // reservationId is stored in AbacatePay metadata when the charge is created
+  // Extract reservationId from metadata (tried in multiple places)
   const reservationId: string | undefined =
     billing?.metadata?.reservationId ??
-    payload?.data?.metadata?.reservationId ??
-    payload?.metadata?.reservationId
+    data?.metadata?.reservationId ??
+    payload?.metadata?.reservationId ??
+    data?.externalId ??
+    billing?.externalId ??
+    payload?.externalId
 
   if (!reservationId) {
     console.error('No reservationId in webhook payload', JSON.stringify(payload))
@@ -57,12 +83,13 @@ Deno.serve(async (req: Request) => {
     })
   }
 
+  console.log('Processing payment confirmation for reservation:', reservationId)
+
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   )
 
-  // Update reservation status to paid (idempotent — only if still pending)
   const { error: updateError } = await supabase
     .from('reservations')
     .update({ status: 'paid' })
@@ -77,7 +104,9 @@ Deno.serve(async (req: Request) => {
     })
   }
 
-  // Send WhatsApp messages (fire-and-forget — don't fail the webhook on WhatsApp error)
+  console.log('Reservation updated to paid:', reservationId)
+
+  // Send WhatsApp (fire-and-forget)
   try {
     await supabase.functions.invoke('send-reservation-whatsapp', {
       body: { reservationId },
