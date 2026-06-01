@@ -82,14 +82,25 @@ export default function StepSuite() {
     const cin = checkIn
     const cout = checkOut()
     if (cin && cout) {
+      const cinIso = cin.toISOString()
+      const coutIso = cout.toISOString()
+
       promises.push(
         supabase
-          .rpc('get_occupied_suite_ids', {
-            p_check_in: cin.toISOString(),
-            p_check_out: cout.toISOString(),
-          })
-          .then(({ data }) => {
-            if (data) setOccupiedIds(new Set(data.map((r: { suite_id: string }) => r.suite_id)))
+          .rpc('get_occupied_suite_ids', { p_check_in: cinIso, p_check_out: coutIso })
+          .then(async ({ data, error }) => {
+            if (!error && data) {
+              setOccupiedIds(new Set(data.map((r: { suite_id: string }) => r.suite_id)))
+              return
+            }
+            // Fallback: direct query (funciona mesmo se a RPC não existir ainda)
+            const { data: rows } = await supabase
+              .from('reservations')
+              .select('suite_id')
+              .in('status', ['paid', 'pending'])
+              .lt('check_in', coutIso)
+              .gt('check_out', cinIso)
+            if (rows) setOccupiedIds(new Set(rows.map(r => r.suite_id as string)))
           }),
       )
     }
