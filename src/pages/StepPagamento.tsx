@@ -37,7 +37,7 @@ export default function StepPagamento() {
   const [error, setError] = useState<string | null>(null)
   const [reservationId, setReservationId] = useState<string | null>(null)
   const [whatsappNum, setWhatsappNum] = useState('5511999999999')
-  const [paymentSource, setPaymentSource] = useState<Method | null>(null)
+  const [paymentSource, setPaymentSource] = useState<'pix' | 'card' | null>(null)
 
   useEffect(() => {
     supabase

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+// @ts-ignore — tus-js-client ships without bundled types
 import * as tus from 'tus-js-client'
 import { supabase } from '../../lib/supabase'
 
