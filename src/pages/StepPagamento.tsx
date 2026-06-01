@@ -130,6 +130,7 @@ export default function StepPagamento() {
           customerName,
           customerPhone,
           customerEmail,
+          customerTaxId,
           totalAmount: total,
           appOrigin: window.location.origin,
           paymentMethod: 'card',
