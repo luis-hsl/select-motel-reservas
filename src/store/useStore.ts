@@ -12,6 +12,7 @@ interface StoreState {
   customerName: string
   customerPhone: string
   customerEmail: string
+  customerTaxId: string
 
   setStep: (step: number) => void
   setPackage: (pkg: Package) => void
@@ -20,7 +21,7 @@ interface StoreState {
   setType: (type: ReservationType) => void
   setSuite: (suite: Suite) => void
   setCheckIn: (date: Date) => void
-  setCustomer: (name: string, phone: string, email: string) => void
+  setCustomer: (name: string, phone: string, email: string, taxId: string) => void
   totalAmount: () => number
   checkOut: () => Date | null
   nextStep: () => void
@@ -38,6 +39,7 @@ export const useStore = create<StoreState>((set, get) => ({
   customerName: '',
   customerPhone: '',
   customerEmail: '',
+  customerTaxId: '',
 
   setStep: (step) => set({ currentStep: step }),
   setPackage: (pkg) => set({ package: pkg }),
@@ -46,8 +48,8 @@ export const useStore = create<StoreState>((set, get) => ({
   setType: (type) => set({ type }),
   setSuite: (suite) => set({ suite }),
   setCheckIn: (date) => set({ checkIn: date, suite: null }),
-  setCustomer: (customerName, customerPhone, customerEmail) =>
-    set({ customerName, customerPhone, customerEmail }),
+  setCustomer: (customerName, customerPhone, customerEmail, customerTaxId) =>
+    set({ customerName, customerPhone, customerEmail, customerTaxId }),
 
   totalAmount: () => {
     const { package: pkg, type } = get()

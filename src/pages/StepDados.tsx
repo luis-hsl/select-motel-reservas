@@ -1,17 +1,26 @@
 import { useState } from 'react'
 import { useStore } from '../store/useStore'
 
+function maskCPF(v: string) {
+  return v.replace(/\D/g, '').slice(0, 11)
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+}
+
 export default function StepDados() {
   const { setCustomer, nextStep, prevStep } = useStore()
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
+  const [taxId, setTaxId] = useState('')
 
-  const canContinue = name.trim() && phone.trim() && email.includes('@')
+  const rawCPF = taxId.replace(/\D/g, '')
+  const canContinue = name.trim() && phone.trim() && email.includes('@') && rawCPF.length === 11
 
   function confirm() {
     if (!canContinue) return
-    setCustomer(name.trim(), phone.trim(), email.trim())
+    setCustomer(name.trim(), phone.trim(), email.trim(), rawCPF)
     nextStep()
   }
 
@@ -22,7 +31,6 @@ export default function StepDados() {
       </button>
 
       <div className="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-start">
-        {/* Heading col */}
         <div>
           <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-light mb-2 leading-tight">
             Seus<br />
@@ -33,7 +41,6 @@ export default function StepDados() {
           </p>
         </div>
 
-        {/* Form col */}
         <div className="space-y-4 max-w-md lg:max-w-none mt-6 lg:mt-0">
           <Field label="Nome completo">
             <input
@@ -41,6 +48,17 @@ export default function StepDados() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Seu nome"
+              className="w-full bg-black/60 border border-gold-900/40 rounded-lg px-4 py-3 text-sm text-gold-200 placeholder-gold-900/50 outline-none focus:border-gold-600/60 transition-colors"
+            />
+          </Field>
+
+          <Field label="CPF">
+            <input
+              type="text"
+              inputMode="numeric"
+              value={taxId}
+              onChange={(e) => setTaxId(maskCPF(e.target.value))}
+              placeholder="000.000.000-00"
               className="w-full bg-black/60 border border-gold-900/40 rounded-lg px-4 py-3 text-sm text-gold-200 placeholder-gold-900/50 outline-none focus:border-gold-600/60 transition-colors"
             />
           </Field>

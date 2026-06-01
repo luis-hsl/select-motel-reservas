@@ -24,7 +24,7 @@ interface PixCharge {
 export default function StepPagamento() {
   const {
     package: pkg, type, suite, checkIn, checkOut,
-    customerName, customerPhone, customerEmail,
+    customerName, customerPhone, customerEmail, customerTaxId,
     totalAmount, prevStep,
   } = useStore()
   const total = totalAmount()
@@ -89,6 +89,7 @@ export default function StepPagamento() {
           customerPhone,
           customerEmail,
           totalAmount: total,
+          customerTaxId,
           appOrigin: window.location.origin,
         },
       },
