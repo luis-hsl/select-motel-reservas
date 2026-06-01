@@ -14,8 +14,6 @@ function fmtDt(d: Date) {
   })
 }
 
-type Method = 'pix' | 'card'
-
 interface PixCharge {
   reservationId: string
   brCode: string
@@ -32,7 +30,6 @@ export default function StepPagamento() {
   const total = totalAmount()
   const checkout = checkOut()
 
-  const [method, setMethod] = useState<Method | null>(null)
   const [pixCharge, setPixCharge] = useState<PixCharge | null>(null)
   const [pixLoading, setPixLoading] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -72,7 +69,10 @@ export default function StepPagamento() {
   }, [pixCharge?.reservationId])
 
   async function generatePixCharge() {
-    if (!pkg || !type || !suite || !checkIn || !checkout) return
+    if (!pkg || !type || !suite || !checkIn || !checkout) {
+      setError('Dados da reserva incompletos. Volte e preencha novamente.')
+      return
+    }
     setPixLoading(true)
     setError(null)
 
@@ -110,7 +110,10 @@ export default function StepPagamento() {
   }
 
   async function handleCardPayment() {
-    if (!pkg || !type || !suite || !checkIn || !checkout) return
+    if (!pkg || !type || !suite || !checkIn || !checkout) {
+      setError('Dados da reserva incompletos. Volte e preencha novamente.')
+      return
+    }
     setCardLoading(true)
     setError(null)
 
@@ -270,129 +273,9 @@ export default function StepPagamento() {
 
         {/* Right: Payment */}
         <div>
-          {/* Method selector */}
-          {!pixCharge && (
-            <div className="mb-6">
-              <p className="text-[10px] tracking-widest uppercase text-gold-600/60 mb-3">
-                Forma de pagamento
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                <MethodCard
-                  id="pix"
-                  selected={method === 'pix'}
-                  onClick={() => { setMethod('pix'); setError(null) }}
-                  icon={
-                    <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none">
-                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  }
-                  label="Pix"
-                  sub="Confirmação imediata"
-                />
-                <MethodCard
-                  id="card"
-                  selected={method === 'card'}
-                  onClick={() => { setMethod('card'); setError(null) }}
-                  icon={
-                    <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none">
-                      <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
-                      <path d="M2 10h20" stroke="currentColor" strokeWidth="1.5" />
-                    </svg>
-                  }
-                  label="Cartão"
-                  sub="Crédito ou débito"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* PIX panel */}
-          {method === 'pix' && (
-            <div className="mb-6 space-y-4">
-              {!pixCharge ? (
-                /* Step 1: generate charge */
-                <button
-                  onClick={generatePixCharge}
-                  disabled={pixLoading}
-                  className="w-full py-4 rounded-xl font-semibold text-sm tracking-wide text-black transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  style={{ background: 'linear-gradient(135deg, #c8a035 0%, #e8c060 50%, #c8a035 100%)' }}
-                >
-                  {pixLoading ? (
-                    <>
-                      <span className="w-4 h-4 rounded-full border-2 border-black/30 border-t-black animate-spin" />
-                      Gerando QR Code…
-                    </>
-                  ) : (
-                    `Gerar QR Code PIX — ${fmt(total)}`
-                  )}
-                </button>
-              ) : (
-                /* Step 2: show QR + waiting */
-                <>
-                  <div className="flex justify-center">
-                    <div className="p-4 bg-white rounded-2xl shadow-lg">
-                      {pixCharge.qrCodeImage ? (
-                        <img src={pixCharge.qrCodeImage} alt="QR Code PIX" className="w-52 h-52" />
-                      ) : (
-                        <QRCodeSVG value={pixCharge.brCode} size={208} level="M" />
-                      )}
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={copyPix}
-                    className="w-full py-3 rounded-xl text-sm font-medium border border-gold-700/40 text-gold-400 hover:bg-gold-900/20 transition-colors flex items-center justify-center gap-2"
-                  >
-                    {copied ? (
-                      <><span className="text-green-400">✓</span> Copiado!</>
-                    ) : (
-                      'Copiar código Pix'
-                    )}
-                  </button>
-
-                  {/* Waiting indicator */}
-                  <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gold-800/30 bg-gold-900/10">
-                    <span className="w-2 h-2 rounded-full bg-gold-400 animate-pulse shrink-0" />
-                    <p className="text-xs text-gold-500/70 leading-relaxed">
-                      Aguardando confirmação… A tela muda automaticamente quando o pagamento for aprovado.
-                    </p>
-                  </div>
-
-                  <p className="text-[11px] text-gold-800/40 text-center">
-                    Escaneie no app do banco ou cole o código Pix Copia e Cola.
-                  </p>
-                </>
-              )}
-            </div>
-          )}
-
-          {/* Card panel */}
-          {method === 'card' && (
-            <div className="mb-6 rounded-xl border border-gold-800/30 bg-gold-900/10 overflow-hidden">
-              <div className="px-5 py-4 space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.25)' }}>
-                    <svg viewBox="0 0 20 20" className="w-4 h-4 text-gold-500" fill="none">
-                      <rect x="2" y="5" width="16" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
-                      <path d="M2 9h16" stroke="currentColor" strokeWidth="1.4" />
-                    </svg>
-                  </div>
-                  <p className="text-sm text-gold-300 font-medium">Cartão de crédito</p>
-                </div>
-                <p className="text-xs text-gold-700/60 leading-relaxed">
-                  Você será direcionado para a página segura de pagamento. Após concluir, voltará automaticamente com a confirmação.
-                </p>
-              </div>
-              <div className="px-5 pb-1 flex items-center gap-2 text-[10px] text-gold-800/50">
-                <svg viewBox="0 0 12 12" className="w-3 h-3 shrink-0" fill="none">
-                  <rect x="1" y="3" width="10" height="7" rx="1" stroke="currentColor" strokeWidth="1" />
-                  <path d="M4 3V2.5a2 2 0 014 0V3" stroke="currentColor" strokeWidth="1" />
-                </svg>
-                Ambiente seguro SSL — seus dados ficam protegidos
-              </div>
-              <div className="h-3" />
-            </div>
-          )}
+          <p className="text-[10px] tracking-widest uppercase text-gold-600/60 mb-3">
+            Forma de pagamento
+          </p>
 
           {error && (
             <p className="mb-4 text-red-400 text-sm text-center bg-red-900/20 border border-red-800/40 rounded-lg px-4 py-3">
@@ -400,22 +283,108 @@ export default function StepPagamento() {
             </p>
           )}
 
-          {method === 'card' && (
-            <button
-              onClick={handleCardPayment}
-              disabled={cardLoading}
-              className="w-full py-4 rounded-xl font-semibold text-sm tracking-wide text-black transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              style={{ background: 'linear-gradient(135deg, #c8a035 0%, #e8c060 50%, #c8a035 100%)' }}
-            >
-              {cardLoading ? (
-                <>
-                  <span className="w-4 h-4 rounded-full border-2 border-black/30 border-t-black animate-spin" />
-                  Redirecionando…
-                </>
-              ) : (
-                `Pagar ${fmt(total)} com Cartão →`
-              )}
-            </button>
+          {/* PIX QR shown after generation */}
+          {pixCharge ? (
+            <div className="space-y-4">
+              <div className="flex justify-center">
+                <div className="p-4 bg-white rounded-2xl shadow-lg">
+                  {pixCharge.qrCodeImage ? (
+                    <img src={pixCharge.qrCodeImage} alt="QR Code PIX" className="w-52 h-52" />
+                  ) : (
+                    <QRCodeSVG value={pixCharge.brCode} size={208} level="M" />
+                  )}
+                </div>
+              </div>
+
+              <button
+                onClick={copyPix}
+                className="w-full py-3 rounded-xl text-sm font-medium border border-gold-700/40 text-gold-400 hover:bg-gold-900/20 transition-colors flex items-center justify-center gap-2"
+              >
+                {copied ? (
+                  <><span className="text-green-400">✓</span> Copiado!</>
+                ) : (
+                  'Copiar código Pix'
+                )}
+              </button>
+
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gold-800/30 bg-gold-900/10">
+                <span className="w-2 h-2 rounded-full bg-gold-400 animate-pulse shrink-0" />
+                <p className="text-xs text-gold-500/70 leading-relaxed">
+                  Aguardando confirmação… A tela muda automaticamente quando o pagamento for aprovado.
+                </p>
+              </div>
+
+              <p className="text-[11px] text-gold-800/40 text-center">
+                Escaneie no app do banco ou cole o código Pix Copia e Cola.
+              </p>
+            </div>
+          ) : (
+            /* Payment buttons — each is a direct action */
+            <div className="space-y-3">
+              {/* PIX button */}
+              <button
+                onClick={generatePixCharge}
+                disabled={pixLoading || cardLoading}
+                className="w-full py-4 rounded-xl font-semibold text-sm tracking-wide text-black transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                style={{ background: 'linear-gradient(135deg, #c8a035 0%, #e8c060 50%, #c8a035 100%)' }}
+              >
+                {pixLoading ? (
+                  <>
+                    <span className="w-4 h-4 rounded-full border-2 border-black/30 border-t-black animate-spin" />
+                    Gerando QR Code…
+                  </>
+                ) : (
+                  <>
+                    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none">
+                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    Pagar {fmt(total)} com PIX
+                  </>
+                )}
+              </button>
+
+              {/* Divider */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-gold-900/40" />
+                <span className="text-[10px] text-gold-800/50 tracking-widest uppercase">ou</span>
+                <div className="flex-1 h-px bg-gold-900/40" />
+              </div>
+
+              {/* Card button */}
+              <button
+                onClick={handleCardPayment}
+                disabled={cardLoading || pixLoading}
+                className="w-full py-4 rounded-xl font-semibold text-sm tracking-wide transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3 border"
+                style={{
+                  background: 'rgba(201,168,76,0.08)',
+                  borderColor: 'rgba(201,168,76,0.35)',
+                  color: '#e8c060',
+                }}
+              >
+                {cardLoading ? (
+                  <>
+                    <span className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: 'rgba(201,168,76,0.3)', borderTopColor: '#e8c060' }} />
+                    Redirecionando…
+                  </>
+                ) : (
+                  <>
+                    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none">
+                      <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="1.8" />
+                      <path d="M2 10h20" stroke="currentColor" strokeWidth="1.8" />
+                    </svg>
+                    Pagar {fmt(total)} com Cartão
+                  </>
+                )}
+              </button>
+
+              <div className="flex items-center justify-center gap-1.5 text-[10px] text-gold-800/40">
+                <svg viewBox="0 0 12 12" className="w-3 h-3 shrink-0" fill="none">
+                  <rect x="1" y="3" width="10" height="7" rx="1" stroke="currentColor" strokeWidth="1" />
+                  <path d="M4 3V2.5a2 2 0 014 0V3" stroke="currentColor" strokeWidth="1" />
+                </svg>
+                Ambiente seguro SSL
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -442,35 +411,3 @@ function SummaryRow({ label, value, highlight, mono }: {
   )
 }
 
-function MethodCard({ selected, onClick, icon, label, sub }: {
-  id: string; selected: boolean; onClick: () => void
-  icon: React.ReactNode; label: string; sub: string
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={[
-        'relative flex flex-col items-center gap-2 p-4 rounded-xl border transition-all duration-200 text-center',
-        selected
-          ? 'border-gold-500 bg-gold-900/20 text-gold-300'
-          : 'border-gold-900/40 text-gold-700/60 hover:border-gold-700/50 hover:text-gold-400',
-      ].join(' ')}
-    >
-      {selected && (
-        <div
-          className="absolute top-2 right-2 w-4 h-4 rounded-full flex items-center justify-center"
-          style={{ background: 'linear-gradient(135deg,#c8a035,#e8c060)' }}
-        >
-          <svg className="w-2.5 h-2.5 text-black" fill="none" viewBox="0 0 10 10">
-            <path d="M2 5l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </div>
-      )}
-      {icon}
-      <div>
-        <p className="text-sm font-semibold">{label}</p>
-        <p className="text-[10px] opacity-60">{sub}</p>
-      </div>
-    </button>
-  )
-}
