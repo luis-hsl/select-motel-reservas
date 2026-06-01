@@ -75,15 +75,15 @@ export default function CardPaymentReturn({ reservationId }: { reservationId: st
       )
       .subscribe()
 
-    // Tenta também via edge function verify-payment (se já deployada)
     async function initialCheck() {
       try {
+        // fromReturn: true — confia no redirect do AbacatePay e confirma imediatamente
         const { data } = await supabase.functions.invoke('verify-payment', {
-          body: { reservationId },
+          body: { reservationId, fromReturn: true },
         })
         if (data?.status === 'paid') { await fetchAndCheck(); return }
       } catch {
-        // função não deployada ainda — continua com polling normal
+        // fallback para polling normal
       }
       const paid = await fetchAndCheck()
       if (!paid) scheduleNext()
@@ -102,14 +102,12 @@ export default function CardPaymentReturn({ reservationId }: { reservationId: st
     if (verifying) return
     setVerifying(true)
     try {
-      // Tenta via edge function primeiro
-      try {
-        const { data } = await supabase.functions.invoke('verify-payment', {
-          body: { reservationId },
-        })
-        if (data?.status === 'paid') { await fetchAndCheck(); return }
-      } catch { /* ignorar se não deployada */ }
-      // Fallback: lê DB direto
+      const { data } = await supabase.functions.invoke('verify-payment', {
+        body: { reservationId, fromReturn: true },
+      })
+      if (data?.status === 'paid') { await fetchAndCheck(); return }
+      await fetchAndCheck()
+    } catch {
       await fetchAndCheck()
     } finally {
       setVerifying(false)
