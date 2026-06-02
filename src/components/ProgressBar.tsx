@@ -8,7 +8,7 @@ export default function ProgressBar({ currentStep }: Props) {
   const pct = ((currentStep - 1) / (TOTAL_STEPS - 1)) * 100
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur border-b border-gold-800/30">
+    <header className="fixed top-0 left-0 right-0 z-50 border-b border-gold-800/20" style={{ background: '#0a0806' }}>
       <div className="max-w-7xl mx-auto px-6 xl:px-10 py-3.5 flex items-center justify-between gap-6">
         {/* Logo */}
         <div className="flex items-center shrink-0">
