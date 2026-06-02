@@ -40,6 +40,7 @@ export default function StepSuite() {
   const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set())
   const [galleryFor, setGalleryFor] = useState<Suite | null>(null)
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({})
+  const [videoUrls, setVideoUrls] = useState<Record<string, string>>({})
   const [whatsappNum, setWhatsappNum] = useState('5543999999999')
 
   const packageSuites = SUITES.filter(s => pkg && s.packageIds.includes(pkg.id as never))
@@ -57,13 +58,20 @@ export default function StepSuite() {
     promises.push(
       supabase
         .from('suites')
-        .select('id, photo_url')
-        .not('photo_url', 'is', null)
+        .select('id, room_number, photo_url, video_url')
         .then(({ data }) => {
           if (data) {
             const urls: Record<string, string> = {}
-            data.forEach(s => { if (s.photo_url) urls[s.id] = s.photo_url })
+            const vids: Record<string, string> = {}
+            data.forEach((s: { id: string; room_number: number | null; photo_url: string | null; video_url: string | null }) => {
+              // Match by room_number to handle any ID mismatch between DB and local constants
+              const local = SUITES.find(ls => ls.room_number === s.room_number)
+              const key = local?.id ?? s.id
+              if (s.photo_url) urls[key] = s.photo_url
+              if (s.video_url) vids[key] = s.video_url
+            })
             setPhotoUrls(urls)
+            setVideoUrls(vids)
           }
         })
     )
@@ -83,9 +91,10 @@ export default function StepSuite() {
       const cinIso = cin.toISOString()
       const coutIso = cout.toISOString()
       promises.push(
-        supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any)
           .rpc('get_occupied_suite_ids', { p_check_in: cinIso, p_check_out: coutIso })
-          .then(async ({ data, error }) => {
+          .then(async ({ data, error }: { data: { suite_id: string }[] | null; error: unknown }) => {
             if (!error && data) {
               setOccupiedIds(new Set(data.map((r: { suite_id: string }) => r.suite_id)))
               return
@@ -180,6 +189,7 @@ export default function StepSuite() {
         <SuiteGallery
           suite={galleryFor}
           photoUrl={photoUrls[galleryFor.id]}
+          videoUrl={videoUrls[galleryFor.id]}
           occupied={occupiedIds.has(galleryFor.id)}
           slotLabel={slotLabel}
           selected={selected?.id === galleryFor.id}
@@ -284,46 +294,52 @@ function SuiteCard({ suite, photoUrl, occupied, slotLabel, selected, onChoose, o
       {/* Content */}
       <div className="relative z-10 h-full flex flex-col p-4">
 
-        {/* Top: SUÍTE label + line */}
-        <div className="text-center">
-          <p className="text-[9px] tracking-[0.45em] uppercase font-medium mb-1.5" style={{ color: occupied ? 'rgba(180,150,100,0.5)' : 'rgba(220,185,100,0.75)' }}>
-            S U Í T E
-          </p>
-          <div
-            className="h-px mx-auto w-12"
-            style={{
-              background: occupied
-                ? 'linear-gradient(to right, transparent, rgba(150,100,60,0.6), transparent)'
-                : 'linear-gradient(to right, transparent, #c9a84c, transparent)',
-              boxShadow: occupied ? 'none' : '0 0 6px rgba(200,160,50,0.7)',
-            }}
-          />
-        </div>
+        {/* Top: SUÍTE label + line — only when no uploaded cover photo */}
+        {!photoUrl && (
+          <div className="text-center">
+            <p className="text-[9px] tracking-[0.45em] uppercase font-medium mb-1.5" style={{ color: occupied ? 'rgba(180,150,100,0.5)' : 'rgba(220,185,100,0.75)' }}>
+              S U Í T E
+            </p>
+            <div
+              className="h-px mx-auto w-12"
+              style={{
+                background: occupied
+                  ? 'linear-gradient(to right, transparent, rgba(150,100,60,0.6), transparent)'
+                  : 'linear-gradient(to right, transparent, #c9a84c, transparent)',
+                boxShadow: occupied ? 'none' : '0 0 6px rgba(200,160,50,0.7)',
+              }}
+            />
+          </div>
+        )}
 
-        {/* Center: Room number */}
+        {/* Center: Room number — only when no uploaded cover photo */}
         <div className="flex-1 flex items-center justify-center">
-          <span
-            className="font-serif font-bold text-transparent bg-clip-text select-none"
-            style={{
-              fontSize: 'clamp(4rem, 16vw, 6rem)',
-              backgroundImage: occupied
-                ? 'linear-gradient(160deg, #a08060 0%, #7a5a30 35%, #5a3a10 70%, #8a6030 100%)'
-                : 'linear-gradient(160deg, #fce8a8 0%, #d4a017 35%, #8b6010 70%, #c9a84c 100%)',
-              lineHeight: 1,
-              filter: occupied
-                ? 'drop-shadow(0 2px 8px rgba(80,50,20,0.3))'
-                : 'drop-shadow(0 2px 16px rgba(200,150,30,0.5))',
-            }}
-          >
-            {suite.room_number}
-          </span>
+          {!photoUrl && (
+            <span
+              className="font-serif font-bold text-transparent bg-clip-text select-none"
+              style={{
+                fontSize: 'clamp(4rem, 16vw, 6rem)',
+                backgroundImage: occupied
+                  ? 'linear-gradient(160deg, #a08060 0%, #7a5a30 35%, #5a3a10 70%, #8a6030 100%)'
+                  : 'linear-gradient(160deg, #fce8a8 0%, #d4a017 35%, #8b6010 70%, #c9a84c 100%)',
+                lineHeight: 1,
+                filter: occupied
+                  ? 'drop-shadow(0 2px 8px rgba(80,50,20,0.3))'
+                  : 'drop-shadow(0 2px 16px rgba(200,150,30,0.5))',
+              }}
+            >
+              {suite.room_number}
+            </span>
+          )}
         </div>
 
         {/* Bottom: category + buttons */}
         <div className="space-y-2">
-          <p className="text-[9px] tracking-widest uppercase text-center" style={{ color: occupied ? 'rgba(160,120,60,0.4)' : 'rgba(200,165,80,0.5)' }}>
-            {CATEGORY_LABEL[suite.category]}
-          </p>
+          {!photoUrl && (
+            <p className="text-[9px] tracking-widest uppercase text-center" style={{ color: occupied ? 'rgba(160,120,60,0.4)' : 'rgba(200,165,80,0.5)' }}>
+              {CATEGORY_LABEL[suite.category]}
+            </p>
+          )}
 
           {occupied ? (
             <div className="w-full text-center py-1.5 rounded-lg border border-red-900/50 text-[10px] tracking-widest uppercase text-red-400/60">
@@ -363,8 +379,8 @@ function SuiteCard({ suite, photoUrl, occupied, slotLabel, selected, onChoose, o
 
 // ── Suite Gallery Modal ────────────────────────────────────
 
-function SuiteGallery({ suite, photoUrl, occupied, slotLabel, selected, onChoose, onClose }: {
-  suite: Suite; photoUrl?: string; occupied: boolean; slotLabel: string; selected: boolean
+function SuiteGallery({ suite, photoUrl, videoUrl, occupied, slotLabel, selected, onChoose, onClose }: {
+  suite: Suite; photoUrl?: string; videoUrl?: string; occupied: boolean; slotLabel: string; selected: boolean
   onChoose: () => void; onClose: () => void
 }) {
   const [visible, setVisible] = useState(false)
@@ -408,10 +424,33 @@ function SuiteGallery({ suite, photoUrl, occupied, slotLabel, selected, onChoose
           <div className="w-10 h-1 rounded-full bg-gold-800/40" />
         </div>
 
-        {/* Cover photo */}
+        {/* Video — shown when available */}
+        {videoUrl && (
+          <div className="relative bg-black">
+            <video
+              src={videoUrl}
+              autoPlay
+              muted
+              loop
+              playsInline
+              controls
+              className="block w-full"
+              style={{ maxHeight: '60vh' }}
+            />
+            <button
+              onClick={close}
+              className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center text-sm transition-opacity hover:opacity-80"
+              style={{ background: 'rgba(0,0,0,0.6)', color: 'rgba(220,185,100,0.8)', border: '1px solid rgba(201,168,76,0.3)' }}
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        {/* Cover photo — shown always (below video if video present, alone if not) */}
         <div
           className="relative w-full overflow-hidden"
-          style={{ aspectRatio: '4 / 3', backgroundColor: '#1a0f02' }}
+          style={{ aspectRatio: videoUrl ? '16 / 9' : '4 / 3', backgroundColor: '#1a0f02' }}
         >
           <img
             src={toWebP(coverUrl, 800)}
@@ -433,16 +472,19 @@ function SuiteGallery({ suite, photoUrl, occupied, slotLabel, selected, onChoose
               ].join(', '),
             }}
           />
-          {/* Close button */}
-          <button
-            onClick={close}
-            className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center text-sm transition-opacity hover:opacity-80"
-            style={{ background: 'rgba(0,0,0,0.6)', color: 'rgba(220,185,100,0.8)', border: '1px solid rgba(201,168,76,0.3)' }}
-          >
-            ✕
-          </button>
+          {/* Close button — only when no video (video section has its own close) */}
+          {!videoUrl && (
+            <button
+              onClick={close}
+              className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center text-sm transition-opacity hover:opacity-80"
+              style={{ background: 'rgba(0,0,0,0.6)', color: 'rgba(220,185,100,0.8)', border: '1px solid rgba(201,168,76,0.3)' }}
+            >
+              ✕
+            </button>
+          )}
 
-          {/* Suite label overlay */}
+          {/* Suite label overlay — only when no uploaded photo */}
+          {!photoUrl && (
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <p className="text-[9px] tracking-[0.5em] uppercase mb-2" style={{ color: occupied ? 'rgba(180,150,100,0.5)' : 'rgba(220,185,100,0.7)' }}>
               S U Í T E
@@ -469,6 +511,7 @@ function SuiteGallery({ suite, photoUrl, occupied, slotLabel, selected, onChoose
               {suite.room_number}
             </span>
           </div>
+          )}
 
           {/* RESERVADO ribbon over gallery cover */}
           {occupied && (
