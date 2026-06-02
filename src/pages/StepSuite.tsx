@@ -568,7 +568,7 @@ function SuiteGallery({ suite, photoUrl, videoUrl, occupied, slotLabel, selected
 
           {/* Limpeza */}
           <p className="text-[11px] text-gold-700/50 text-center">
-            🧹 Limpeza de {suite.cleaning_buffer_h === 1 ? '1 hora' : `${suite.cleaning_buffer_h} horas`} entre reservas
+            🧹 Limpeza de 1 a 2 horas entre reservas
           </p>
 
           {/* CTA */}
