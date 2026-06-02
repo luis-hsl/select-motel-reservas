@@ -125,8 +125,10 @@ Deno.serve(async (req)=>{
         const cd = customerResp.data ?? customerResp;
         const customerId = cd._id ?? cd.id;
         if (!customerId) throw new Error(`customerId não retornado: ${JSON.stringify(customerResp)}`);
+        // externalId precisa ser único — se o cliente trocar de método ou retentar,
+        // a mesma reservation cria outra cobrança e /products/create dá 400 'already exists'
         const productResp = await abacatePOST('/products/create', {
-          externalId: reservationId,
+          externalId: `${reservationId}-${Date.now()}`,
           name: 'Reserva Select Motel',
           description: `Check-in ${checkInFmt}`,
           price: amountCents,
