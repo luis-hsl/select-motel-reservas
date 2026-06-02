@@ -100,19 +100,58 @@ Deno.serve(async (req: Request) => {
   }
 
   const phone = normalizePhoneBR(r.customer_phone)
-  const msg =
-`Olá *${r.customer_name}*! 🏨
 
-Sua reserva no Select Motel está *confirmada* ✅
+  // Busca nome bonito da suíte (a tabela tem name + category) — fallback pro id
+  const { data: suite } = await supabase
+    .from('suites')
+    .select('name, category')
+    .eq('id', r.suite_id)
+    .maybeSingle<{ name: string; category: string | null }>()
 
-🛏 Suíte: ${r.suite_id}
-📅 Check-in: ${fmtDateTime(r.check_in)}
-📅 Check-out: ${fmtDateTime(r.check_out)}
-💳 Total: ${fmtBRL(r.total_amount)}
+  const ex = r.extras ?? {}
+  const firstName = (r.customer_name ?? '').split(' ')[0]
+  const codigo    = r.id.slice(0, 8).toUpperCase()
+  const suiteNome = suite?.name ?? r.suite_id
+  const suiteCat  = suite?.category ? ` · ${suite.category}` : ''
+  const tipoLabel = TYPE_LABEL[ex.type ?? r.type] ?? (ex.type ?? r.type)
 
-Código da reserva: ${r.id}
-
-Em caso de dúvidas, é só responder esta mensagem.`
+  const lines: string[] = []
+  lines.push(`✨ *Reserva confirmada!*`)
+  lines.push(`_Select Motel_`)
+  lines.push(``)
+  lines.push(`Olá *${firstName}*, recebemos seu pagamento e tudo está pronto pra te receber. 💛`)
+  lines.push(``)
+  lines.push(`━━━━━━━━━━━━━━━━━━`)
+  lines.push(`📋 *Código:* \`${codigo}\``)
+  lines.push(`━━━━━━━━━━━━━━━━━━`)
+  lines.push(``)
+  lines.push(`🛏 *Suíte*`)
+  lines.push(`${suiteNome}${suiteCat}`)
+  lines.push(``)
+  lines.push(`📅 *Período*`)
+  lines.push(`Entrada:  ${fmtDateTime(r.check_in)}`)
+  lines.push(`Saída:    ${fmtDateTime(r.check_out)}`)
+  lines.push(`⏱ ${tipoLabel}`)
+  lines.push(``)
+  lines.push(`📦 *Pacote:* ${ex.packageLabel ?? r.package_id}`)
+  if (Array.isArray(ex.includes) && ex.includes.length) {
+    lines.push(ex.includes.map(i => `  ✓ ${i}`).join('\n'))
+  }
+  if (ex.drink || ex.food) lines.push('')
+  if (ex.drink) lines.push(`🥂 *Bebida:* ${DRINK_LABEL[ex.drink] ?? ex.drink}`)
+  if (ex.food)  lines.push(`🍽 *Comida:* ${FOOD_LABEL[ex.food]  ?? ex.food}`)
+  lines.push(``)
+  lines.push(`💳 *Total pago:* *${fmtBRL(r.total_amount)}*` +
+             (r.payment_method ? `  _(${r.payment_method.toUpperCase()})_` : ''))
+  lines.push(``)
+  lines.push(`━━━━━━━━━━━━━━━━━━`)
+  lines.push(`📍 *No dia da reserva*`)
+  lines.push(`Apresente o código *${codigo}* na recepção. Chegue até o horário de entrada — a suíte fica reservada por 30 minutos após esse horário.`)
+  lines.push(``)
+  lines.push(`Qualquer dúvida, é só responder esta mensagem que a gente te ajuda. 🤍`)
+  lines.push(``)
+  lines.push(`_Obrigado por escolher o Select Motel._`)
+  const msg = lines.join('\n')
 
   async function sendText(toPhone: string, body: string) {
     const r = await fetch(`${wuzUrl!.replace(/\/$/, '')}/chat/send/text`, {
