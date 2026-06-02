@@ -1,10 +1,24 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import { SUITES, calcCheckOut } from '../data'
+import { SUITES } from '../data'
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
 import type { Suite, SuiteCategory } from '../types'
 
+function toWebP(url: string, width = 600): string {
+  if (!url || url.startsWith('/')) return url
+  const match = url.match(/\/storage\/v1\/object\/public\/(.+)$/)
+  if (!match) return url
+  const base = url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/')
+  return `${base}?format=webp&quality=82&width=${width}`
+}
+
+function buildSlotLabel(cin: Date, cout: Date): string {
+  const fmt = (d: Date) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  return `${fmt(cin)} – ${fmt(cout)}`
+}
+
+const WHATSAPP_MSG = encodeURIComponent('Olá! Gostaria de verificar disponibilidade de suítes para o Dia dos Namorados.')
 
 const CATEGORY_LABEL: Record<SuiteCategory, string> = {
   'VIP Piscina': 'VIP · Piscina',
@@ -13,59 +27,92 @@ const CATEGORY_LABEL: Record<SuiteCategory, string> = {
   'Standard': 'Standard',
 }
 
+// Galeria de cada suíte — adicione mais URLs conforme disponível
+const GALLERY: Record<string, string[]> = {
+  'suite-11': [], 'suite-12': [], 'suite-13': [], 'suite-14': [],
+  'suite-15': [], 'suite-16': [], 'suite-17': [], 'suite-18': [],
+  'suite-22': [], 'suite-23': [], 'suite-24': [], 'suite-25': [], 'suite-26': [],
+}
 
 export default function StepSuite() {
-  const { package: pkg, suite: selected, checkIn, type, setSuite, nextStep, prevStep } = useStore()
+  const { package: pkg, suite: selected, setSuite, nextStep, prevStep, checkIn, checkOut } = useStore()
   const [loading, setLoading] = useState(true)
+  const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set())
   const [galleryFor, setGalleryFor] = useState<Suite | null>(null)
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({})
   const [videoUrls, setVideoUrls] = useState<Record<string, string>>({})
-  const [allPhotos, setAllPhotos] = useState<Record<string, string[]>>({})
-const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set())
+  const [whatsappNum, setWhatsappNum] = useState('5543999999999')
 
   const packageSuites = SUITES.filter(s => pkg && s.packageIds.includes(pkg.id as never))
 
-  useEffect(() => {
-    const checkOut = checkIn && type ? calcCheckOut(checkIn, type) : null
+  const slotLabel = useMemo(() => {
+    const cin = checkIn
+    const cout = checkOut()
+    if (!cin || !cout) return ''
+    return buildSlotLabel(cin, cout)
+  }, [checkIn, checkOut])
 
-    Promise.all([
-      supabase.from('suites').select('id,room_number,photo_url,video_url'),
-      (supabase as any).from('suite_photos').select('suite_id,url').order('sort_order'),
-      checkIn && checkOut
+  useEffect(() => {
+    const promises: PromiseLike<unknown>[] = []
+
+    promises.push(
+      supabase
+        .from('suites')
+        .select('id, room_number, photo_url, video_url')
+        .then(({ data }) => {
+          if (data) {
+            const urls: Record<string, string> = {}
+            const vids: Record<string, string> = {}
+            data.forEach((s: { id: string; room_number: number | null; photo_url: string | null; video_url: string | null }) => {
+              // Match by room_number to handle any ID mismatch between DB and local constants
+              const local = SUITES.find(ls => ls.room_number === s.room_number)
+              const key = local?.id ?? s.id
+              if (s.photo_url) urls[key] = s.photo_url
+              if (s.video_url) vids[key] = s.video_url
+            })
+            setPhotoUrls(urls)
+            setVideoUrls(vids)
+          }
+        })
+    )
+
+    promises.push(
+      supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'whatsapp_number')
+        .single()
+        .then(({ data }) => { if (data?.value) setWhatsappNum(data.value) })
+    )
+
+    const cin = checkIn
+    const cout = checkOut()
+    if (cin && cout) {
+      const cinIso = cin.toISOString()
+      const coutIso = cout.toISOString()
+      promises.push(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ? (supabase as any).rpc('get_occupied_suite_ids', {
-            p_check_in: checkIn.toISOString(),
-            p_check_out: checkOut.toISOString(),
+        (supabase as any)
+          .rpc('get_occupied_suite_ids', { p_check_in: cinIso, p_check_out: coutIso })
+          .then(async ({ data, error }: { data: { suite_id: string }[] | null; error: unknown }) => {
+            if (!error && data) {
+              setOccupiedIds(new Set(data.map((r: { suite_id: string }) => r.suite_id)))
+              return
+            }
+            // Fallback: direct query se a função RPC ainda não existir no banco
+            const { data: rows } = await supabase
+              .from('reservations')
+              .select('suite_id')
+              .in('status', ['paid', 'pending'])
+              .lt('check_in', coutIso)
+              .gt('check_out', cinIso)
+            if (rows) setOccupiedIds(new Set(rows.map(r => r.suite_id as string)))
           })
-        : Promise.resolve({ data: [] }),
-    ]).then(([suiteRes, photosRes, occRes]) => {
-      if (suiteRes.data) {
-        const photos: Record<string, string> = {}
-        const videos: Record<string, string> = {}
-        suiteRes.data.forEach((s: { id: string; room_number: number | null; photo_url: string | null; video_url: string | null }) => {
-          // Match by room_number to handle any ID mismatch between DB and local constants
-          const local = SUITES.find(ls => ls.room_number === s.room_number)
-          const key = local?.id ?? s.id
-          if (s.photo_url) photos[key] = s.photo_url
-          if (s.video_url) videos[key] = s.video_url
-        })
-        setPhotoUrls(photos)
-        setVideoUrls(videos)
-      }
-      if (photosRes.data) {
-        const grouped: Record<string, string[]> = {}
-        ;(photosRes.data as { suite_id: string; url: string }[]).forEach(p => {
-          if (!grouped[p.suite_id]) grouped[p.suite_id] = []
-          grouped[p.suite_id].push(p.url)
-        })
-        setAllPhotos(grouped)
-      }
-      if (occRes.data) {
-        setOccupiedIds(new Set((occRes.data as { suite_id: string }[]).map(r => r.suite_id)))
-      }
-      setLoading(false)
-    })
-  }, [checkIn, type])
+      )
+    }
+
+    Promise.all(promises).finally(() => setLoading(false))
+  }, [checkIn, checkOut])
 
   const allOccupied = packageSuites.length > 0 && packageSuites.every(s => occupiedIds.has(s.id))
 
@@ -88,11 +135,7 @@ const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set())
       </h1>
       <p className="text-gold-700/70 text-sm mb-6 sm:mb-8">
         Suítes disponíveis para o{' '}
-        <strong className="text-gold-500 font-medium">{pkg?.label}</strong>
-        {checkIn && (
-          <> no horário escolhido.</>
-        )}
-        {!checkIn && <>.{/* fallback */}</>}
+        <strong className="text-gold-500 font-medium">{pkg?.label}</strong>.
       </p>
 
       {loading ? (
@@ -107,6 +150,7 @@ const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set())
             <p className="text-sm text-red-400/80 mb-1">Todas as suítes do {pkg?.label} estão ocupadas para este período.</p>
             <p className="text-xs text-gold-800/50">Entre em contato com nosso suporte.</p>
           </div>
+          <SupportCard highlight whatsappNum={whatsappNum} />
         </div>
       ) : (
         <div className="space-y-8">
@@ -127,6 +171,7 @@ const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set())
                       suite={suite}
                       photoUrl={photoUrls[suite.id]}
                       occupied={occupiedIds.has(suite.id)}
+                      slotLabel={slotLabel}
                       selected={selected?.id === suite.id}
                       onChoose={() => choose(suite)}
                       onViewMore={() => setGalleryFor(suite)}
@@ -136,15 +181,17 @@ const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set())
               </div>
             )
           })}
+          <SupportCard highlight={false} whatsappNum={whatsappNum} />
         </div>
       )}
 
       {galleryFor && createPortal(
         <SuiteGallery
           suite={galleryFor}
-          photos={allPhotos[galleryFor.id] ?? (photoUrls[galleryFor.id] ? [photoUrls[galleryFor.id]] : [])}
+          photoUrl={photoUrls[galleryFor.id]}
           videoUrl={videoUrls[galleryFor.id]}
           occupied={occupiedIds.has(galleryFor.id)}
+          slotLabel={slotLabel}
           selected={selected?.id === galleryFor.id}
           onChoose={() => { choose(galleryFor); setGalleryFor(null) }}
           onClose={() => setGalleryFor(null)}
@@ -157,63 +204,128 @@ const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set())
 
 // ── Suite Card ─────────────────────────────────────────────
 
-function SuiteCard({ suite, photoUrl, occupied, selected, onChoose, onViewMore }: {
-  suite: Suite; photoUrl?: string; occupied: boolean; selected: boolean
+function SuiteCard({ suite, photoUrl, occupied, slotLabel, selected, onChoose, onViewMore }: {
+  suite: Suite; photoUrl?: string; occupied: boolean; slotLabel: string; selected: boolean
   onChoose: () => void; onViewMore: () => void
 }) {
+  const coverUrl = photoUrl ?? `/suites/${suite.id}.jpg`
+
   return (
     <div
       className={[
         'relative rounded-2xl overflow-hidden border transition-all duration-300',
-        occupied ? 'border-gold-900/20 opacity-60' : selected ? 'border-gold-500 ring-2 ring-gold-500/30' : 'border-gold-800/40',
+        occupied
+          ? 'border-red-900/40'
+          : selected
+          ? 'border-gold-500 ring-2 ring-gold-500/30'
+          : 'border-gold-800/40',
       ].join(' ')}
       style={{ aspectRatio: '1 / 1' }}
     >
       {/* Background: photo + gradient overlay */}
-      <div
-        className="absolute inset-0"
-        style={{
-          backgroundColor: '#120a02',
-          backgroundImage: photoUrl
-            ? `linear-gradient(to bottom, rgba(0,0,0,0) 45%, rgba(0,0,0,0.6) 100%), url(${photoUrl})`
-            : [
-                'radial-gradient(ellipse at 50% 110%, rgba(180,90,15,0.55) 0%, transparent 55%)',
-                'radial-gradient(ellipse at 20% 85%, rgba(130,65,10,0.4) 0%, transparent 45%)',
-                'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.65) 100%)',
-              ].join(', '),
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      />
+      <div className="absolute inset-0" style={{ backgroundColor: '#120a02' }}>
+        <img
+          src={toWebP(coverUrl)}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className={[
+            'absolute inset-0 w-full h-full object-cover transition-all duration-300',
+            occupied ? 'grayscale-[60%] brightness-[0.55]' : '',
+          ].join(' ')}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: [
+              'radial-gradient(ellipse at 50% 110%, rgba(180,90,15,0.55) 0%, transparent 55%)',
+              'radial-gradient(ellipse at 20% 85%, rgba(130,65,10,0.4) 0%, transparent 45%)',
+              'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.65) 100%)',
+            ].join(', '),
+          }}
+        />
+      </div>
 
       {/* Gold frame border inner glow */}
       <div className="absolute inset-0 rounded-2xl" style={{ boxShadow: 'inset 0 0 30px rgba(0,0,0,0.6)' }} />
 
+      {/* RESERVADO diagonal ribbon */}
+      {occupied && (
+        <div
+          className="absolute inset-0 flex items-center justify-center pointer-events-none z-20"
+          style={{ transform: 'rotate(-35deg)' }}
+        >
+          <div
+            className="flex flex-col items-center gap-0.5 px-8 py-2 select-none"
+            style={{
+              background: 'linear-gradient(135deg, rgba(90,8,22,0.97) 0%, rgba(120,12,30,1) 100%)',
+              border: '1px solid rgba(200,150,60,0.5)',
+              borderLeft: 'none',
+              borderRight: 'none',
+              boxShadow: '0 0 24px rgba(120,0,20,0.6), inset 0 1px 0 rgba(255,200,100,0.15)',
+              width: '180%',
+            }}
+          >
+            <div className="flex items-center gap-2">
+              {/* Lock icon */}
+              <svg width="10" height="12" viewBox="0 0 10 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0 opacity-80">
+                <rect x="1" y="5" width="8" height="7" rx="1.2" fill="rgba(200,150,60,0.9)" />
+                <path d="M2.5 5V3.5a2.5 2.5 0 0 1 5 0V5" stroke="rgba(200,150,60,0.9)" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+              </svg>
+              <span
+                className="font-bold tracking-[0.3em] uppercase"
+                style={{ fontSize: '0.6rem', color: 'rgba(240,200,100,0.95)', textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}
+              >
+                Reservado
+              </span>
+            </div>
+            {slotLabel && (
+              <span
+                className="tracking-widest"
+                style={{ fontSize: '0.5rem', color: 'rgba(200,150,80,0.7)' }}
+              >
+                {slotLabel}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Content */}
       <div className="relative z-10 h-full flex flex-col p-4">
 
-        {/* Top: SUÍTE label + line — only when no cover photo */}
+        {/* Top: SUÍTE label + line — only when no uploaded cover photo */}
         {!photoUrl && (
           <div className="text-center">
-            <p className="text-[9px] tracking-[0.45em] uppercase font-medium mb-1.5" style={{ color: 'rgba(220,185,100,0.75)' }}>
+            <p className="text-[9px] tracking-[0.45em] uppercase font-medium mb-1.5" style={{ color: occupied ? 'rgba(180,150,100,0.5)' : 'rgba(220,185,100,0.75)' }}>
               S U Í T E
             </p>
             <div
               className="h-px mx-auto w-12"
-              style={{ background: 'linear-gradient(to right, transparent, #c9a84c, transparent)', boxShadow: '0 0 6px rgba(200,160,50,0.7)' }}
+              style={{
+                background: occupied
+                  ? 'linear-gradient(to right, transparent, rgba(150,100,60,0.6), transparent)'
+                  : 'linear-gradient(to right, transparent, #c9a84c, transparent)',
+                boxShadow: occupied ? 'none' : '0 0 6px rgba(200,160,50,0.7)',
+              }}
             />
           </div>
         )}
 
-        {/* Center: Room number — only when no cover photo */}
+        {/* Center: Room number — only when no uploaded cover photo */}
         <div className="flex-1 flex items-center justify-center">
           {!photoUrl && (
             <span
               className="font-serif font-bold text-transparent bg-clip-text select-none"
               style={{
                 fontSize: 'clamp(4rem, 16vw, 6rem)',
-                backgroundImage: 'linear-gradient(160deg, #fce8a8 0%, #d4a017 35%, #8b6010 70%, #c9a84c 100%)',
+                backgroundImage: occupied
+                  ? 'linear-gradient(160deg, #a08060 0%, #7a5a30 35%, #5a3a10 70%, #8a6030 100%)'
+                  : 'linear-gradient(160deg, #fce8a8 0%, #d4a017 35%, #8b6010 70%, #c9a84c 100%)',
                 lineHeight: 1,
+                filter: occupied
+                  ? 'drop-shadow(0 2px 8px rgba(80,50,20,0.3))'
+                  : 'drop-shadow(0 2px 16px rgba(200,150,30,0.5))',
               }}
             >
               {suite.room_number}
@@ -224,14 +336,14 @@ function SuiteCard({ suite, photoUrl, occupied, selected, onChoose, onViewMore }
         {/* Bottom: category + buttons */}
         <div className="space-y-2">
           {!photoUrl && (
-            <p className="text-[9px] tracking-widest uppercase text-center" style={{ color: 'rgba(200,165,80,0.5)' }}>
+            <p className="text-[9px] tracking-widest uppercase text-center" style={{ color: occupied ? 'rgba(160,120,60,0.4)' : 'rgba(200,165,80,0.5)' }}>
               {CATEGORY_LABEL[suite.category]}
             </p>
           )}
 
           {occupied ? (
-            <div className="w-full text-center py-1.5 rounded-lg border border-red-900/50 text-[10px] tracking-widest uppercase text-red-400/70">
-              Esgotado
+            <div className="w-full text-center py-1.5 rounded-lg border border-red-900/50 text-[10px] tracking-widest uppercase text-red-400/60">
+              Reservado
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-1.5">
@@ -253,20 +365,25 @@ function SuiteCard({ suite, photoUrl, occupied, selected, onChoose, onViewMore }
           )}
         </div>
       </div>
+
+      {/* Corner accent dot */}
+      {occupied && (
+        <div
+          className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full z-30"
+          style={{ background: 'rgba(180,30,50,0.9)', boxShadow: '0 0 6px rgba(200,20,40,0.7)' }}
+        />
+      )}
     </div>
   )
 }
 
 // ── Suite Gallery Modal ────────────────────────────────────
 
-function SuiteGallery({ suite, photos, videoUrl, occupied, selected, onChoose, onClose }: {
-  suite: Suite; photos: string[]; videoUrl?: string; occupied: boolean; selected: boolean
+function SuiteGallery({ suite, photoUrl, videoUrl, occupied, slotLabel, selected, onChoose, onClose }: {
+  suite: Suite; photoUrl?: string; videoUrl?: string; occupied: boolean; slotLabel: string; selected: boolean
   onChoose: () => void; onClose: () => void
 }) {
   const [visible, setVisible] = useState(false)
-  const [currentIdx, setCurrentIdx] = useState(0)
-  const carouselRef = useRef<HTMLDivElement>(null)
-
   useEffect(() => {
     document.body.style.overflow = 'hidden'
     requestAnimationFrame(() => setTimeout(() => setVisible(true), 10))
@@ -278,17 +395,8 @@ function SuiteGallery({ suite, photos, videoUrl, occupied, selected, onChoose, o
     setTimeout(onClose, 360)
   }
 
-  function handleScroll() {
-    const el = carouselRef.current
-    if (!el) return
-    setCurrentIdx(Math.round(el.scrollLeft / el.clientWidth))
-  }
-
-  function goTo(idx: number) {
-    const el = carouselRef.current
-    if (!el) return
-    el.scrollTo({ left: idx * el.clientWidth, behavior: 'smooth' })
-  }
+  const coverUrl = photoUrl ?? `/suites/${suite.id}.jpg`
+  const extraPhotos = GALLERY[suite.id] ?? []
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" style={{ pointerEvents: visible ? 'auto' : 'none' }}>
@@ -316,9 +424,9 @@ function SuiteGallery({ suite, photos, videoUrl, occupied, selected, onChoose, o
           <div className="w-10 h-1 rounded-full bg-gold-800/40" />
         </div>
 
-        {/* Video hero — when available, show ONLY video (no photos) */}
+        {/* Video — shown when available */}
         {videoUrl && (
-          <div className="relative bg-black flex items-center justify-center">
+          <div className="relative bg-black">
             <video
               src={videoUrl}
               autoPlay
@@ -329,120 +437,142 @@ function SuiteGallery({ suite, photos, videoUrl, occupied, selected, onChoose, o
               className="block w-full"
               style={{ maxHeight: '60vh' }}
             />
-            {/* Close button */}
             <button
               onClick={close}
-              className="absolute top-3 right-3 z-20 w-9 h-9 rounded-full flex items-center justify-center text-base font-bold transition-all hover:scale-110 active:scale-95"
-              style={{ background: 'rgba(0,0,0,0.72)', color: 'rgba(255,255,255,0.9)', border: '1px solid rgba(201,168,76,0.5)', boxShadow: '0 2px 12px rgba(0,0,0,0.6)' }}
+              className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center text-sm transition-opacity hover:opacity-80"
+              style={{ background: 'rgba(0,0,0,0.6)', color: 'rgba(220,185,100,0.8)', border: '1px solid rgba(201,168,76,0.3)' }}
             >
               ✕
             </button>
           </div>
         )}
 
-        {/* Photo area — only when there is no video */}
-        {!videoUrl && (
-          <div className="relative overflow-hidden" style={{ aspectRatio: '4 / 3' }}>
-            {photos.length > 0 ? (
-              /* ── Swipeable carousel ── */
+        {/* Cover photo — shown always (below video if video present, alone if not) */}
+        <div
+          className="relative w-full overflow-hidden"
+          style={{ aspectRatio: videoUrl ? '16 / 9' : '4 / 3', backgroundColor: '#1a0f02' }}
+        >
+          <img
+            src={toWebP(coverUrl, 800)}
+            alt=""
+            loading="eager"
+            decoding="async"
+            className={[
+              'absolute inset-0 w-full h-full object-cover transition-all duration-300',
+              occupied ? 'grayscale-[60%] brightness-[0.5]' : '',
+            ].join(' ')}
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: [
+                'radial-gradient(ellipse at 50% 110%, rgba(180,90,15,0.6) 0%, transparent 55%)',
+                'radial-gradient(ellipse at 15% 85%, rgba(130,65,10,0.45) 0%, transparent 48%)',
+                'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.6) 100%)',
+              ].join(', '),
+            }}
+          />
+          {/* Close button — only when no video (video section has its own close) */}
+          {!videoUrl && (
+            <button
+              onClick={close}
+              className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center text-sm transition-opacity hover:opacity-80"
+              style={{ background: 'rgba(0,0,0,0.6)', color: 'rgba(220,185,100,0.8)', border: '1px solid rgba(201,168,76,0.3)' }}
+            >
+              ✕
+            </button>
+          )}
+
+          {/* Suite label overlay — only when no uploaded photo */}
+          {!photoUrl && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <p className="text-[9px] tracking-[0.5em] uppercase mb-2" style={{ color: occupied ? 'rgba(180,150,100,0.5)' : 'rgba(220,185,100,0.7)' }}>
+              S U Í T E
+            </p>
+            <div className="h-px w-10 mb-3" style={{
+              background: occupied
+                ? 'linear-gradient(to right, transparent, rgba(150,100,60,0.5), transparent)'
+                : 'linear-gradient(to right, transparent, #c9a84c, transparent)',
+              boxShadow: occupied ? 'none' : '0 0 6px rgba(200,160,50,0.8)',
+            }} />
+            <span
+              className="font-serif font-bold text-transparent bg-clip-text"
+              style={{
+                fontSize: 'clamp(5rem, 22vw, 8rem)',
+                backgroundImage: occupied
+                  ? 'linear-gradient(160deg, #a08060 0%, #7a5a30 35%, #5a3a10 70%, #8a6030 100%)'
+                  : 'linear-gradient(160deg, #fce8a8 0%, #d4a017 35%, #8b6010 70%, #c9a84c 100%)',
+                lineHeight: 1,
+                filter: occupied
+                  ? 'drop-shadow(0 2px 8px rgba(80,50,20,0.3))'
+                  : 'drop-shadow(0 4px 20px rgba(200,150,30,0.6))',
+              }}
+            >
+              {suite.room_number}
+            </span>
+          </div>
+          )}
+
+          {/* RESERVADO ribbon over gallery cover */}
+          {occupied && (
+            <div
+              className="absolute inset-0 flex items-center justify-center pointer-events-none z-20"
+              style={{ transform: 'rotate(-20deg)' }}
+            >
               <div
-                ref={carouselRef}
-                className="flex h-full overflow-x-auto scrollbar-hide"
-                style={{ scrollSnapType: 'x mandatory' }}
-                onScroll={handleScroll}
-              >
-                {photos.map((url, i) => (
-                  <div key={i} className="shrink-0 w-full h-full" style={{ scrollSnapAlign: 'start' }}>
-                    <img src={url} alt="" className="w-full h-full object-cover" draggable={false} />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              /* ── Placeholder with suite number ── */
-              <div
-                className="w-full h-full flex flex-col items-center justify-center"
+                className="flex flex-col items-center gap-1 px-12 py-3 select-none"
                 style={{
-                  backgroundColor: '#1a0f02',
-                  backgroundImage: [
-                    'radial-gradient(ellipse at 50% 110%, rgba(180,90,15,0.6) 0%, transparent 55%)',
-                    'radial-gradient(ellipse at 15% 85%, rgba(130,65,10,0.45) 0%, transparent 48%)',
-                  ].join(', '),
+                  background: 'linear-gradient(135deg, rgba(90,8,22,0.97) 0%, rgba(120,12,30,1) 100%)',
+                  border: '1px solid rgba(200,150,60,0.5)',
+                  borderLeft: 'none',
+                  borderRight: 'none',
+                  boxShadow: '0 0 32px rgba(120,0,20,0.7), inset 0 1px 0 rgba(255,200,100,0.15)',
+                  width: '120%',
                 }}
               >
-                <p className="text-[9px] tracking-[0.5em] uppercase mb-2" style={{ color: 'rgba(220,185,100,0.7)' }}>
-                  S U Í T E
-                </p>
-                <div className="h-px w-10 mb-3" style={{ background: 'linear-gradient(to right, transparent, #c9a84c, transparent)' }} />
-                <span
-                  className="font-serif font-bold text-transparent bg-clip-text"
-                  style={{
-                    fontSize: 'clamp(5rem, 22vw, 8rem)',
-                    backgroundImage: 'linear-gradient(160deg, #fce8a8 0%, #d4a017 35%, #8b6010 70%, #c9a84c 100%)',
-                    lineHeight: 1,
-                  }}
-                >
-                  {suite.room_number}
-                </span>
+                <div className="flex items-center gap-2.5">
+                  <svg width="12" height="14" viewBox="0 0 10 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0 opacity-80">
+                    <rect x="1" y="5" width="8" height="7" rx="1.2" fill="rgba(200,150,60,0.9)" />
+                    <path d="M2.5 5V3.5a2.5 2.5 0 0 1 5 0V5" stroke="rgba(200,150,60,0.9)" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+                  </svg>
+                  <span
+                    className="font-bold tracking-[0.35em] uppercase"
+                    style={{ fontSize: '0.75rem', color: 'rgba(240,200,100,0.95)', textShadow: '0 1px 8px rgba(0,0,0,0.8)' }}
+                  >
+                    Reservado
+                  </span>
+                </div>
+                {slotLabel && (
+                  <span
+                    className="tracking-widest"
+                    style={{ fontSize: '0.6rem', color: 'rgba(200,150,80,0.75)' }}
+                  >
+                    {slotLabel}
+                  </span>
+                )}
               </div>
-            )}
+            </div>
+          )}
+        </div>
 
-            {/* Close button (only when no video hero) */}
-            {!videoUrl && (
-              <button
-                onClick={close}
-                className="absolute top-3 right-3 z-20 w-9 h-9 rounded-full flex items-center justify-center text-base font-bold transition-all hover:scale-110 active:scale-95"
-                style={{ background: 'rgba(0,0,0,0.72)', color: 'rgba(255,255,255,0.9)', border: '1px solid rgba(201,168,76,0.5)', boxShadow: '0 2px 12px rgba(0,0,0,0.6)' }}
-              >
-                ✕
-              </button>
-            )}
-
-            {/* Prev / Next arrows (apenas com múltiplas fotos) */}
-            {photos.length > 1 && (
-              <>
-                <button
-                  onClick={() => goTo(currentIdx - 1)}
-                  disabled={currentIdx === 0}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full flex items-center justify-center text-lg transition-all disabled:opacity-0"
-                  style={{ background: 'rgba(0,0,0,0.55)', color: 'rgba(220,185,100,0.85)' }}
-                >
-                  ‹
-                </button>
-                <button
-                  onClick={() => goTo(currentIdx + 1)}
-                  disabled={currentIdx === photos.length - 1}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full flex items-center justify-center text-lg transition-all disabled:opacity-0"
-                  style={{ background: 'rgba(0,0,0,0.55)', color: 'rgba(220,185,100,0.85)' }}
-                >
-                  ›
-                </button>
-              </>
-            )}
-
-            {/* Dot indicators */}
-            {photos.length > 1 && (
-              <div className="absolute bottom-3 left-0 right-0 flex gap-1.5 justify-center">
-                {photos.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => goTo(i)}
-                    className={`rounded-full transition-all duration-250 ${
-                      i === currentIdx ? 'w-4 h-1.5 bg-gold-400' : 'w-1.5 h-1.5 bg-white/35 hover:bg-white/60'
-                    }`}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Counter */}
-            {photos.length > 1 && (
+        {/* Extra photos grid */}
+        {extraPhotos.length > 0 && (
+          <div className="grid grid-cols-3 gap-1 p-1">
+            {extraPhotos.map((url, i) => (
               <div
-                className="absolute top-3 left-3 z-10 text-[10px] text-white/70 px-2 py-0.5 rounded-full tabular-nums"
-                style={{ background: 'rgba(0,0,0,0.5)' }}
+                key={i}
+                className="rounded-lg overflow-hidden"
+                style={{ aspectRatio: '1 / 1', backgroundColor: '#1a0f02' }}
               >
-                {currentIdx + 1} / {photos.length}
+                <img
+                  src={toWebP(url, 400)}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-full object-cover"
+                />
               </div>
-            )}
+            ))}
           </div>
         )}
 
@@ -462,6 +592,25 @@ function SuiteGallery({ suite, photos, videoUrl, occupied, selected, onChoose, o
             <p className="text-sm text-gold-700/60">{suite.description}</p>
           </div>
 
+          {/* Occupied notice */}
+          {occupied && (
+            <div
+              className="rounded-xl px-4 py-3 flex items-center gap-3"
+              style={{ background: 'rgba(90,8,22,0.35)', border: '1px solid rgba(180,30,50,0.4)' }}
+            >
+              <svg width="16" height="18" viewBox="0 0 10 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
+                <rect x="1" y="5" width="8" height="7" rx="1.2" fill="rgba(200,100,100,0.9)" />
+                <path d="M2.5 5V3.5a2.5 2.5 0 0 1 5 0V5" stroke="rgba(200,100,100,0.9)" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+              </svg>
+              <div>
+                <p className="text-xs font-semibold text-red-400/90">Suíte reservada para este período</p>
+                {slotLabel && (
+                  <p className="text-[10px] text-red-500/60 mt-0.5">{slotLabel}</p>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Details */}
           <div className="grid grid-cols-2 gap-3">
             <DetailChip label="Tamanho" value={suite.size === 'large' ? 'Grande' : 'Compacta'} />
@@ -479,7 +628,7 @@ function SuiteGallery({ suite, photos, videoUrl, occupied, selected, onChoose, o
             </button>
           ) : (
             <div className="w-full py-4 rounded-xl text-center text-sm border border-red-900/40 text-red-400/60">
-              Suíte esgotada para este período
+              Suíte reservada para este período
             </div>
           )}
         </div>
@@ -499,3 +648,26 @@ function DetailChip({ label, value }: { label: string; value: string }) {
   )
 }
 
+function SupportCard({ highlight, whatsappNum }: { highlight: boolean; whatsappNum: string }) {
+  return (
+    <a
+      href={`https://wa.me/${whatsappNum}?text=${WHATSAPP_MSG}`}
+      target="_blank" rel="noopener noreferrer"
+      className={[
+        'flex items-center gap-4 w-full rounded-xl border px-5 py-4 transition-all duration-200 hover:opacity-90 active:scale-[0.98]',
+        highlight ? 'border-gold-600/60 bg-gold-900/20' : 'border-gold-900/30 bg-black/30',
+      ].join(' ')}
+    >
+      <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-lg" style={{ background: 'rgba(37,211,102,0.15)', border: '1px solid rgba(37,211,102,0.3)' }}>
+        💬
+      </div>
+      <div className="min-w-0">
+        <p className={['text-sm font-medium', highlight ? 'text-gold-300' : 'text-gold-400/80'].join(' ')}>
+          Falar com o suporte
+        </p>
+        <p className="text-[11px] text-gold-700/50">Dúvidas sobre disponibilidade? Chamamos no WhatsApp.</p>
+      </div>
+      <span className="text-gold-700/40 text-sm ml-auto shrink-0">→</span>
+    </a>
+  )
+}
