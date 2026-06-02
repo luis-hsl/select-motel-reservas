@@ -34,3 +34,6 @@ infra/*.dump
 .claude/
 
 .vercel
+
+# Supabase CLI local cache (functions download etc)
+supabase/.temp/
