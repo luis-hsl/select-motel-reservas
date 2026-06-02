@@ -9,6 +9,10 @@ type Status = {
 
 type PairMode = 'qr' | 'code'
 
+const PAIR_TTL_MS    = 2 * 60 * 1000   // sessao de pareamento expira em 2 min na UI
+const QR_REFRESH_MS  = 25 * 1000        // QR real do WhatsApp expira em ~30s — renovamos antes
+
+
 async function adminInvoke<T = unknown>(
   action: string,
   init: { method?: 'GET' | 'POST'; body?: unknown } = {},
@@ -37,11 +41,20 @@ export default function WhatsAppTab() {
   // QR
   const [qr, setQr] = useState<string>('')
   const [qrLoading, setQrLoading] = useState(false)
+  const [qrExpiresAt, setQrExpiresAt] = useState<number | null>(null)
 
   // Pareamento por codigo
   const [pairPhone, setPairPhone] = useState('')
   const [pairCode, setPairCode] = useState('')
   const [pairLoading, setPairLoading] = useState(false)
+  const [codeExpiresAt, setCodeExpiresAt] = useState<number | null>(null)
+
+  // tick a cada segundo para atualizar contadores
+  const [, setNow] = useState(Date.now())
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [])
 
   // Setting: telefone do motel
   const [notifPhone, setNotifPhone] = useState('')
@@ -82,6 +95,7 @@ export default function WhatsAppTab() {
     setTimeout(refreshStatus, 1000)
   }
 
+  // Inicia sessao de QR de 2min: gera o primeiro e agenda renovacoes
   async function handleGetQr() {
     setQrLoading(true); setError(null)
     if (!status?.connected) await handleConnect()
@@ -89,15 +103,35 @@ export default function WhatsAppTab() {
     const r = await adminInvoke<{ qr: string }>('qr')
     if (r.ok && (r.data as { qr: string }).qr) {
       setQr((r.data as { qr: string }).qr)
+      setQrExpiresAt(Date.now() + PAIR_TTL_MS)
     } else {
       setError('Não consegui obter QR')
     }
     setQrLoading(false)
   }
 
+  // Auto-renova o QR a cada ~25s ate expirar
+  useEffect(() => {
+    if (!qrExpiresAt) return
+    const t = setInterval(async () => {
+      if (Date.now() >= qrExpiresAt) { setQr(''); setQrExpiresAt(null); return }
+      const r = await adminInvoke<{ qr: string }>('qr')
+      if (r.ok && (r.data as { qr: string }).qr) setQr((r.data as { qr: string }).qr)
+    }, QR_REFRESH_MS)
+    return () => clearInterval(t)
+  }, [qrExpiresAt])
+
+  // Limpa QR/codigo quando o user logar com sucesso
+  useEffect(() => {
+    if (status?.loggedIn) {
+      setQr(''); setQrExpiresAt(null)
+      setPairCode(''); setCodeExpiresAt(null)
+    }
+  }, [status?.loggedIn])
+
   async function handlePairByCode() {
     if (!pairPhone.trim()) { setError('Informe o telefone do celular que vai parear'); return }
-    setPairLoading(true); setError(null); setPairCode('')
+    setPairLoading(true); setError(null); setPairCode(''); setCodeExpiresAt(null)
     if (!status?.connected) await handleConnect()
     await new Promise(res => setTimeout(res, 1000))
     const r = await adminInvoke<{ code: string }>('pair', {
@@ -106,17 +140,25 @@ export default function WhatsAppTab() {
     })
     if (r.ok && (r.data as { code: string }).code) {
       setPairCode((r.data as { code: string }).code)
+      setCodeExpiresAt(Date.now() + PAIR_TTL_MS)
     } else {
       setError('Falha ao gerar código de pareamento')
     }
     setPairLoading(false)
   }
 
+  // Limpa code quando expira
+  useEffect(() => {
+    if (codeExpiresAt && Date.now() >= codeExpiresAt) {
+      setPairCode(''); setCodeExpiresAt(null)
+    }
+  }, [codeExpiresAt])
+
   async function handleDisconnect() {
     if (!confirm('Desconectar o WhatsApp? Você precisará escanear/parear de novo.')) return
     setBusy(true)
     await adminInvoke('disconnect', { method: 'POST' })
-    setQr(''); setPairCode('')
+    setQr(''); setQrExpiresAt(null); setPairCode(''); setCodeExpiresAt(null)
     setBusy(false)
     setTimeout(refreshStatus, 1000)
   }
@@ -125,7 +167,7 @@ export default function WhatsAppTab() {
     if (!confirm('Fazer LOGOUT? Isso encerra a sessão por completo no aparelho.')) return
     setBusy(true)
     await adminInvoke('logout', { method: 'POST' })
-    setQr(''); setPairCode('')
+    setQr(''); setQrExpiresAt(null); setPairCode(''); setCodeExpiresAt(null)
     setBusy(false)
     setTimeout(refreshStatus, 1000)
   }
@@ -144,6 +186,14 @@ export default function WhatsAppTab() {
 
   const isLoggedIn = !!status?.loggedIn
   const isConnected = !!status?.connected
+
+  function fmtRemaining(expiresAt: number | null): string {
+    if (!expiresAt) return ''
+    const s = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000))
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+  }
+  const qrRemaining   = fmtRemaining(qrExpiresAt)
+  const codeRemaining = fmtRemaining(codeExpiresAt)
   const statusLabel = isLoggedIn ? 'Conectado' : isConnected ? 'Aguardando pareamento' : 'Desconectado'
   const statusColor = isLoggedIn ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10'
                                   : isConnected ? 'text-amber-400 border-amber-500/30 bg-amber-500/10'
@@ -229,16 +279,20 @@ export default function WhatsAppTab() {
               {qr ? (
                 <div className="flex flex-col items-center gap-3">
                   <img src={qr} alt="QR" className="w-64 h-64 rounded-lg bg-white p-3" />
+                  <div className="flex items-center gap-2">
+                    <span className="text-white/40 text-xs">Expira em</span>
+                    <span className="font-mono text-sm text-gold-400 tabular-nums">{qrRemaining}</span>
+                  </div>
                   <p className="text-white/40 text-xs text-center max-w-xs">
-                    WhatsApp → ⋮ → <strong className="text-white/60">Dispositivos conectados</strong> → <strong className="text-white/60">Conectar dispositivo</strong> → aponta a câmera. <br />
-                    O QR expira em ~30s. Se passar do tempo, gera de novo.
+                    WhatsApp → ⋮ → <strong className="text-white/60">Dispositivos conectados</strong> → <strong className="text-white/60">Conectar dispositivo</strong> → aponta a câmera.<br />
+                    O QR se renova automaticamente. Depois de 2 min você precisa gerar de novo.
                   </p>
                   <button
                     onClick={handleGetQr}
                     disabled={qrLoading}
                     className="text-xs text-white/50 hover:text-white/80 underline disabled:opacity-40"
                   >
-                    Gerar novo QR
+                    Reiniciar sessão de QR
                   </button>
                 </div>
               ) : (
@@ -280,6 +334,10 @@ export default function WhatsAppTab() {
                 <div className="mt-4 p-5 rounded-xl border border-gold-500/30 bg-gold-500/5 text-center">
                   <p className="text-white/40 text-[11px] tracking-widest uppercase mb-2">Código de pareamento</p>
                   <p className="font-mono text-3xl text-gold-400 tracking-[0.3em]">{pairCode}</p>
+                  <div className="mt-2 flex items-center justify-center gap-2">
+                    <span className="text-white/40 text-xs">Expira em</span>
+                    <span className="font-mono text-sm text-gold-400 tabular-nums">{codeRemaining}</span>
+                  </div>
                   <p className="text-white/40 text-xs mt-3 leading-relaxed">
                     No WhatsApp → ⋮ → <strong className="text-white/60">Dispositivos conectados</strong> → <strong className="text-white/60">Conectar dispositivo</strong> → toque em <strong className="text-white/60">Conectar com número de telefone</strong> e digite esse código.
                   </p>
