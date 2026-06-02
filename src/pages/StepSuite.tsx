@@ -547,20 +547,6 @@ function SuiteGallery({ suite, photoUrl, videoUrl, occupied, slotLabel, selected
 
         {/* Suite info */}
         <div className="px-6 py-5 space-y-5">
-          {/* Name + category */}
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-              <p className="font-serif text-2xl font-semibold text-transparent bg-clip-text"
-                style={{ backgroundImage: 'linear-gradient(135deg, #f5e0a0, #d4a017, #8b6010)' }}>
-                {suite.name}
-              </p>
-              <span className="text-[9px] tracking-widest uppercase px-2 py-0.5 rounded-full border border-gold-700/40 text-gold-600/60 shrink-0">
-                {CATEGORY_LABEL[suite.category]}
-              </span>
-            </div>
-            <p className="text-sm text-gold-700/60">{suite.description}</p>
-          </div>
-
           {/* Occupied notice */}
           {occupied && (
             <div
