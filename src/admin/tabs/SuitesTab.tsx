@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react'
-import * as tus from 'tus-js-client'
 import { supabase } from '../../lib/supabase'
 
 type Suite = {
@@ -19,7 +18,7 @@ export default function SuitesTab() {
   const [suites, setSuites] = useState<Suite[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState<Uploading>(null)
-  const [videoProgress, setVideoProgress] = useState<Record<string, number>>({})
+  const [videoProgress, setVideoProgress] = useState<Record<string, number>>({}) // 0-100 via XHR
   const photoRefs = useRef<Record<string, HTMLInputElement | null>>({})
   const videoRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
@@ -62,61 +61,46 @@ export default function SuitesTab() {
 
   async function uploadVideo(suiteId: string, file: File) {
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
-      alert('Sessão expirada. Faça login novamente.')
-      return
-    }
+    if (!session) { alert('Sessão expirada. Faça login novamente.'); return }
 
     setUploading({ id: suiteId, kind: 'video' })
     setVideoProgress(prev => ({ ...prev, [suiteId]: 0 }))
 
     const ext = file.name.split('.').pop() ?? 'mp4'
     const path = `${suiteId}.${ext}`
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 
-    const upload = new tus.Upload(file, {
-      endpoint: `${supabaseUrl}/storage/v1/upload/resumable`,
-      retryDelays: [0, 3000, 5000, 10000, 20000],
-      headers: {
-        authorization: `Bearer ${session.access_token}`,
-        'x-upsert': 'true',
-      },
-      uploadDataDuringCreation: false,
-      removeFingerprintOnSuccess: true,
-      metadata: {
-        bucketName: 'suite-videos',
-        objectName: path,
-        contentType: file.type,
-        cacheControl: '3600',
-      },
-      chunkSize: 6 * 1024 * 1024,
-      onError: (err: Error) => {
-        const is413 = err.message.includes('413') || err.message.includes('Maximum size')
-        if (is413) {
-          alert(
-            'Vídeo muito grande para o plano atual do Supabase.\n\n' +
-            'Para resolver: acesse supabase.com → seu projeto → Storage → Settings → aumente o "Global file upload size limit".\n\n' +
-            'No plano gratuito o limite é 50 MB. Comprima o vídeo ou faça upgrade para o plano Pro.'
-          )
-        } else {
-          alert(`Erro no upload: ${err.message}`)
-        }
-        setUploading(null)
-        setVideoProgress(prev => { const n = { ...prev }; delete n[suiteId]; return n })
-      },
-      onProgress: (uploaded: number, total: number) => {
-        setVideoProgress(prev => ({ ...prev, [suiteId]: Math.round((uploaded / total) * 100) }))
-      },
-      onSuccess: async () => {
-        const { data: { publicUrl } } = supabase.storage.from('suite-videos').getPublicUrl(path)
-        await supabase.from('suites').update({ video_url: publicUrl }).eq('id', suiteId)
-        setSuites(prev => prev.map(s => s.id === suiteId ? { ...s, video_url: publicUrl } : s))
-        setUploading(null)
-        setVideoProgress(prev => { const n = { ...prev }; delete n[suiteId]; return n })
-      },
+    // Upload via XHR para rastrear progresso sem depender do TUS
+    await new Promise<void>((resolve, reject) => {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+      const url = `${supabaseUrl}/storage/v1/object/suite-videos/${path}`
+
+      const xhr = new XMLHttpRequest()
+      xhr.open('POST', url)
+      xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`)
+      xhr.setRequestHeader('x-upsert', 'true')
+      xhr.setRequestHeader('Content-Type', file.type)
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable)
+          setVideoProgress(prev => ({ ...prev, [suiteId]: Math.round((e.loaded / e.total) * 100) }))
+      }
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) resolve()
+        else reject(new Error(`HTTP ${xhr.status}: ${xhr.responseText}`))
+      }
+      xhr.onerror = () => reject(new Error('Erro de rede'))
+      xhr.send(file)
+    }).then(async () => {
+      const { data: { publicUrl } } = supabase.storage.from('suite-videos').getPublicUrl(path)
+      await supabase.from('suites').update({ video_url: publicUrl }).eq('id', suiteId)
+      setSuites(prev => prev.map(s => s.id === suiteId ? { ...s, video_url: publicUrl } : s))
+    }).catch((err: Error) => {
+      alert(`Erro no upload: ${err.message}`)
+    }).finally(() => {
+      setUploading(null)
+      setVideoProgress(prev => { const n = { ...prev }; delete n[suiteId]; return n })
     })
-
-    upload.start()
   }
 
   async function deleteVideo(suiteId: string, videoUrl: string) {
