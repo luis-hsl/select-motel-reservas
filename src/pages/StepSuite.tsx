@@ -52,7 +52,7 @@ export default function StepSuite() {
   }, [checkIn, checkOut])
 
   useEffect(() => {
-    const promises: Promise<unknown>[] = []
+    const promises: PromiseLike<unknown>[] = []
 
     promises.push(
       supabase

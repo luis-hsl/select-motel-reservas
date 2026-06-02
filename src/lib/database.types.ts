@@ -187,7 +187,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_occupied_suite_ids: {
+        Args: { p_check_in: string; p_check_out: string }
+        Returns: { suite_id: string }[]
+      }
     }
     Enums: {
       [_ in never]: never
