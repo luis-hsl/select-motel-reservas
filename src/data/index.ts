@@ -8,9 +8,8 @@ export const PACKAGES: Package[] = [
     highlighted: true,
     includes: [
       'Decoração romântica',
-      'Jantar ou Sushi',
-      'Fondue',
-      'Entrada (somente para jantar)',
+      'Jantar completo (com entrada) — ou Sushi',
+      'Fondue de chocolate',
       'Vinho ou frisante',
     ],
     note: 'Ao escolher Sushi, a entrada não está inclusa.',

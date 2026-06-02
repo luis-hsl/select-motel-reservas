@@ -56,9 +56,15 @@ const THEME: Record<PkgId, {
   },
 }
 
+interface FoodOption {
+  item: string
+  note: string
+}
+
 interface PackageDetail {
   headline: string
   includes: { item: string; note?: string }[]
+  foodChoice?: { options: FoodOption[] }
   suites: { category: string; rooms: string; desc?: string }[]
   dates: string
   notes: string[]
@@ -69,17 +75,21 @@ const DETAIL: Record<PkgId, PackageDetail> = {
     headline: 'A experiência mais completa do Select Motel',
     includes: [
       { item: 'Decoração romântica completa do ambiente' },
-      { item: 'Jantar completo com entrada inclusa', note: 'A entrada está inclusa apenas ao escolher o jantar' },
-      { item: 'Sushi premium (alternativa ao jantar)', note: 'Ao optar por sushi, a entrada não está inclusa' },
       { item: 'Fondue de chocolate' },
       { item: 'Vinho ou Frisante — à escolha do casal' },
     ],
+    foodChoice: {
+      options: [
+        { item: 'Jantar completo', note: 'Inclui entrada (couvert)' },
+        { item: 'Sushi premium', note: 'Não inclui entrada' },
+      ],
+    },
     suites: [
       { category: 'Suíte VIP', rooms: 'Quartos 14 ou 16', desc: 'Suíte exclusiva com estrutura VIP' },
     ],
     dates: '8 a 14 de junho de 2026',
     notes: [
-      'A entrada (couvert) está inclusa somente ao escolher o jantar. Quem optar por sushi não terá entrada.',
+      'A entrada (couvert) está inclusa somente ao escolher o jantar.',
       'Para pernoite: apenas 1 suíte de cada categoria disponível por dia da promoção.',
       'Reservas de período disponíveis apenas durante a semana dos namorados.',
       'Não haverá reservas online fora da promoção na semana dos namorados.',
@@ -254,7 +264,7 @@ export default function StepPacote() {
         })}
       </div>
 
-      {/* Detail Modal — portal ao body para não ser afetado por transforms de ancestrais */}
+      {/* Detail Modal */}
       {detailId && detailPkg && createPortal(
         <PackageModal
           id={detailId}
@@ -345,7 +355,7 @@ function PackageModal({ id, pkg, detail, visible, onClose, onSelect }: ModalProp
         <div className="px-6"><GlowDivider color={t.dividerColor} /></div>
 
         {/* Prices */}
-        <div className="px-6 py-5 grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="px-6 py-5 grid grid-cols-2 gap-3">
           {[
             { label: 'Período', value: pkg.price_period },
             { label: 'Pernoite', value: pkg.price_overnight },
@@ -363,23 +373,55 @@ function PackageModal({ id, pkg, detail, visible, onClose, onSelect }: ModalProp
 
         {/* O que está incluído */}
         <Section title="O que está incluído" color={t.accentColor} dividerColor={t.dividerColor}>
-          <ul className="space-y-3">
+          <ul className="space-y-3 mb-4">
             {detail.includes.map((inc, i) => (
-              <li key={i}>
-                <div className="flex items-start gap-3">
-                  <span className="mt-0.5 text-sm shrink-0" style={{ color: t.iconColor }}>✦</span>
-                  <div>
-                    <p className="text-sm" style={{ color: 'rgba(245,224,180,0.85)' }}>{inc.item}</p>
-                    {inc.note && (
-                      <p className="text-[11px] mt-0.5 italic" style={{ color: t.labelColor }}>
-                        ⚠ {inc.note}
-                      </p>
-                    )}
-                  </div>
+              <li key={i} className="flex items-start gap-3">
+                <div className="mt-1.5 w-4 shrink-0 flex justify-center">
+                  <div className="w-1 h-1 rounded-full" style={{ background: t.accentColor }} />
+                </div>
+                <div>
+                  <p className="text-sm" style={{ color: 'rgba(245,224,180,0.85)' }}>{inc.item}</p>
+                  {inc.note && (
+                    <p className="text-[11px] mt-0.5 italic" style={{ color: t.labelColor }}>{inc.note}</p>
+                  )}
                 </div>
               </li>
             ))}
           </ul>
+
+          {/* Food choice — jantar OU sushi */}
+          {detail.foodChoice && (
+            <div className="mt-2">
+              <p className="text-[9px] tracking-widest uppercase mb-3 font-medium" style={{ color: t.labelColor }}>
+                Refeição — escolha uma das opções
+              </p>
+              <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${t.dividerColor}40` }}>
+                {detail.foodChoice.options.map((opt, i) => (
+                  <>
+                    {i > 0 && (
+                      <div
+                        key={`sep-${i}`}
+                        className="flex items-center gap-3 px-5 py-2"
+                        style={{ background: `${t.dividerColor}08`, borderTop: `1px solid ${t.dividerColor}20`, borderBottom: `1px solid ${t.dividerColor}20` }}
+                      >
+                        <div className="h-px flex-1" style={{ background: `${t.dividerColor}30` }} />
+                        <span className="text-[9px] tracking-[0.35em] uppercase font-semibold" style={{ color: t.labelColor }}>ou</span>
+                        <div className="h-px flex-1" style={{ background: `${t.dividerColor}30` }} />
+                      </div>
+                    )}
+                    <div
+                      key={i}
+                      className="px-5 py-4"
+                      style={{ background: `${t.dividerColor}${i === 0 ? '12' : '08'}` }}
+                    >
+                      <p className="text-sm font-medium" style={{ color: 'rgba(245,224,180,0.90)' }}>{opt.item}</p>
+                      <p className="text-[11px] mt-0.5 italic" style={{ color: t.labelColor }}>{opt.note}</p>
+                    </div>
+                  </>
+                ))}
+              </div>
+            </div>
+          )}
         </Section>
 
         {/* Suítes disponíveis */}
@@ -392,10 +434,8 @@ function PackageModal({ id, pkg, detail, visible, onClose, onSelect }: ModalProp
                 style={{ background: `${t.dividerColor}12`, border: `1px solid ${t.dividerColor}30` }}
               >
                 <p className="text-sm font-semibold mb-0.5" style={{ color: t.priceColor }}>{s.category}</p>
-                {s.desc && <p className="text-[11px] mb-1.5 italic" style={{ color: t.labelColor }}>{s.desc}</p>}
-                <p className="text-xs" style={{ color: 'rgba(245,224,180,0.6)' }}>
-                  🚪 {s.rooms}
-                </p>
+                {s.desc && <p className="text-[11px] mb-2 italic" style={{ color: t.labelColor }}>{s.desc}</p>}
+                <p className="text-xs" style={{ color: 'rgba(245,224,180,0.55)' }}>{s.rooms}</p>
               </div>
             ))}
           </div>
@@ -411,7 +451,7 @@ function PackageModal({ id, pkg, detail, visible, onClose, onSelect }: ModalProp
               Semana dos Namorados
             </p>
             <p className="text-sm font-medium" style={{ color: 'rgba(245,224,180,0.85)' }}>
-              📅 {detail.dates}
+              {detail.dates}
             </p>
           </div>
         </Section>
@@ -420,9 +460,11 @@ function PackageModal({ id, pkg, detail, visible, onClose, onSelect }: ModalProp
         <Section title="Observações importantes" color={t.accentColor} dividerColor={t.dividerColor}>
           <ul className="space-y-2.5">
             {detail.notes.map((note, i) => (
-              <li key={i} className="flex items-start gap-2.5">
-                <span className="text-xs mt-0.5 shrink-0" style={{ color: t.accentColor }}>!</span>
-                <p className="text-xs leading-relaxed" style={{ color: 'rgba(245,224,180,0.65)' }}>{note}</p>
+              <li key={i} className="flex items-start gap-3">
+                <div className="mt-1.5 shrink-0">
+                  <div className="w-1 h-1 rounded-full" style={{ background: `${t.accentColor}60` }} />
+                </div>
+                <p className="text-xs leading-relaxed" style={{ color: 'rgba(245,224,180,0.55)' }}>{note}</p>
               </li>
             ))}
           </ul>
