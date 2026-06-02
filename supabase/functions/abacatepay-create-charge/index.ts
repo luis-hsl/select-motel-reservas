@@ -93,25 +93,24 @@ Deno.serve(async (req)=>{
     let qrCodeImage = null;
     try {
       if (paymentMethod === 'pix') {
-        const resp = await abacatePOST('/transparents/create', {
-          method: 'PIX',
-          data: {
-            amount: amountCents,
-            description: `Reserva Select Motel — check-in ${checkInFmt}`,
-            externalId: reservationId,
-            metadata: {
-              reservationId
-            },
-            customer: {
-              name: customerName,
-              email: customerEmail,
-              cellphone: phone,
-              ...taxId ? {
-                taxId
-              } : {}
-            }
-          }
-        });
+        // Em prod, se o `customer` é enviado, TODOS os campos viram obrigatórios
+        // (name+email+cellphone+taxId). Sem taxId → mandamos sem customer.
+        const data: Record<string, unknown> = {
+          amount: amountCents,
+          expiresIn: 3600,
+          description: `Reserva Select Motel — check-in ${checkInFmt}`,
+          externalId: reservationId,
+          metadata: { reservationId }
+        };
+        if (taxId) {
+          data.customer = {
+            name: customerName,
+            email: customerEmail,
+            cellphone: phone,
+            taxId
+          };
+        }
+        const resp = await abacatePOST('/transparents/create', { method: 'PIX', data });
         const d = resp.data ?? resp;
         billingId = d.id ?? d._id ?? null;
         brCode = d.brCode ?? d.pixCode ?? '';
@@ -136,23 +135,18 @@ Deno.serve(async (req)=>{
         const pd = productResp.data ?? productResp;
         const productId = pd._id ?? pd.id;
         if (!productId) throw new Error(`productId não retornado: ${JSON.stringify(productResp)}`);
+        // card.maxInstallments > 1 faz aparecer o seletor de parcelas
+        // (mínimo R$10 por parcela; a API recusa se total ÷ parcelas < R$10)
+        const maxInstallments = Math.max(1, Math.min(12, Math.floor(amountCents / 1000)));
         const checkoutResp = await abacatePOST('/checkouts/create', {
           frequency: 'ONE_TIME',
-          methods: [
-            'CARD'
-          ],
-          items: [
-            {
-              id: productId,
-              quantity: 1
-            }
-          ],
-          returnUrl: `${origin}/?payment=ok&ref=${reservationId}`,
+          methods: ['CARD'],
+          items: [{ id: productId, quantity: 1 }],
+          returnUrl:     `${origin}/?payment=ok&ref=${reservationId}`,
           completionUrl: `${origin}/?payment=ok&ref=${reservationId}`,
           customerId,
-          metadata: {
-            reservationId
-          }
+          card: { maxInstallments },
+          metadata: { reservationId }
         });
         const d = checkoutResp.data ?? checkoutResp;
         billingId = d._id ?? d.id ?? null;
