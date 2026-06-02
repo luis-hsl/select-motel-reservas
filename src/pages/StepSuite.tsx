@@ -18,8 +18,6 @@ function buildSlotLabel(cin: Date, cout: Date): string {
   return `${fmt(cin)} – ${fmt(cout)}`
 }
 
-const WHATSAPP_MSG = encodeURIComponent('Olá! Gostaria de verificar disponibilidade de suítes para o Dia dos Namorados.')
-
 const CATEGORY_LABEL: Record<SuiteCategory, string> = {
   'VIP Piscina': 'VIP · Piscina',
   'Hidro': 'Hidro',
@@ -41,7 +39,6 @@ export default function StepSuite() {
   const [galleryFor, setGalleryFor] = useState<Suite | null>(null)
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({})
   const [videoUrls, setVideoUrls] = useState<Record<string, string>>({})
-  const [whatsappNum, setWhatsappNum] = useState('5543999999999')
 
   const packageSuites = SUITES.filter(s => pkg && s.packageIds.includes(pkg.id as never))
 
@@ -71,15 +68,6 @@ export default function StepSuite() {
             setVideoUrls(vids)
           }
         })
-    )
-
-    promises.push(
-      supabase
-        .from('settings')
-        .select('value')
-        .eq('key', 'whatsapp_number')
-        .single()
-        .then(({ data }) => { if (data?.value) setWhatsappNum(data.value) })
     )
 
     const cin = checkIn
@@ -142,12 +130,9 @@ export default function StepSuite() {
           ))}
         </div>
       ) : allOccupied ? (
-        <div className="space-y-4">
-          <div className="rounded-xl border border-red-900/40 bg-red-900/10 px-5 py-4 text-center">
-            <p className="text-sm text-red-400/80 mb-1">Todas as suítes do {pkg?.label} estão ocupadas para este período.</p>
-            <p className="text-xs text-gold-800/50">Entre em contato com nosso suporte.</p>
-          </div>
-          <SupportCard highlight whatsappNum={whatsappNum} />
+        <div className="rounded-xl border border-red-900/40 bg-red-900/10 px-5 py-4 text-center">
+          <p className="text-sm text-red-400/80 mb-1">Todas as suítes do {pkg?.label} estão ocupadas para este período.</p>
+          <p className="text-xs text-gold-800/50">Por favor, escolha outro horário ou data.</p>
         </div>
       ) : (
         <div className="space-y-8">
@@ -178,7 +163,6 @@ export default function StepSuite() {
               </div>
             )
           })}
-          <SupportCard highlight={false} whatsappNum={whatsappNum} />
         </div>
       )}
 
@@ -650,26 +634,3 @@ function DetailChip({ label, value }: { label: string; value: string }) {
   )
 }
 
-function SupportCard({ highlight, whatsappNum }: { highlight: boolean; whatsappNum: string }) {
-  return (
-    <a
-      href={`https://wa.me/${whatsappNum}?text=${WHATSAPP_MSG}`}
-      target="_blank" rel="noopener noreferrer"
-      className={[
-        'flex items-center gap-4 w-full rounded-xl border px-5 py-4 transition-all duration-200 hover:opacity-90 active:scale-[0.98]',
-        highlight ? 'border-gold-600/60 bg-gold-900/20' : 'border-gold-900/30 bg-black/30',
-      ].join(' ')}
-    >
-      <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-lg" style={{ background: 'rgba(37,211,102,0.15)', border: '1px solid rgba(37,211,102,0.3)' }}>
-        💬
-      </div>
-      <div className="min-w-0">
-        <p className={['text-sm font-medium', highlight ? 'text-gold-300' : 'text-gold-400/80'].join(' ')}>
-          Falar com o suporte
-        </p>
-        <p className="text-[11px] text-gold-700/50">Dúvidas sobre disponibilidade? Chamamos no WhatsApp.</p>
-      </div>
-      <span className="text-gold-700/40 text-sm ml-auto shrink-0">→</span>
-    </a>
-  )
-}
