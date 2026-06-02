@@ -37,7 +37,7 @@ Deno.serve(async (req)=>{
     status: 405
   });
   try {
-    const { packageId, type, suiteId, checkIn, checkOut, customerName, customerPhone, customerEmail, customerTaxId, totalAmount, appOrigin, paymentMethod = 'pix' } = await req.json();
+    const { packageId, type, suiteId, checkIn, checkOut, customerName, customerPhone, customerEmail, customerTaxId, totalAmount, appOrigin, paymentMethod = 'pix', extras = {} } = await req.json();
     const supabase = createClient(Deno.env.get('SUPABASE_URL'), Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'));
     const holdExpiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
     const now = new Date().toISOString();
@@ -51,7 +51,8 @@ Deno.serve(async (req)=>{
       await supabase.from('reservations').update({
         payment_method: paymentMethod,
         hold_expires_at: holdExpiresAt,
-        payment_id: null
+        payment_id: null,
+        extras
       }).eq('id', reservationId);
       console.log('Reusing reservation:', reservationId, '| new method:', paymentMethod);
     } else {
@@ -67,7 +68,8 @@ Deno.serve(async (req)=>{
         total_amount: totalAmount,
         payment_method: paymentMethod,
         status: 'pending',
-        hold_expires_at: holdExpiresAt
+        hold_expires_at: holdExpiresAt,
+        extras
       }).select('id').single();
       if (insertError || !reservation) {
         const msg = insertError?.message ?? 'Erro ao criar reserva';

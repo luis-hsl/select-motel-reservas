@@ -14,10 +14,36 @@ interface Reservation {
   id: string
   customer_name: string
   customer_phone: string
+  customer_email: string
   check_in: string
   check_out: string
   total_amount: number
   suite_id: string
+  package_id: string
+  type: string
+  payment_method: string | null
+  extras: {
+    packageLabel?: string | null
+    includes?: string[]
+    drink?: string | null
+    food?: string | null
+    type?: string | null
+  } | null
+}
+
+const DRINK_LABEL: Record<string, string> = {
+  vinho:    'Vinho',
+  frisante: 'Frisante',
+  drinque:  'Drink especial',
+}
+const FOOD_LABEL: Record<string, string> = {
+  jantar: 'Jantar',
+  sushi:  'Sushi',
+  pizza:  'Pizza',
+}
+const TYPE_LABEL: Record<string, string> = {
+  period:    'Período (2h)',
+  overnight: 'Pernoite (12h)',
 }
 
 function normalizePhoneBR(raw: string): string {
@@ -64,7 +90,7 @@ Deno.serve(async (req: Request) => {
 
   const { data: r, error } = await supabase
     .from('reservations')
-    .select('id, customer_name, customer_phone, check_in, check_out, total_amount, suite_id')
+    .select('id, customer_name, customer_phone, customer_email, check_in, check_out, total_amount, suite_id, package_id, type, payment_method, extras')
     .eq('id', reservationId)
     .single<Reservation>()
 
@@ -119,16 +145,35 @@ Em caso de dúvidas, é só responder esta mensagem.`
   const motelPhoneRaw = setting?.value?.trim() ?? ''
   if (motelPhoneRaw) {
     const motelPhone = normalizePhoneBR(motelPhoneRaw)
-    const motelMsg =
-`🆕 *Nova reserva confirmada*
 
-👤 ${r.customer_name}
-📱 ${r.customer_phone}
-🛏 Suíte: ${r.suite_id}
-📅 ${fmtDateTime(r.check_in)} → ${fmtDateTime(r.check_out)}
-💳 ${fmtBRL(r.total_amount)}
+    // Monta detalhes do pacote + escolhas (bebida/comida) + tipo + pagamento.
+    const ex = r.extras ?? {}
+    const lines: string[] = []
+    lines.push(`🆕 *Nova reserva confirmada*`)
+    lines.push('')
+    lines.push(`👤 *Cliente:* ${r.customer_name}`)
+    lines.push(`📱 *Telefone:* ${r.customer_phone}`)
+    if (r.customer_email) lines.push(`✉️ *E-mail:* ${r.customer_email}`)
+    lines.push('')
+    lines.push(`🛏 *Suíte:* ${r.suite_id}`)
+    lines.push(`📅 *Check-in:*  ${fmtDateTime(r.check_in)}`)
+    lines.push(`📅 *Check-out:* ${fmtDateTime(r.check_out)}`)
+    const typeLabel = TYPE_LABEL[ex.type ?? r.type] ?? (ex.type ?? r.type)
+    lines.push(`⏱ *Tipo:* ${typeLabel}`)
+    lines.push('')
+    lines.push(`📦 *Pacote:* ${ex.packageLabel ?? r.package_id}`)
+    if (Array.isArray(ex.includes) && ex.includes.length) {
+      lines.push(`   • ${ex.includes.join('\n   • ')}`)
+    }
+    if (ex.drink) lines.push(`🥂 *Bebida escolhida:* ${DRINK_LABEL[ex.drink] ?? ex.drink}`)
+    if (ex.food)  lines.push(`🍽 *Comida escolhida:* ${FOOD_LABEL[ex.food]  ?? ex.food}`)
+    lines.push('')
+    lines.push(`💳 *Total:* ${fmtBRL(r.total_amount)}` +
+               (r.payment_method ? `  (${r.payment_method.toUpperCase()})` : ''))
+    lines.push('')
+    lines.push(`Código da reserva: ${r.id}`)
+    const motelMsg = lines.join('\n')
 
-#${r.id.slice(0, 8)}`
     const mRes = await sendText(motelPhone, motelMsg)
     motelSent = mRes.ok
     if (!mRes.ok) console.error('Wuzapi (motel) error', mRes.status, mRes.body)

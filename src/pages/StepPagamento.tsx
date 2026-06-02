@@ -25,8 +25,18 @@ export default function StepPagamento() {
   const {
     package: pkg, type, suite, checkIn, checkOut,
     customerName, customerPhone, customerEmail, customerTaxId,
-    totalAmount, prevStep,
+    totalAmount, prevStep, drink, food,
   } = useStore()
+  // Snapshot do que o cliente escolheu — vai na coluna extras (jsonb) da reserva
+  // e é usado pra montar a mensagem que o motel recebe quando o pagamento confirma.
+  const extras = {
+    packageId:    pkg?.id    ?? null,
+    packageLabel: pkg?.label ?? null,
+    includes:     pkg?.includes ?? [],
+    drink,
+    food,
+    type,
+  }
   const total = totalAmount()
   const checkout = checkOut()
 
@@ -91,6 +101,7 @@ export default function StepPagamento() {
           totalAmount: total,
           customerTaxId,
           appOrigin: window.location.origin,
+          extras,
         },
       },
     )
@@ -134,6 +145,7 @@ export default function StepPagamento() {
           totalAmount: total,
           appOrigin: window.location.origin,
           paymentMethod: 'card',
+          extras,
         },
       },
     )
