@@ -58,17 +58,14 @@ export default function StepSuite() {
     promises.push(
       supabase
         .from('suites')
-        .select('id, room_number, photo_url, video_url')
+        .select('id, photo_url, video_url')
         .then(({ data }) => {
           if (data) {
             const urls: Record<string, string> = {}
             const vids: Record<string, string> = {}
-            data.forEach((s: { id: string; room_number: number | null; photo_url: string | null; video_url: string | null }) => {
-              // Match by room_number to handle any ID mismatch between DB and local constants
-              const local = SUITES.find(ls => ls.room_number === s.room_number)
-              const key = local?.id ?? s.id
-              if (s.photo_url) urls[key] = s.photo_url
-              if (s.video_url) vids[key] = s.video_url
+            data.forEach(s => {
+              if (s.photo_url) urls[s.id] = s.photo_url
+              if (s.video_url) vids[s.id] = s.video_url
             })
             setPhotoUrls(urls)
             setVideoUrls(vids)
@@ -208,7 +205,8 @@ function SuiteCard({ suite, photoUrl, occupied, slotLabel, selected, onChoose, o
   suite: Suite; photoUrl?: string; occupied: boolean; slotLabel: string; selected: boolean
   onChoose: () => void; onViewMore: () => void
 }) {
-  const coverUrl = photoUrl ?? `/suites/${suite.id}.jpg`
+  const [imgLoaded, setImgLoaded] = useState(false)
+  const showPlaceholder = !photoUrl || !imgLoaded
 
   return (
     <div
@@ -224,24 +222,28 @@ function SuiteCard({ suite, photoUrl, occupied, slotLabel, selected, onChoose, o
     >
       {/* Background: photo + gradient overlay */}
       <div className="absolute inset-0" style={{ backgroundColor: '#120a02' }}>
-        <img
-          src={toWebP(coverUrl)}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          className={[
-            'absolute inset-0 w-full h-full object-cover transition-all duration-300',
-            occupied ? 'grayscale-[60%] brightness-[0.55]' : '',
-          ].join(' ')}
-        />
+        {photoUrl && (
+          <img
+            src={photoUrl}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            onLoad={() => setImgLoaded(true)}
+            onError={() => setImgLoaded(false)}
+            className={[
+              'absolute inset-0 w-full h-full object-cover transition-all duration-300',
+              occupied ? 'grayscale-[60%] brightness-[0.55]' : '',
+            ].join(' ')}
+          />
+        )}
         <div
           className="absolute inset-0"
           style={{
-            backgroundImage: [
+            backgroundImage: showPlaceholder ? [
               'radial-gradient(ellipse at 50% 110%, rgba(180,90,15,0.55) 0%, transparent 55%)',
               'radial-gradient(ellipse at 20% 85%, rgba(130,65,10,0.4) 0%, transparent 45%)',
               'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.65) 100%)',
-            ].join(', '),
+            ].join(', ') : 'linear-gradient(to bottom, rgba(0,0,0,0) 50%, rgba(0,0,0,0.55) 100%)',
           }}
         />
       </div>
@@ -295,7 +297,7 @@ function SuiteCard({ suite, photoUrl, occupied, slotLabel, selected, onChoose, o
       <div className="relative z-10 h-full flex flex-col p-4">
 
         {/* Top: SUÍTE label + line — only when no uploaded cover photo */}
-        {!photoUrl && (
+        {showPlaceholder && (
           <div className="text-center">
             <p className="text-[9px] tracking-[0.45em] uppercase font-medium mb-1.5" style={{ color: occupied ? 'rgba(180,150,100,0.5)' : 'rgba(220,185,100,0.75)' }}>
               S U Í T E
@@ -314,7 +316,7 @@ function SuiteCard({ suite, photoUrl, occupied, slotLabel, selected, onChoose, o
 
         {/* Center: Room number — only when no uploaded cover photo */}
         <div className="flex-1 flex items-center justify-center">
-          {!photoUrl && (
+          {showPlaceholder && (
             <span
               className="font-serif font-bold text-transparent bg-clip-text select-none"
               style={{
@@ -335,7 +337,7 @@ function SuiteCard({ suite, photoUrl, occupied, slotLabel, selected, onChoose, o
 
         {/* Bottom: category + buttons */}
         <div className="space-y-2">
-          {!photoUrl && (
+          {showPlaceholder && (
             <p className="text-[9px] tracking-widest uppercase text-center" style={{ color: occupied ? 'rgba(160,120,60,0.4)' : 'rgba(200,165,80,0.5)' }}>
               {CATEGORY_LABEL[suite.category]}
             </p>
