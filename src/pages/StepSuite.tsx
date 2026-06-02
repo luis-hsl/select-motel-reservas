@@ -580,11 +580,10 @@ function SuiteGallery({ suite, photoUrl, videoUrl, occupied, slotLabel, selected
             </div>
           )}
 
-          {/* Details */}
-          <div className="grid grid-cols-2 gap-3">
-            <DetailChip label="Tamanho" value={suite.size === 'large' ? 'Grande' : 'Compacta'} />
-            <DetailChip label="Limpeza" value={`+${suite.cleaning_buffer_h}h entre reservas`} />
-          </div>
+          {/* Limpeza */}
+          <p className="text-[11px] text-gold-700/50 text-center">
+            🧹 Limpeza de {suite.cleaning_buffer_h === 1 ? '1 hora' : `${suite.cleaning_buffer_h} horas`} entre reservas
+          </p>
 
           {/* CTA */}
           {!occupied ? (
@@ -606,14 +605,4 @@ function SuiteGallery({ suite, photoUrl, videoUrl, occupied, slotLabel, selected
   )
 }
 
-// ── Sub-components ─────────────────────────────────────────
-
-function DetailChip({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl px-4 py-3" style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.2)' }}>
-      <p className="text-[9px] tracking-widest uppercase text-gold-700/50 mb-0.5">{label}</p>
-      <p className="text-xs text-gold-400/80 font-medium">{value}</p>
-    </div>
-  )
-}
 
