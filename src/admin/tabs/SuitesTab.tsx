@@ -3,16 +3,8 @@ import { useState, useEffect, useRef } from 'react'
 import * as tus from 'tus-js-client'
 import { supabase } from '../../lib/supabase'
 
-// URL direta do Supabase extraída do JWT (bypassa proxy nginx que bloqueia TUS)
-function getDirectSupabaseUrl(): string {
-  try {
-    const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string
-    const payload = JSON.parse(atob(key.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
-    return `https://${payload.ref}.supabase.co`
-  } catch {
-    return import.meta.env.VITE_SUPABASE_URL as string
-  }
-}
+// URL direta do Supabase — bypassa proxy nginx que bloqueia headers TUS
+const SUPABASE_DIRECT_URL = 'https://trfzjleivvbogdwelfhv.supabase.co'
 
 type Suite = {
   id: string
@@ -82,12 +74,9 @@ export default function SuitesTab() {
     const ext = file.name.split('.').pop() ?? 'mp4'
     const path = `${suiteId}.${ext}`
 
-    // TUS aponta para URL direta do Supabase (bypassa proxy nginx que bloqueia headers TUS)
-    const directUrl = getDirectSupabaseUrl()
-
     await new Promise<void>((resolve, reject) => {
       const upload = new tus.Upload(file, {
-        endpoint: `${directUrl}/storage/v1/upload/resumable`,
+        endpoint: `${SUPABASE_DIRECT_URL}/storage/v1/upload/resumable`,
         retryDelays: [0, 3000, 5000, 10000, 20000],
         headers: {
           authorization: `Bearer ${session.access_token}`,
