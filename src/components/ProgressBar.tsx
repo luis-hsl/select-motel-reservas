@@ -12,7 +12,13 @@ export default function ProgressBar({ currentStep }: Props) {
       <div className="max-w-7xl mx-auto px-6 xl:px-10 py-3.5 flex items-center justify-between gap-6">
         {/* Logo */}
         <div className="flex items-center shrink-0">
-          <img src="/logo.webp" alt="Select Motel" className="w-auto" style={{ height: 'clamp(3.6rem, 5.5vw, 5.2rem)' }} />
+          <img
+            src="/logo-header.webp"
+            alt="Select Motel · Grupo Scuira"
+            className="w-auto"
+            style={{ height: 'clamp(2.8rem, 4.5vw, 4rem)' }}
+            onError={e => { (e.currentTarget as HTMLImageElement).src = '/logo.webp' }}
+          />
         </div>
 
         {/* Step label + bar */}
