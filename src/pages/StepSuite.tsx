@@ -348,20 +348,20 @@ function SuiteCard({ suite, photoUrl, occupied, slotLabel, selected, onChoose, o
               Reservado
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-1.5">
-              <button
-                onClick={(e) => { e.stopPropagation(); onViewMore() }}
-                className="py-1.5 rounded-lg text-[10px] tracking-wide font-medium transition-all duration-200 hover:opacity-90 active:scale-95"
-                style={{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(201,168,76,0.4)', color: 'rgba(220,185,100,0.8)' }}
-              >
-                Ver mais
-              </button>
+            <div className="flex flex-col gap-1.5">
               <button
                 onClick={onChoose}
-                className="py-1.5 rounded-lg text-[10px] tracking-wide font-semibold text-black transition-all duration-200 hover:opacity-90 active:scale-95"
-                style={{ background: selected ? 'linear-gradient(135deg,#c9a84c,#f5d87a,#a07820)' : 'rgba(201,168,76,0.85)' }}
+                className="w-full py-2 rounded-xl text-[11px] tracking-wider font-semibold text-black transition-all duration-200 hover:opacity-90 active:scale-95"
+                style={{ background: selected ? 'linear-gradient(135deg,#c9a84c,#f5d87a,#a07820)' : 'linear-gradient(135deg,#a07820,#d4a017,#c9a84c)' }}
               >
                 {selected ? '✓ Escolhida' : 'Escolher'}
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); onViewMore() }}
+                className="w-full py-1.5 rounded-xl text-[10px] tracking-widest font-semibold uppercase transition-all duration-200 hover:opacity-90 active:scale-95"
+                style={{ background: 'rgba(201,168,76,0.12)', border: '1px solid rgba(201,168,76,0.55)', color: 'rgba(240,210,120,0.95)', letterSpacing: '0.12em' }}
+              >
+                Ver Suíte
               </button>
             </div>
           )}
