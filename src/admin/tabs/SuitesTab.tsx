@@ -1,5 +1,18 @@
 import { useState, useEffect, useRef } from 'react'
+// @ts-ignore
+import * as tus from 'tus-js-client'
 import { supabase } from '../../lib/supabase'
+
+// URL direta do Supabase extraída do JWT (bypassa proxy nginx que bloqueia TUS)
+function getDirectSupabaseUrl(): string {
+  try {
+    const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string
+    const payload = JSON.parse(atob(key.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+    return `https://${payload.ref}.supabase.co`
+  } catch {
+    return import.meta.env.VITE_SUPABASE_URL as string
+  }
+}
 
 type Suite = {
   id: string
@@ -18,7 +31,8 @@ export default function SuitesTab() {
   const [suites, setSuites] = useState<Suite[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState<Uploading>(null)
-const photoRefs = useRef<Record<string, HTMLInputElement | null>>({})
+  const [videoProgress, setVideoProgress] = useState<Record<string, number>>({})
+  const photoRefs = useRef<Record<string, HTMLInputElement | null>>({})
   const videoRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
   useEffect(() => { load() }, [])
@@ -59,25 +73,52 @@ const photoRefs = useRef<Record<string, HTMLInputElement | null>>({})
   }
 
   async function uploadVideo(suiteId: string, file: File) {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) { alert('Sessão expirada. Faça login novamente.'); return }
+
     setUploading({ id: suiteId, kind: 'video' })
+    setVideoProgress(prev => ({ ...prev, [suiteId]: 0 }))
 
     const ext = file.name.split('.').pop() ?? 'mp4'
     const path = `${suiteId}.${ext}`
 
-    const { error } = await supabase.storage
-      .from('suite-videos')
-      .upload(path, file, { upsert: true, contentType: file.type })
+    // TUS aponta para URL direta do Supabase (bypassa proxy nginx que bloqueia headers TUS)
+    const directUrl = getDirectSupabaseUrl()
 
-    if (error) {
-      alert(`Erro no upload: ${error.message}`)
+    await new Promise<void>((resolve, reject) => {
+      const upload = new tus.Upload(file, {
+        endpoint: `${directUrl}/storage/v1/upload/resumable`,
+        retryDelays: [0, 3000, 5000, 10000, 20000],
+        headers: {
+          authorization: `Bearer ${session.access_token}`,
+          'x-upsert': 'true',
+        },
+        uploadDataDuringCreation: true,
+        removeFingerprintOnSuccess: true,
+        metadata: {
+          bucketName: 'suite-videos',
+          objectName: path,
+          contentType: file.type,
+          cacheControl: '3600',
+        },
+        chunkSize: 6 * 1024 * 1024,
+        onError: reject,
+        onProgress: (uploaded: number, total: number) => {
+          setVideoProgress(prev => ({ ...prev, [suiteId]: Math.round((uploaded / total) * 100) }))
+        },
+        onSuccess: () => resolve(),
+      })
+      upload.start()
+    }).then(async () => {
+      const { data: { publicUrl } } = supabase.storage.from('suite-videos').getPublicUrl(path)
+      await supabase.from('suites').update({ video_url: publicUrl }).eq('id', suiteId)
+      setSuites(prev => prev.map(s => s.id === suiteId ? { ...s, video_url: publicUrl } : s))
+    }).catch((err: Error) => {
+      alert(`Erro no upload: ${err.message}`)
+    }).finally(() => {
       setUploading(null)
-      return
-    }
-
-    const { data: { publicUrl } } = supabase.storage.from('suite-videos').getPublicUrl(path)
-    await supabase.from('suites').update({ video_url: publicUrl }).eq('id', suiteId)
-    setSuites(prev => prev.map(s => s.id === suiteId ? { ...s, video_url: publicUrl } : s))
-    setUploading(null)
+      setVideoProgress(prev => { const n = { ...prev }; delete n[suiteId]; return n })
+    })
   }
 
   async function deleteVideo(suiteId: string, videoUrl: string) {
@@ -102,6 +143,7 @@ const photoRefs = useRef<Record<string, HTMLInputElement | null>>({})
           const uploadingPhoto = uploading?.id === suite.id && uploading.kind === 'photo'
           const uploadingVideo = uploading?.id === suite.id && uploading.kind === 'video'
           const busy = uploadingPhoto || uploadingVideo
+          const pct = videoProgress[suite.id]
 
           return (
             <div key={suite.id} className="bg-white/[0.03] border border-white/8 rounded-xl overflow-hidden">
@@ -139,10 +181,13 @@ const photoRefs = useRef<Record<string, HTMLInputElement | null>>({})
                 </div>
               )}
 
-              {/* ── Indicador de upload de vídeo ── */}
+              {/* ── Barra de progresso do vídeo ── */}
               {uploadingVideo && (
                 <div className="px-3 pt-2">
-                  <p className="text-[10px] text-blue-400/70 text-center animate-pulse">Enviando vídeo...</p>
+                  <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500 transition-all duration-300 rounded-full" style={{ width: `${pct ?? 0}%` }} />
+                  </div>
+                  <p className="text-[10px] text-blue-400/70 text-center mt-1">{pct ?? 0}% enviado</p>
                 </div>
               )}
 
@@ -203,7 +248,7 @@ const photoRefs = useRef<Record<string, HTMLInputElement | null>>({})
                     disabled={busy}
                     className="py-2 rounded-lg text-xs font-medium border border-blue-500/30 text-blue-400/80 hover:bg-blue-500/10 hover:text-blue-400 transition-colors disabled:opacity-40"
                   >
-                    {uploadingVideo ? '↑ Enviando...' : suite.video_url ? '▶ Trocar vídeo' : '▶ + Vídeo'}
+                    {uploadingVideo ? `↑ ${pct ?? 0}%` : suite.video_url ? '▶ Trocar vídeo' : '▶ + Vídeo'}
                   </button>
                 </div>
 
