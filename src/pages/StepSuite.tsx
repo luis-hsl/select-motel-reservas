@@ -29,7 +29,7 @@ const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set())
     const checkOut = checkIn && type ? calcCheckOut(checkIn, type) : null
 
     Promise.all([
-      supabase.from('suites').select('id,photo_url,video_url'),
+      supabase.from('suites').select('id,room_number,photo_url,video_url'),
       (supabase as any).from('suite_photos').select('suite_id,url').order('sort_order'),
       checkIn && checkOut
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -42,9 +42,12 @@ const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set())
       if (suiteRes.data) {
         const photos: Record<string, string> = {}
         const videos: Record<string, string> = {}
-        suiteRes.data.forEach((s: { id: string; photo_url: string | null; video_url: string | null }) => {
-          if (s.photo_url) photos[s.id] = s.photo_url
-          if (s.video_url) videos[s.id] = s.video_url
+        suiteRes.data.forEach((s: { id: string; room_number: number | null; photo_url: string | null; video_url: string | null }) => {
+          // Match by room_number to handle any ID mismatch between DB and local constants
+          const local = SUITES.find(ls => ls.room_number === s.room_number)
+          const key = local?.id ?? s.id
+          if (s.photo_url) photos[key] = s.photo_url
+          if (s.video_url) videos[key] = s.video_url
         })
         setPhotoUrls(photos)
         setVideoUrls(videos)
@@ -171,12 +174,13 @@ function SuiteCard({ suite, photoUrl, occupied, selected, onChoose, onViewMore }
         className="absolute inset-0"
         style={{
           backgroundColor: '#120a02',
-          backgroundImage: [
-            'radial-gradient(ellipse at 50% 110%, rgba(180,90,15,0.55) 0%, transparent 55%)',
-            'radial-gradient(ellipse at 20% 85%, rgba(130,65,10,0.4) 0%, transparent 45%)',
-            'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.65) 100%)',
-            ...(photoUrl ? [`url(${photoUrl})`] : []),
-          ].join(', '),
+          backgroundImage: photoUrl
+            ? `linear-gradient(to bottom, rgba(0,0,0,0) 45%, rgba(0,0,0,0.6) 100%), url(${photoUrl})`
+            : [
+                'radial-gradient(ellipse at 50% 110%, rgba(180,90,15,0.55) 0%, transparent 55%)',
+                'radial-gradient(ellipse at 20% 85%, rgba(130,65,10,0.4) 0%, transparent 45%)',
+                'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.65) 100%)',
+              ].join(', '),
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}
@@ -321,7 +325,9 @@ function SuiteGallery({ suite, photos, videoUrl, occupied, selected, onChoose, o
               muted
               loop
               playsInline
-              className="block w-auto max-h-[58vh]"
+              controls
+              className="block w-full"
+              style={{ maxHeight: '60vh' }}
             />
             {/* Close button */}
             <button
