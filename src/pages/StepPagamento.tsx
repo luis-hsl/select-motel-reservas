@@ -38,7 +38,7 @@ interface PixCharge {
 export default function StepPagamento() {
   const {
     package: pkg, type, suite, checkIn, checkOut,
-    customerName, customerPhone, customerEmail,
+    customerName, customerPhone, customerEmail, customerTaxId,
     totalAmount, prevStep, drink, food,
   } = useStore()
   // Snapshot do que o cliente escolheu — vai na coluna extras (jsonb) da reserva
@@ -112,6 +112,7 @@ export default function StepPagamento() {
           customerName,
           customerPhone,
           customerEmail,
+          customerTaxId,
           totalAmount: total,
           appOrigin: window.location.origin,
           extras,
@@ -154,6 +155,7 @@ export default function StepPagamento() {
           customerName,
           customerPhone,
           customerEmail,
+          customerTaxId,
           totalAmount: total,
           appOrigin: window.location.origin,
           paymentMethod: 'card',
