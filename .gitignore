@@ -32,3 +32,5 @@ infra/*.dump
 *.sln
 *.sw?
 .claude/
+
+.vercel
