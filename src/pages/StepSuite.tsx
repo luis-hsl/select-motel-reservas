@@ -449,10 +449,10 @@ function SuiteGallery({ suite, photoUrl, videoUrl, occupied, slotLabel, selected
           </div>
         )}
 
-        {/* Cover photo — shown always (below video if video present, alone if not) */}
-        <div
+        {/* Cover photo — shown only when there is no video */}
+        {!videoUrl && <div
           className="relative w-full overflow-hidden"
-          style={{ aspectRatio: videoUrl ? '16 / 9' : '4 / 3', backgroundColor: '#1a0f02' }}
+          style={{ aspectRatio: '4 / 3', backgroundColor: '#1a0f02' }}
         >
           <img
             src={toWebP(coverUrl, 800)}
@@ -555,7 +555,7 @@ function SuiteGallery({ suite, photoUrl, videoUrl, occupied, slotLabel, selected
               </div>
             </div>
           )}
-        </div>
+        </div>}
 
         {/* Extra photos grid */}
         {extraPhotos.length > 0 && (
