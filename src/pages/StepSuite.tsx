@@ -226,8 +226,8 @@ function SuiteCard({ suite, photoUrl, occupied, slotLabel, selected, onChoose, o
           <img
             src={photoUrl}
             alt=""
-            loading="lazy"
-            decoding="async"
+            loading="eager"
+            decoding="sync"
             onLoad={() => setImgLoaded(true)}
             onError={() => setImgLoaded(false)}
             className={[
