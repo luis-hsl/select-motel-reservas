@@ -87,24 +87,55 @@ Código da reserva: ${r.id}
 
 Em caso de dúvidas, é só responder esta mensagem.`
 
-  // Wuzapi: POST /chat/send/text  body {Phone, Body}  header token: <user-token>
-  const wuzRes = await fetch(`${wuzUrl.replace(/\/$/, '')}/chat/send/text`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'token': wuzToken,
-    },
-    body: JSON.stringify({ Phone: phone, Body: msg }),
-  })
-
-  const wuzBody = await wuzRes.text()
-  if (!wuzRes.ok) {
-    console.error('Wuzapi error', wuzRes.status, wuzBody)
-    return new Response(JSON.stringify({ error: 'wuzapi failed', detail: wuzBody }), { status: 502 })
+  async function sendText(toPhone: string, body: string) {
+    const r = await fetch(`${wuzUrl!.replace(/\/$/, '')}/chat/send/text`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'token': wuzToken! },
+      body: JSON.stringify({ Phone: toPhone, Body: body }),
+    })
+    return { ok: r.ok, status: r.status, body: await r.text() }
   }
 
-  console.log('WhatsApp enviado para', phone, 'reserva', reservationId)
-  return new Response(JSON.stringify({ sent: true, phone }), {
-    headers: { 'Content-Type': 'application/json' },
-  })
+  // 1) Cliente
+  const clientRes = await sendText(phone, msg)
+  if (!clientRes.ok) {
+    console.error('Wuzapi (cliente) error', clientRes.status, clientRes.body)
+    return new Response(
+      JSON.stringify({ error: 'wuzapi failed', detail: clientRes.body }),
+      { status: 502, headers: { 'Content-Type': 'application/json' } },
+    )
+  }
+  console.log('WhatsApp enviado ao cliente', phone, 'reserva', reservationId)
+
+  // 2) Motel (best-effort, nao falha se nao configurado)
+  let motelSent = false
+  const { data: setting } = await supabase
+    .from('settings')
+    .select('value')
+    .eq('key', 'motel_notification_phone')
+    .maybeSingle<{ value: string }>()
+
+  const motelPhoneRaw = setting?.value?.trim() ?? ''
+  if (motelPhoneRaw) {
+    const motelPhone = normalizePhoneBR(motelPhoneRaw)
+    const motelMsg =
+`🆕 *Nova reserva confirmada*
+
+👤 ${r.customer_name}
+📱 ${r.customer_phone}
+🛏 Suíte: ${r.suite_id}
+📅 ${fmtDateTime(r.check_in)} → ${fmtDateTime(r.check_out)}
+💳 ${fmtBRL(r.total_amount)}
+
+#${r.id.slice(0, 8)}`
+    const mRes = await sendText(motelPhone, motelMsg)
+    motelSent = mRes.ok
+    if (!mRes.ok) console.error('Wuzapi (motel) error', mRes.status, mRes.body)
+    else console.log('Notificacao enviada ao motel', motelPhone)
+  }
+
+  return new Response(
+    JSON.stringify({ sent: true, phone, motelNotified: motelSent }),
+    { headers: { 'Content-Type': 'application/json' } },
+  )
 })
