@@ -26,13 +26,18 @@ Deno.serve(async (req: Request) => {
     return new Response('Method Not Allowed', { status: 405 })
   }
 
-  // Verify webhook secret (optional — only checked if env var is set)
+  // Verify webhook secret (opcional — só checa se a env var estiver setada).
+  // AbacatePay envia o secret como ?webhookSecret=... na query string.
+  // Mantemos suporte a Authorization: Bearer como fallback compatível.
   const webhookSecret = Deno.env.get('ABACATEPAY_WEBHOOK_SECRET')
   if (webhookSecret) {
+    const url = new URL(req.url)
+    const fromQuery = url.searchParams.get('webhookSecret') ?? ''
     const authHeader = req.headers.get('Authorization') ?? ''
-    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader
-    if (token !== webhookSecret) {
-      console.warn('Webhook secret mismatch, header:', authHeader)
+    const fromHeader = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader
+
+    if (fromQuery !== webhookSecret && fromHeader !== webhookSecret) {
+      console.warn('Webhook secret mismatch. query?=', !!fromQuery, ' header?=', !!fromHeader)
       return new Response('Unauthorized', { status: 401 })
     }
   }

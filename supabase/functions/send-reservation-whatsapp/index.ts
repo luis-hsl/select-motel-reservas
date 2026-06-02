@@ -35,8 +35,9 @@ function fmtDateTime(iso: string): string {
   })
 }
 
-function fmtBRL(cents: number): string {
-  return (cents / 100).toLocaleString('pt-BR', {
+function fmtBRL(reais: number): string {
+  // total_amount está em REAIS (numeric(10,2)), não em centavos.
+  return Number(reais).toLocaleString('pt-BR', {
     style: 'currency', currency: 'BRL',
   })
 }
