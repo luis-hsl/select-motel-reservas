@@ -25,8 +25,9 @@ jobs:
           ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Rsync functions -> VPS
+        # --delete preserva main/ e hello/ (router padrão do edge-runtime que vem do compose oficial)
         run: |
-          rsync -az --delete \
+          rsync -az --delete --exclude='/main' --exclude='/hello' \
             -e "ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=yes" \
             supabase/functions/ \
             ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/supabase/app/volumes/functions/
