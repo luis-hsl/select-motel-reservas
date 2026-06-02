@@ -39,8 +39,8 @@ export const PACKAGES: Package[] = [
       'Pizza',
       'Drink',
     ],
-    price_period: 2,
-    price_overnight: 2,
+    price_period: 599,
+    price_overnight: 1499,
   },
 ]
 
