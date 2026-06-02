@@ -1,0 +1,19 @@
+# Override pra VPS 4GB do Select Motel.
+# - Restringe portas do Kong/Studio a localhost (Nginx do host expõe HTTPS)
+# - Passa envs custom (Wuzapi + AbacatePay) ao container functions
+# - Os opcionais analytics/vector/imgproxy são parados manualmente
+#   (profiles=["disabled"] quebra os depends_on do compose original)
+services:
+  functions:
+    environment:
+      WUZAPI_URL: ${WUZAPI_URL}
+      WUZAPI_USER_TOKEN: ${WUZAPI_USER_TOKEN}
+      ABACATEPAY_API_KEY: ${ABACATEPAY_API_KEY}
+      ABACATEPAY_WEBHOOK_SECRET: ${ABACATEPAY_WEBHOOK_SECRET}
+  kong:
+    ports: !override
+      - "127.0.0.1:8000:8000/tcp"
+      - "127.0.0.1:8443:8443/tcp"
+  studio:
+    ports: !override
+      - "127.0.0.1:3000:3000/tcp"
