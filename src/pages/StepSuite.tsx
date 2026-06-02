@@ -106,8 +106,6 @@ export default function StepSuite() {
     setTimeout(nextStep, 300)
   }
 
-  const categories = Array.from(new Set(packageSuites.map(s => s.category)))
-
   return (
     <div>
       <button onClick={prevStep} className="flex items-center gap-1 text-gold-700/60 text-sm mb-8 hover:text-gold-500 transition-colors">
@@ -135,34 +133,19 @@ export default function StepSuite() {
           <p className="text-xs text-gold-800/50">Por favor, escolha outro horário ou data.</p>
         </div>
       ) : (
-        <div className="space-y-8">
-          {categories.map(cat => {
-            const catSuites = packageSuites.filter(s => s.category === cat)
-            return (
-              <div key={cat}>
-                <div className="flex items-center gap-3 mb-4">
-                  <p className="text-[10px] tracking-widest uppercase text-gold-500/60 font-medium shrink-0">
-                    {CATEGORY_LABEL[cat]}
-                  </p>
-                  <div className="h-px flex-1 bg-gradient-to-r from-gold-800/40 to-transparent" />
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
-                  {catSuites.map(suite => (
-                    <SuiteCard
-                      key={suite.id}
-                      suite={suite}
-                      photoUrl={photoUrls[suite.id]}
-                      occupied={occupiedIds.has(suite.id)}
-                      slotLabel={slotLabel}
-                      selected={selected?.id === suite.id}
-                      onChoose={() => choose(suite)}
-                      onViewMore={() => setGalleryFor(suite)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )
-          })}
+        <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
+          {packageSuites.map(suite => (
+            <SuiteCard
+              key={suite.id}
+              suite={suite}
+              photoUrl={photoUrls[suite.id]}
+              occupied={occupiedIds.has(suite.id)}
+              slotLabel={slotLabel}
+              selected={selected?.id === suite.id}
+              onChoose={() => choose(suite)}
+              onViewMore={() => setGalleryFor(suite)}
+            />
+          ))}
         </div>
       )}
 
