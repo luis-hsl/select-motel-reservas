@@ -1,21 +1,36 @@
-name: Deploy Supabase Edge Functions to VPS
+name: Deploy Frontend to VPS
 
 on:
   push:
     branches: [main]
-    paths:
+    paths-ignore:
       - 'supabase/functions/**'
+      - 'infra/**'
+      - '**.md'
   workflow_dispatch:
 
 concurrency:
-  group: vps-functions
+  group: vps-deploy
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build (Vite)
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run build
 
       - name: Configure SSH
         run: |
@@ -24,15 +39,15 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Rsync functions -> VPS
+      - name: Rsync dist -> VPS
         run: |
           rsync -az --delete \
             -e "ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=yes" \
-            supabase/functions/ \
-            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/supabase/app/volumes/functions/
+            dist/ \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/var/www/select-motel/dist/
 
-      - name: Restart functions container
+      - name: Reload nginx
         run: |
           ssh -i ~/.ssh/id_ed25519 \
             ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
-            "cd /opt/supabase/app && sudo docker compose restart functions"
+            "sudo systemctl reload nginx"

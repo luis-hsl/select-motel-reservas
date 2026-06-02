@@ -16,6 +16,11 @@ dist-ssr
 .env
 .env.*
 
+# Infra secrets and dumps — never commit
+infra/secrets*.env
+infra/dump*.sql
+infra/*.dump
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -26,3 +31,4 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.claude/
