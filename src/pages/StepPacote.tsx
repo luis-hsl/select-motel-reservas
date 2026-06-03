@@ -167,7 +167,7 @@ export default function StepPacote() {
     <div>
       <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light mb-2 leading-tight">
         Qual pacote<br />
-        <span className="gold-gradient font-semibold italic pr-1">você prefere?</span>
+        <span className="gold-gradient font-semibold italic pr-1 lg:pr-3">você prefere?</span>
       </h1>
       <p className="text-gold-700/70 text-sm mb-6 sm:mb-8">
         Cada pacote inclui decoração e experiências exclusivas.

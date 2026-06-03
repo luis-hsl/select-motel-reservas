@@ -82,7 +82,7 @@ export default function StepRefeicao() {
       <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-light mb-2 leading-tight">
         {isSingle
           ? (<>Uma surpresa<br /><span className="gold-gradient font-semibold italic">para o casal</span></>)
-          : (<>Qual refeição<br /><span className="gold-gradient font-semibold italic pr-1">o casal prefere?</span></>)}
+          : (<>Qual refeição<br /><span className="gold-gradient font-semibold italic pr-1 lg:pr-3">o casal prefere?</span></>)}
       </h1>
       <p className="text-gold-700/70 text-sm mb-8 sm:mb-10">{SUBTITULO[pkgId]}</p>
 

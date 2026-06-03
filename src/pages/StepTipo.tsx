@@ -76,7 +76,7 @@ export default function StepTipo() {
 
       <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light mb-2 leading-tight">
         Período ou<br />
-        <span className="gold-gradient font-semibold italic pr-1">pernoite?</span>
+        <span className="gold-gradient font-semibold italic pr-1 lg:pr-3">pernoite?</span>
       </h1>
       <p className="text-gold-700/70 text-sm mb-6 sm:mb-8">
         Escolha a duração da sua experiência no{' '}
