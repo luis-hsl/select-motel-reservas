@@ -581,11 +581,6 @@ function SuiteGallery({ suite, photoUrl, videoUrl, occupied, slotLabel, selected
             </div>
           )}
 
-          {/* Limpeza */}
-          <p className="text-[11px] text-gold-700/50 text-center">
-            🧹 Limpeza de 1 a 2 horas entre reservas
-          </p>
-
           {/* CTA */}
           {!occupied ? (
             <button
