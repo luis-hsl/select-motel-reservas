@@ -13,6 +13,7 @@ interface StoreState {
   customerPhone: string
   customerEmail: string
   customerTaxId: string
+  observations: string
 
   setStep: (step: number) => void
   setPackage: (pkg: Package) => void
@@ -22,6 +23,7 @@ interface StoreState {
   setSuite: (suite: Suite) => void
   setCheckIn: (date: Date) => void
   setCustomer: (name: string, phone: string, email: string, taxId: string) => void
+  setObservations: (obs: string) => void
   totalAmount: () => number
   checkOut: () => Date | null
   nextStep: () => void
@@ -40,6 +42,7 @@ export const useStore = create<StoreState>((set, get) => ({
   customerPhone: '',
   customerEmail: '',
   customerTaxId: '',
+  observations: '',
 
   setStep: (step) => set({ currentStep: step }),
   setPackage: (pkg) => set({ package: pkg }),
@@ -50,6 +53,7 @@ export const useStore = create<StoreState>((set, get) => ({
   setCheckIn: (date) => set({ checkIn: date, suite: null }),
   setCustomer: (customerName, customerPhone, customerEmail, customerTaxId) =>
     set({ customerName, customerPhone, customerEmail, customerTaxId }),
+  setObservations: (observations) => set({ observations }),
 
   totalAmount: () => {
     const { package: pkg, type } = get()

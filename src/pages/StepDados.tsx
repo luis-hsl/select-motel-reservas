@@ -18,11 +18,12 @@ function maskPhone(v: string) {
 }
 
 export default function StepDados() {
-  const { setCustomer, nextStep, prevStep } = useStore()
+  const { setCustomer, setObservations, observations: storedObs, nextStep, prevStep } = useStore()
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [taxId, setTaxId] = useState('')
+  const [obs, setObs] = useState(storedObs ?? '')
 
   const rawCPF = taxId.replace(/\D/g, '')
   const rawPhone = phone.replace(/\D/g, '')
@@ -31,6 +32,7 @@ export default function StepDados() {
   function confirm() {
     if (!canContinue) return
     setCustomer(name.trim(), phone.trim(), email.trim(), rawCPF)
+    setObservations(obs.trim())
     nextStep()
   }
 
@@ -92,6 +94,17 @@ export default function StepDados() {
               placeholder="seu@email.com"
               className="w-full bg-black/60 border border-gold-900/40 rounded-lg px-4 py-3 text-sm text-gold-200 placeholder-gold-900/50 outline-none focus:border-gold-600/60 transition-colors"
             />
+          </Field>
+
+          <Field label="Observações (opcional)">
+            <textarea
+              value={obs}
+              onChange={(e) => setObs(e.target.value.slice(0, 500))}
+              placeholder="Ex: ligar a hidromassagem, servir os pratos às 21h, alergia a frutos do mar…"
+              rows={3}
+              className="w-full bg-black/60 border border-gold-900/40 rounded-lg px-4 py-3 text-sm text-gold-200 placeholder-gold-900/50 outline-none focus:border-gold-600/60 transition-colors resize-none"
+            />
+            <p className="mt-1 text-[10px] text-gold-700/40 text-right">{obs.length}/500</p>
           </Field>
 
           <button

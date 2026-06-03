@@ -28,6 +28,7 @@ interface Reservation {
     drink?: string | null
     food?: string | null
     type?: string | null
+    observations?: string | null
   } | null
 }
 
@@ -206,6 +207,11 @@ Deno.serve(async (req: Request) => {
     }
     if (ex.drink) lines.push(`🥂 *Bebida escolhida:* ${DRINK_LABEL[ex.drink] ?? ex.drink}`)
     if (ex.food)  lines.push(`🍽 *Comida escolhida:* ${FOOD_LABEL[ex.food]  ?? ex.food}`)
+    if (ex.observations) {
+      lines.push('')
+      lines.push(`📝 *Observações do cliente*`)
+      lines.push(ex.observations)
+    }
     lines.push('')
     lines.push(`💳 *Total:* ${fmtBRL(r.total_amount)}` +
                (r.payment_method ? `  (${r.payment_method.toUpperCase()})` : ''))
