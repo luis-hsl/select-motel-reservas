@@ -15,17 +15,21 @@ function fmtDt(d: Date) {
 }
 
 function foodLabel(f: string | null): string | null {
-  if (f === 'jantar') return '🍽️ Jantar'
-  if (f === 'sushi')  return '🍣 Sushi'
-  if (f === 'pizza')  return '🍕 Pizza'
+  if (f === 'jantar') return 'Jantar'
+  if (f === 'sushi')  return 'Sushi'
+  if (f === 'pizza')  return 'Pizza'
   return null
 }
 
 function drinkLabel(d: string | null): string | null {
-  if (d === 'vinho')    return '🍷 Vinho'
-  if (d === 'frisante') return '🥂 Frisante'
-  if (d === 'drinque')  return '🍹 Drink'
+  if (d === 'vinho')    return 'Vinho'
+  if (d === 'frisante') return 'Frisante'
+  if (d === 'drinque')  return 'Drink'
   return null
+}
+
+function fmtTime(d: Date) {
+  return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
 
 interface PixCharge {
@@ -236,9 +240,28 @@ export default function StepPagamento() {
             <SummaryRow label="Suíte" value={suite ? `${suite.name} + Decoração` : ''} />
             {foodLabel(food) && <SummaryRow label="Refeição" value={foodLabel(food)!} />}
             {drinkLabel(drink) && <SummaryRow label="Bebida" value={drinkLabel(drink)!} />}
-            <SummaryRow label="Fondue" value="🍫 Incluído" />
+            <SummaryRow label="Fondue" value="Incluído" />
             <SummaryRow label="Check-in" value={checkIn ? fmtDt(checkIn) : ''} />
-            <SummaryRow label="Check-out" value={checkout ? fmtDt(checkout) : ''} />
+            <SummaryRow label="Check-out" value={checkout ? fmtDt(checkout) : ''} highlight />
+            {type === 'period' && checkout && (
+              <div
+                className="rounded-lg px-3.5 py-3 flex items-start gap-2.5"
+                style={{ background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.18)' }}
+              >
+                <svg className="w-3.5 h-3.5 shrink-0 mt-[1px]" viewBox="0 0 14 14" fill="none" style={{ color: 'rgba(201,168,76,0.55)' }}>
+                  <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1" />
+                  <path d="M7 4.5v3l1.8 1.2" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <div>
+                  <p className="text-[9px] tracking-widest uppercase mb-0.5" style={{ color: 'rgba(201,168,76,0.45)' }}>
+                    Modalidade período · 2 horas
+                  </p>
+                  <p className="text-xs leading-snug" style={{ color: 'rgba(220,190,110,0.8)' }}>
+                    Saída prevista às <span className="font-semibold">{fmtTime(checkout)}</span>. Respeitamos esse horário para garantir a limpeza e preparação da suíte para o próximo hóspede.
+                  </p>
+                </div>
+              </div>
+            )}
             <div className="border-t border-gold-900/40 pt-3 flex items-baseline justify-between">
               <span className="text-[10px] tracking-widest uppercase text-gold-600/60">Total</span>
               <span className="font-serif text-2xl font-semibold gold-gradient">{fmt(total)}</span>
@@ -299,10 +322,32 @@ export default function StepPagamento() {
               <SummaryRow label="Pacote" value={pkg?.label ?? '—'} />
               {foodLabel(food) && <SummaryRow label="Refeição" value={foodLabel(food)!} />}
               {drinkLabel(drink) && <SummaryRow label="Bebida" value={drinkLabel(drink)!} />}
-              <SummaryRow label="Fondue" value="🍫 Incluído" />
+              <SummaryRow label="Fondue" value="Incluído" />
               <SummaryRow label="Modalidade" value={type === 'period' ? 'Período' : 'Pernoite'} />
               <SummaryRow label="Check-in" value={checkIn ? fmtDt(checkIn) : '—'} />
               <SummaryRow label="Check-out" value={checkout ? fmtDt(checkout) : '—'} highlight />
+
+              {/* Aviso de período — 2 horas */}
+              {type === 'period' && checkout && (
+                <div
+                  className="rounded-lg px-3.5 py-3 flex items-start gap-2.5"
+                  style={{ background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.18)' }}
+                >
+                  <svg className="w-3.5 h-3.5 shrink-0 mt-[1px]" viewBox="0 0 14 14" fill="none" style={{ color: 'rgba(201,168,76,0.55)' }}>
+                    <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1" />
+                    <path d="M7 4.5v3l1.8 1.2" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <div>
+                    <p className="text-[9px] tracking-widest uppercase mb-0.5" style={{ color: 'rgba(201,168,76,0.45)' }}>
+                      Modalidade período · 2 horas
+                    </p>
+                    <p className="text-xs leading-snug" style={{ color: 'rgba(220,190,110,0.8)' }}>
+                      Saída prevista às <span className="font-semibold">{fmtTime(checkout)}</span>. Respeitamos esse horário para garantir a limpeza e preparação da suíte para o próximo hóspede.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <div className="border-t border-gold-900/40 pt-3 flex items-baseline justify-between">
                 <span className="text-[10px] tracking-widest uppercase text-gold-600/60">Total</span>
                 <span className="font-serif text-2xl font-semibold gold-gradient">{fmt(total)}</span>
