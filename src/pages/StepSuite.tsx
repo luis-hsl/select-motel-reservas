@@ -404,10 +404,20 @@ function SuiteGallery({ suite, photoUrl, videoUrl, occupied, slotLabel, selected
             <video
               src={videoUrl}
               autoPlay
-              muted
               loop
               playsInline
               controls
+              // tenta iniciar com áudio; se o browser bloquear autoplay com som,
+              // re-tenta mutado pra ao menos rodar o vídeo (user clica no alto-falante depois).
+              ref={(el) => {
+                if (!el) return
+                el.muted = false
+                el.volume = 1
+                el.play().catch(() => {
+                  el.muted = true
+                  el.play().catch(() => {})
+                })
+              }}
               className="block w-full"
               style={{ maxHeight: '60vh' }}
             />
