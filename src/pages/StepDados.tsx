@@ -33,6 +33,19 @@ export default function StepDados() {
     if (!canContinue) return
     setCustomer(name.trim(), phone.trim(), email.trim(), rawCPF)
     setObservations(obs.trim())
+
+    // Google Ads — conversion "Inscrição" (lead): cliente preencheu dados completos.
+    // Usa email como transaction_id pra dedupe básico se o lead voltar.
+    const gtag = (window as unknown as { gtag?: (...a: unknown[]) => void }).gtag
+    if (typeof gtag === 'function') {
+      gtag('event', 'conversion', {
+        send_to: 'AW-18204610844/RO0FCNWRkrgcEJyi0ehD',
+        value: 1.0,
+        currency: 'BRL',
+        transaction_id: email.trim().toLowerCase(),
+      })
+    }
+
     nextStep()
   }
 
