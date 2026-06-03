@@ -103,6 +103,18 @@ export default function StepSuite() {
 
   function choose(suite: Suite) {
     setSuite(suite)
+
+    // Google Ads — conversion "Selecionou suíte"
+    const gtag = (window as unknown as { gtag?: (...a: unknown[]) => void }).gtag
+    if (typeof gtag === 'function') {
+      gtag('event', 'conversion', {
+        send_to: 'AW-18204610844/RBcCCJH5krgcEJyi0ehD',
+        value: 1.0,
+        currency: 'BRL',
+        transaction_id: suite.id,
+      })
+    }
+
     setTimeout(nextStep, 300)
   }
 

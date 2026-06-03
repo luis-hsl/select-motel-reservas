@@ -141,6 +141,18 @@ export default function StepPacote() {
 
   function choose(pkg: Package) {
     setPackage(pkg)
+
+    // Google Ads — conversion "Selecionou pacote"
+    const gtag = (window as unknown as { gtag?: (...a: unknown[]) => void }).gtag
+    if (typeof gtag === 'function') {
+      gtag('event', 'conversion', {
+        send_to: 'AW-18204610844/rZVECNHc_LccEJyi0ehD',
+        value: 1.0,
+        currency: 'BRL',
+        transaction_id: pkg.id,
+      })
+    }
+
     setTimeout(nextStep, 300)
   }
 
