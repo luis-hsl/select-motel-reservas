@@ -146,7 +146,7 @@ Deno.serve(async (req: Request) => {
   lines.push(``)
   lines.push(`━━━━━━━━━━━━━━━━━━`)
   lines.push(`📍 *No dia da reserva*`)
-  lines.push(`Apresente o código *${codigo}* na recepção. Chegue até o horário de entrada — a suíte fica reservada por 30 minutos após esse horário.`)
+  lines.push(`Chegue até o horário de entrada — a suíte fica reservada por 30 minutos após esse horário.`)
   lines.push(``)
   lines.push(`Qualquer dúvida, é só responder esta mensagem que a gente te ajuda. 🤍`)
   lines.push(``)
