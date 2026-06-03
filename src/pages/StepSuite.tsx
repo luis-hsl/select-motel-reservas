@@ -204,7 +204,7 @@ function SuiteCard({ suite, photoUrl, occupied, slotLabel, selected, onChoose, o
         {photoUrl && (
           <img
             src={photoUrl}
-            alt=""
+            alt={`${suite.name} ${suite.category} no Select Motel Ivaiporã`}
             loading="eager"
             decoding="sync"
             onLoad={() => setImgLoaded(true)}
@@ -450,7 +450,7 @@ function SuiteGallery({ suite, photoUrl, videoUrl, occupied, slotLabel, selected
         >
           <img
             src={toWebP(coverUrl, 800)}
-            alt=""
+            alt={`Foto da ${suite.name} — ${suite.category} no Select Motel Ivaiporã`}
             loading="eager"
             decoding="async"
             className={[
@@ -562,7 +562,7 @@ function SuiteGallery({ suite, photoUrl, videoUrl, occupied, slotLabel, selected
               >
                 <img
                   src={toWebP(url, 400)}
-                  alt=""
+                  alt={`${suite.name} ${suite.category} — foto ${i + 1} no Select Motel Ivaiporã`}
                   loading="lazy"
                   decoding="async"
                   className="w-full h-full object-cover"

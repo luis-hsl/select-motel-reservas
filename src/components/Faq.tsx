@@ -47,10 +47,47 @@ const FAQ: Array<{ q: string; a: string }> = [
 
 export default function Faq() {
   return (
-    <section
-      aria-labelledby="faq-title"
-      className="mt-16 sm:mt-20 lg:mt-24 pt-10 border-t border-gold-900/30"
-    >
+    <>
+      <section
+        aria-labelledby="about-title"
+        className="mt-16 sm:mt-20 lg:mt-24 pt-10 border-t border-gold-900/30 max-w-3xl mx-auto"
+      >
+        <h2
+          id="about-title"
+          className="font-serif text-2xl sm:text-3xl font-light text-center mb-2"
+        >
+          Sobre o <span className="gold-gradient italic font-semibold">Select Motel</span>
+        </h2>
+        <p className="text-gold-700/60 text-xs sm:text-sm text-center mb-6">
+          Ivaiporã · Paraná
+        </p>
+        <div className="space-y-4 text-sm sm:text-[15px] text-gold-300/75 leading-relaxed">
+          <p>
+            O <strong className="text-gold-200">Select Motel</strong> é o motel de referência em{' '}
+            <strong className="text-gold-200">Ivaiporã, Paraná</strong>, com suítes premium projetadas
+            para encontros românticos, datas especiais e momentos a dois. Estamos localizados na
+            Rodovia Celso Fumiu Makita, com acesso fácil e discreto a partir de Ivaiporã, Apucarana
+            e cidades da região.
+          </p>
+          <p>
+            Oferecemos <strong className="text-gold-200">suítes VIP com piscina privativa</strong>,
+            quartos com hidromassagem e quartos standard, todos com decoração romântica inclusa.
+            Os pacotes Bronze, Prata e Ouro adicionam refeições (jantar, sushi ou pizza), fondue
+            de chocolate e bebidas como vinho, frisante ou drink especial — tudo preparado para
+            o seu horário de check-in.
+          </p>
+          <p>
+            A reserva é 100% online: você escolhe o pacote, a suíte, a data, a refeição e paga por{' '}
+            <strong className="text-gold-200">PIX ou cartão de crédito em até 3x</strong>. A
+            confirmação chega na hora pelo WhatsApp.
+          </p>
+        </div>
+      </section>
+
+      <section
+        aria-labelledby="faq-title"
+        className="mt-12 sm:mt-16 pt-10 border-t border-gold-900/30"
+      >
       <h2
         id="faq-title"
         className="font-serif text-2xl sm:text-3xl font-light text-center mb-2"
@@ -83,5 +120,6 @@ export default function Faq() {
         ))}
       </div>
     </section>
+    </>
   )
 }
