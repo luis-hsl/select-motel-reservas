@@ -77,6 +77,19 @@ export default function StepPagamento() {
       .then(({ data }) => { if (data?.value) setWhatsappNum(data.value) })
   }, [])
 
+  // Google Ads — conversion "Iniciar finalização de compra"
+  // dispara uma vez quando o cliente chega na tela de pagamento, com o valor da reserva.
+  useEffect(() => {
+    const gtag = (window as unknown as { gtag?: (...a: unknown[]) => void }).gtag
+    if (typeof gtag !== 'function' || !total) return
+    gtag('event', 'conversion', {
+      send_to: 'AW-18204610844/B1gpCIyhv7ccEJyi0ehD',
+      value: total,
+      currency: 'BRL',
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // Poll DB every 3s for PIX payment confirmation
   useEffect(() => {
     if (!pixCharge?.reservationId) return
