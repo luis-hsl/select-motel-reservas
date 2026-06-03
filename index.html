@@ -1,17 +1,164 @@
 <!doctype html>
 <html lang="pt-BR" translate="no">
   <head>
-    <!-- Sinaliza pra Safari/Chrome/Google nao traduzir nem oferecer tradução -->
+    <meta charset="UTF-8" />
     <meta http-equiv="Content-Language" content="pt-BR" />
     <meta name="google" content="notranslate" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
-    <!-- Google Tag Manager -->
+    <!-- ============================================================
+         PRIMARY META — Search engines (Title, Description, Keywords)
+         ============================================================ -->
+    <title>Select Motel Ivaiporã · Suítes Premium com Hidro e Piscina · Reserve Online</title>
+    <meta name="description" content="Select Motel em Ivaiporã/PR · Suítes VIP com piscina, hidromassagem e decoração romântica. Pacotes com jantar, sushi, fondue e vinho. Reserve online com PIX ou cartão." />
+    <meta name="keywords" content="select motel, motel ivaiporã, motel ivaiporã pr, motel em ivaiporã, suíte vip ivaiporã, motel com hidro ivaiporã, motel com piscina ivaiporã, motel romântico, pacote romântico ivaiporã, motel próximo apucarana, reserva motel ivaiporã, select motel reserva" />
+    <meta name="author" content="Select Motel" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow" />
+    <meta name="theme-color" content="#0a0806" />
+    <meta name="format-detection" content="telephone=yes" />
+
+    <!-- ============================================================
+         CANONICAL — evita duplicidade entre www / sem www / vercel
+         ============================================================ -->
+    <link rel="canonical" href="https://www.selectreservas.com.br/" />
+
+    <!-- ============================================================
+         GEO — sinais de localização pra Google
+         ============================================================ -->
+    <meta name="geo.region" content="BR-PR" />
+    <meta name="geo.placename" content="Ivaiporã, Paraná" />
+    <meta name="geo.position" content="-24.2475;-51.6739" />
+    <meta name="ICBM" content="-24.2475, -51.6739" />
+
+    <!-- ============================================================
+         OPEN GRAPH — Facebook, WhatsApp, LinkedIn link preview
+         ============================================================ -->
+    <meta property="og:site_name" content="Select Motel" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:url" content="https://www.selectreservas.com.br/" />
+    <meta property="og:title" content="Select Motel Ivaiporã · Suítes Premium com Hidro e Piscina" />
+    <meta property="og:description" content="Reserve sua suíte no Select Motel em Ivaiporã/PR. Pacotes com decoração, jantar, fondue e vinho. Pagamento PIX ou cartão em até 3x." />
+    <meta property="og:image" content="https://www.selectreservas.com.br/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Select Motel Ivaiporã — fachada e suíte VIP" />
+
+    <!-- ============================================================
+         TWITTER CARDS
+         ============================================================ -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Select Motel Ivaiporã · Suítes Premium" />
+    <meta name="twitter:description" content="Reserve suítes VIP com hidro e piscina. Pacotes românticos com jantar, fondue e vinho. PIX ou cartão." />
+    <meta name="twitter:image" content="https://www.selectreservas.com.br/og-image.jpg" />
+
+    <!-- ============================================================
+         ICONS / PWA
+         ============================================================ -->
+    <link rel="icon"             type="image/webp" href="/logo.webp" />
+    <link rel="apple-touch-icon"                   href="/logo.webp" />
+    <link rel="shortcut icon"    type="image/webp" href="/logo.webp" />
+    <link rel="manifest"                           href="/manifest.webmanifest" />
+
+    <!-- ============================================================
+         PRECONNECT — economiza handshake nos recursos críticos
+         ============================================================ -->
+    <link rel="preconnect" href="https://api.selectreservas.com.br" crossorigin />
+    <link rel="dns-prefetch" href="//api.selectreservas.com.br" />
+    <link rel="preconnect" href="https://www.googletagmanager.com" />
+    <link rel="dns-prefetch" href="//www.googletagmanager.com" />
+
+    <!-- ============================================================
+         SCHEMA.ORG — JSON-LD pra Rich Results (Motel / LocalBusiness)
+         Reconhecido pelo Google em Maps, Knowledge Panel e Local Pack.
+         ============================================================ -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": ["Motel", "LodgingBusiness", "LocalBusiness"],
+      "@id": "https://www.selectreservas.com.br/#motel",
+      "name": "Select Motel",
+      "alternateName": "Select Motel Ivaiporã",
+      "url": "https://www.selectreservas.com.br/",
+      "logo": "https://www.selectreservas.com.br/logo.webp",
+      "image": "https://www.selectreservas.com.br/og-image.jpg",
+      "description": "Motel em Ivaiporã/PR com suítes VIP, piscina privativa, hidromassagem e pacotes românticos com jantar, sushi, fondue e vinho. Reserva online com PIX ou cartão em até 3x.",
+      "telephone": "+55-43-99909-7482",
+      "priceRange": "R$ 599 – R$ 2.500",
+      "currenciesAccepted": "BRL",
+      "paymentAccepted": "PIX, Cartão de Crédito",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Rodovia Celso Fumiu Makita, s/n — Parque Industrial",
+        "addressLocality": "Ivaiporã",
+        "addressRegion": "PR",
+        "postalCode": "86870-000",
+        "addressCountry": "BR"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": -24.2475,
+        "longitude": -51.6739
+      },
+      "openingHoursSpecification": [{
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+        "opens": "00:00",
+        "closes": "23:59"
+      }],
+      "hasMap": "https://www.google.com/maps?q=Rodovia+Celso+Fumiu+Makita,+Ivaiporã+-+PR",
+      "amenityFeature": [
+        {"@type": "LocationFeatureSpecification", "name": "Piscina privativa",        "value": true},
+        {"@type": "LocationFeatureSpecification", "name": "Hidromassagem",            "value": true},
+        {"@type": "LocationFeatureSpecification", "name": "Decoração romântica",      "value": true},
+        {"@type": "LocationFeatureSpecification", "name": "Jantar incluso (pacote)",  "value": true},
+        {"@type": "LocationFeatureSpecification", "name": "Estacionamento privativo", "value": true},
+        {"@type": "LocationFeatureSpecification", "name": "Wi-Fi",                    "value": true},
+        {"@type": "LocationFeatureSpecification", "name": "TV",                       "value": true},
+        {"@type": "LocationFeatureSpecification", "name": "Ar-condicionado",          "value": true}
+      ],
+      "sameAs": [
+        "https://www.instagram.com/selectmotel/",
+        "https://www.facebook.com/selectmotel/"
+      ],
+      "potentialAction": {
+        "@type": "ReserveAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://www.selectreservas.com.br/",
+          "actionPlatform": [
+            "http://schema.org/DesktopWebPlatform",
+            "http://schema.org/MobileWebPlatform"
+          ]
+        },
+        "result": {
+          "@type": "LodgingReservation",
+          "name": "Reserva de suíte"
+        }
+      }
+    }
+    </script>
+
+    <!-- WebSite (sitelinks searchbox) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "url": "https://www.selectreservas.com.br/",
+      "name": "Select Motel Ivaiporã",
+      "inLanguage": "pt-BR"
+    }
+    </script>
+
+    <!-- ============================================================
+         GOOGLE TAG MANAGER
+         ============================================================ -->
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
     j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
     })(window,document,'script','dataLayer','GTM-T7V27N8D');</script>
-    <!-- End Google Tag Manager -->
 
     <!-- Google Ads (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18204610844"></script>
@@ -21,20 +168,25 @@
       gtag('js', new Date());
       gtag('config', 'AW-18204610844');
     </script>
-    <!-- End Google Ads -->
-
-    <meta charset="UTF-8" />
-    <link rel="icon"          type="image/webp" href="/logo.webp" />
-    <link rel="apple-touch-icon"               href="/logo.webp" />
-    <link rel="shortcut icon" type="image/webp" href="/logo.webp" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Select Motel · Reservas</title>
   </head>
   <body class="notranslate" translate="no">
-    <!-- Google Tag Manager (noscript) -->
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-T7V27N8D"
-    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-    <!-- End Google Tag Manager (noscript) -->
+      height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+    <!-- H1/copy escondido pra crawlers que não executam JS pegarem palavras-chave.
+         Aparece no documento mas é removido visualmente. -->
+    <h1 style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden">
+      Select Motel Ivaiporã – Reserva online de suítes VIP com piscina, hidromassagem e pacotes românticos
+    </h1>
+    <noscript>
+      <main style="max-width:680px;margin:2rem auto;font-family:system-ui,sans-serif;color:#222;padding:1rem">
+        <h2>Select Motel Ivaiporã</h2>
+        <p>Suítes VIP com piscina privativa, hidromassagem e pacotes românticos com jantar, sushi, fondue e vinho. Reserve sua suíte em Ivaiporã / Paraná.</p>
+        <p><strong>Telefone:</strong> (43) 99909-7482</p>
+        <p><strong>Endereço:</strong> Rodovia Celso Fumiu Makita, Parque Industrial, Ivaiporã – PR, 86870-000</p>
+        <p>Ative o JavaScript para reservar online com PIX ou cartão em até 3x.</p>
+      </main>
+    </noscript>
 
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
