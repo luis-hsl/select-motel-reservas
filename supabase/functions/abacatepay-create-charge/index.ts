@@ -137,9 +137,10 @@ Deno.serve(async (req)=>{
         const pd = productResp.data ?? productResp;
         const productId = pd._id ?? pd.id;
         if (!productId) throw new Error(`productId não retornado: ${JSON.stringify(productResp)}`);
-        // card.maxInstallments > 1 faz aparecer o seletor de parcelas
-        // (mínimo R$10 por parcela; a API recusa se total ÷ parcelas < R$10)
-        const maxInstallments = Math.max(1, Math.min(12, Math.floor(amountCents / 1000)));
+        // card.maxInstallments > 1 faz aparecer o seletor de parcelas.
+        // Política: até 3x. AbacatePay exige mínimo R$10 por parcela —
+        // se o total ÷ 3 ficar abaixo disso, cai pra 2x ou 1x automaticamente.
+        const maxInstallments = Math.max(1, Math.min(3, Math.floor(amountCents / 1000)));
         const checkoutResp = await abacatePOST('/checkouts/create', {
           frequency: 'ONE_TIME',
           methods: ['CARD'],
