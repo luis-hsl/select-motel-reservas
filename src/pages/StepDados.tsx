@@ -8,6 +8,23 @@ function maskCPF(v: string) {
     .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
 }
 
+// Valida CPF pelos dois dígitos verificadores. Bloqueia 11 chars iguais
+// (000…000, 111…111, …) e sequências geradas randomicamente que não passam
+// no algoritmo do MOD-11 — o AbacatePay em produção rejeita esses.
+function isValidCPF(raw: string): boolean {
+  if (raw.length !== 11) return false
+  if (/^(\d)\1+$/.test(raw)) return false
+  const d = raw.split('').map(Number)
+  for (const k of [9, 10] as const) {
+    let sum = 0
+    for (let i = 0; i < k; i++) sum += d[i] * (k + 1 - i)
+    const rest = (sum * 10) % 11
+    const check = rest === 10 ? 0 : rest
+    if (check !== d[k]) return false
+  }
+  return true
+}
+
 function maskPhone(v: string) {
   const d = v.replace(/\D/g, '').slice(0, 11)
   if (!d) return ''
@@ -27,7 +44,9 @@ export default function StepDados() {
 
   const rawCPF = taxId.replace(/\D/g, '')
   const rawPhone = phone.replace(/\D/g, '')
-  const canContinue = name.trim() && rawPhone.length >= 10 && email.includes('@') && rawCPF.length === 11
+  const cpfValid = isValidCPF(rawCPF)
+  const cpfError = rawCPF.length === 11 && !cpfValid
+  const canContinue = name.trim() && rawPhone.length >= 10 && email.includes('@') && cpfValid
 
   function confirm() {
     if (!canContinue) return
@@ -84,8 +103,16 @@ export default function StepDados() {
               value={taxId}
               onChange={(e) => setTaxId(maskCPF(e.target.value))}
               placeholder="000.000.000-00"
-              className="w-full bg-black/60 border border-gold-900/40 rounded-lg px-4 py-3 text-sm text-gold-200 placeholder-gold-900/50 outline-none focus:border-gold-600/60 transition-colors"
+              className={[
+                'w-full bg-black/60 rounded-lg px-4 py-3 text-sm text-gold-200 placeholder-gold-900/50 outline-none transition-colors border',
+                cpfError
+                  ? 'border-red-500/60 focus:border-red-400'
+                  : 'border-gold-900/40 focus:border-gold-600/60',
+              ].join(' ')}
             />
+            {cpfError && (
+              <p className="text-[11px] text-red-400/80 mt-1">CPF inválido — confira os números.</p>
+            )}
           </Field>
 
           <Field label="WhatsApp">
