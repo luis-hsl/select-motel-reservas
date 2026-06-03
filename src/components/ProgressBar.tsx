@@ -16,7 +16,7 @@ export default function ProgressBar({ currentStep }: Props) {
             src="/logo-header.webp"
             alt="Select Motel · Grupo Scuira"
             className="w-auto"
-            style={{ height: 'clamp(2.8rem, 4.5vw, 4rem)' }}
+            style={{ height: 'clamp(3.6rem, 5.5vw, 5.2rem)' }}
             onError={e => { (e.currentTarget as HTMLImageElement).src = '/logo.webp' }}
           />
         </div>
