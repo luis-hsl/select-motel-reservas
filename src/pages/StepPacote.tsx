@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { PACKAGES } from '../data'
 import { useStore } from '../store/useStore'
 import type { Package } from '../types'
+import Faq from '../components/Faq'
 
 function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -288,6 +289,8 @@ export default function StepPacote() {
         />,
         document.body
       )}
+
+      <Faq />
     </div>
   )
 }
