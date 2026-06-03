@@ -173,7 +173,7 @@ function SuiteCard({ suite, photoUrl, occupied, slotLabel, selected, onChoose, o
   onChoose: () => void; onViewMore: () => void
 }) {
   const [imgLoaded, setImgLoaded] = useState(false)
-  const showPlaceholder = !photoUrl || !imgLoaded
+  const showPlaceholder = !photoUrl
 
   return (
     <div
@@ -198,10 +198,15 @@ function SuiteCard({ suite, photoUrl, occupied, slotLabel, selected, onChoose, o
             onLoad={() => setImgLoaded(true)}
             onError={() => setImgLoaded(false)}
             className={[
-              'absolute inset-0 w-full h-full object-cover transition-all duration-300',
+              'absolute inset-0 w-full h-full object-cover transition-opacity duration-500',
+              imgLoaded ? 'opacity-100' : 'opacity-0',
               occupied ? 'grayscale-[60%] brightness-[0.55]' : '',
             ].join(' ')}
           />
+        )}
+        {/* shimmer while photo loads */}
+        {photoUrl && !imgLoaded && (
+          <div className="absolute inset-0 animate-pulse" style={{ background: 'linear-gradient(135deg, #1a1008 0%, #0e0804 100%)' }} />
         )}
         <div
           className="absolute inset-0"
