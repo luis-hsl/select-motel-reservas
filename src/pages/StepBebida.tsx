@@ -95,7 +95,7 @@ export default function StepBebida() {
         {isSingle ? (
           <>Um brinde<br /><span className="gold-gradient font-semibold italic">para o casal</span></>
         ) : (
-          <>Qual bebida<br /><span className="gold-gradient font-semibold italic">o casal prefere?</span></>
+          <>Qual bebida<br /><span className="gold-gradient font-semibold italic pr-1">o casal prefere?</span></>
         )}
       </h1>
       <p className="text-gold-700/70 text-sm mb-8 sm:mb-10">
