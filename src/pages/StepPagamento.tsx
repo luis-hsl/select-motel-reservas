@@ -90,6 +90,20 @@ export default function StepPagamento() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Google Ads — conversion "Compra Confirmada" (PIX). Cartão dispara em CardPaymentReturn.
+  // transaction_id evita dedupe Ads se o user reabrir a tela.
+  useEffect(() => {
+    if (!reservationId || paymentSource !== 'pix') return
+    const gtag = (window as unknown as { gtag?: (...a: unknown[]) => void }).gtag
+    if (typeof gtag !== 'function') return
+    gtag('event', 'conversion', {
+      send_to: 'AW-18204610844/tNRrCK-4kbgcEJyi0ehD',
+      value: total,
+      currency: 'BRL',
+      transaction_id: reservationId,
+    })
+  }, [reservationId, paymentSource, total])
+
   // Poll DB every 3s for PIX payment confirmation
   useEffect(() => {
     if (!pixCharge?.reservationId) return

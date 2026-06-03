@@ -29,6 +29,23 @@ export default function CardPaymentReturn({ reservationId }: { reservationId: st
   const cancelledRef = useRef(false)
   const attemptsRef = useRef(0)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const conversionFiredRef = useRef(false)
+
+  // Google Ads — conversion "Compra Confirmada"
+  // Dispara UMA VEZ por reserva quando o status vira "paid".
+  // transaction_id evita contar duplicado se o user recarregar a tela.
+  useEffect(() => {
+    if (phase !== 'paid' || !reservation || conversionFiredRef.current) return
+    const gtag = (window as unknown as { gtag?: (...a: unknown[]) => void }).gtag
+    if (typeof gtag !== 'function') return
+    conversionFiredRef.current = true
+    gtag('event', 'conversion', {
+      send_to: 'AW-18204610844/tNRrCK-4kbgcEJyi0ehD',
+      value: Number(reservation.total_amount) || 0,
+      currency: 'BRL',
+      transaction_id: reservation.id,
+    })
+  }, [phase, reservation])
 
   const fetchAndCheck = useCallback(async (): Promise<boolean> => {
     const { data } = await supabase
