@@ -111,13 +111,19 @@ Deno.serve(async (req: Request) => {
 
   console.log('Reservation updated to paid:', reservationId)
 
-  // Send WhatsApp (fire-and-forget)
-  try {
-    await supabase.functions.invoke('send-reservation-whatsapp', {
-      body: { reservationId },
+  // Enfileira notificação (garantia de entrega via process-notifications-queue + cron).
+  // O worker processa de 1 em 1 minuto com backoff exponencial e até 10 tentativas.
+  const { error: queueErr } = await supabase
+    .from('notification_queue')
+    .insert({
+      kind:    'reservation_whatsapp',
+      payload: { reservationId },
+      status:  'pending',
     })
-  } catch (err) {
-    console.error('WhatsApp send failed (non-fatal):', err)
+  if (queueErr) {
+    console.error('Failed to enqueue notification (non-fatal):', queueErr)
+  } else {
+    console.log('Notification enqueued for', reservationId)
   }
 
   return new Response(JSON.stringify({ received: true, reservationId }), {

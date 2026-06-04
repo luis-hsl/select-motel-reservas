@@ -1,4 +1,22 @@
 #!/usr/bin/env node
+// ============================================================================
+// ⚠️  AVISO IMPORTANTE
+// ----------------------------------------------------------------------------
+// Este script gera secrets de PRODUCAO em infra/secrets.local.env.
+// Esse arquivo:
+//   1. EH gitignored (nao vai pro repo) — confirmado em .gitignore
+//   2. Fica em TEXTO PURO no seu disco — se o laptop for comprometido,
+//      o atacante tem acesso ao banco, AbacatePay, Wuzapi e tudo
+//
+// FLUXO RECOMENDADO:
+//   1. Rode este script
+//   2. Copie o conteudo de infra/secrets.local.env para 1Password/Bitwarden
+//      (ou outro cofre de senhas) IMEDIATAMENTE
+//   3. Apague o arquivo do disco:  node infra/purge-secrets.mjs
+//   4. Quando precisar dos secrets de novo, COLE do cofre numa env temporaria
+//      em vez de regerar este arquivo
+// ============================================================================
+//
 // Gera todos os secrets do self-host e grava em infra/secrets.local.env (gitignored).
 // Uso: node infra/gen-secrets.mjs [PUBLIC_HOST]
 //   PUBLIC_HOST padrao: 2.24.104.155
@@ -89,8 +107,9 @@ console.log(`  WUZAPI_ADMIN_TOKEN   ${WUZAPI_ADMIN_TOKEN.slice(0, 12)}...`)
 console.log(`  WUZAPI_USER_TOKEN    ${WUZAPI_USER_TOKEN.slice(0, 12)}...`)
 console.log()
 console.log('Proximos passos:')
-console.log('  1) Backup do arquivo em gerenciador de senhas.')
+console.log('  1) ⚠️  COPIE este arquivo PRA 1Password/Bitwarden AGORA.')
 console.log('  2) Copie pra VPS: scp infra/secrets.local.env deploy@HOST:/tmp/')
 console.log('  3) Na VPS, exporte e rode os setup scripts:')
 console.log('     set -a; source /tmp/secrets.local.env; set +a')
 console.log('     bash /tmp/supabase-setup.sh')
+console.log('  4) ⚠️  APAGUE o arquivo do disco:  node infra/purge-secrets.mjs')

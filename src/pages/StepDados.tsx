@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useStore } from '../store/useStore'
+import LegalModal, { type LegalKind } from '../components/LegalModal'
 
 function maskCPF(v: string) {
   return v.replace(/\D/g, '').slice(0, 11)
@@ -35,23 +36,26 @@ function maskPhone(v: string) {
 }
 
 export default function StepDados() {
-  const { setCustomer, setObservations, observations: storedObs, nextStep, prevStep } = useStore()
+  const { setCustomer, setObservations, observations: storedObs, setConsentAt, nextStep, prevStep } = useStore()
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [taxId, setTaxId] = useState('')
   const [obs, setObs] = useState(storedObs ?? '')
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
+  const [legalOpen, setLegalOpen] = useState<LegalKind | null>(null)
 
   const rawCPF = taxId.replace(/\D/g, '')
   const rawPhone = phone.replace(/\D/g, '')
   const cpfValid = isValidCPF(rawCPF)
   const cpfError = rawCPF.length === 11 && !cpfValid
-  const canContinue = name.trim() && rawPhone.length >= 10 && email.includes('@') && cpfValid
+  const canContinue = name.trim() && rawPhone.length >= 10 && email.includes('@') && cpfValid && acceptedTerms
 
   function confirm() {
     if (!canContinue) return
     setCustomer(name.trim(), phone.trim(), email.trim(), rawCPF)
     setObservations(obs.trim())
+    setConsentAt(new Date().toISOString())
 
     // Google Ads — conversion "Inscrição" (lead): cliente preencheu dados completos.
     // Usa email como transaction_id pra dedupe básico se o lead voltar.
@@ -147,6 +151,35 @@ export default function StepDados() {
             <p className="mt-1 text-[10px] text-gold-700/40 text-right">{obs.length}/500</p>
           </Field>
 
+          {/* LGPD — consentimento obrigatório */}
+          <label className="flex items-start gap-3 cursor-pointer select-none mt-1">
+            <input
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              className="mt-0.5 w-4 h-4 accent-gold-500 cursor-pointer shrink-0"
+            />
+            <span className="text-[12px] sm:text-xs text-gold-700/80 leading-relaxed">
+              Li e concordo com os{' '}
+              <button
+                type="button"
+                onClick={() => setLegalOpen('terms')}
+                className="text-gold-400 underline underline-offset-2 hover:text-gold-300"
+              >
+                Termos de Uso
+              </button>{' '}
+              e com a{' '}
+              <button
+                type="button"
+                onClick={() => setLegalOpen('privacy')}
+                className="text-gold-400 underline underline-offset-2 hover:text-gold-300"
+              >
+                Política de Privacidade
+              </button>{' '}
+              do Select Motel. Autorizo o tratamento dos meus dados para fins da reserva, nos termos da LGPD.
+            </span>
+          </label>
+
           <button
             onClick={confirm}
             disabled={!canContinue}
@@ -161,6 +194,8 @@ export default function StepDados() {
           </button>
         </div>
       </div>
+
+      {legalOpen && <LegalModal kind={legalOpen} onClose={() => setLegalOpen(null)} />}
     </div>
   )
 }

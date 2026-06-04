@@ -39,6 +39,30 @@ Deno.serve(async (req)=>{
   try {
     const { packageId, type, suiteId, checkIn, checkOut, customerName, customerPhone, customerEmail, customerTaxId, totalAmount, appOrigin, paymentMethod = 'pix', extras = {} } = await req.json();
     const supabase = createClient(Deno.env.get('SUPABASE_URL'), Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'));
+
+    // -------- Rate limit (anti-spam) --------
+    // Por IP: 10 charges/min — protege contra burst sintético
+    // Por email: 5 charges/min — protege a chave AbacatePay e o leitor de fraude
+    const ip = (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'unknown';
+    const emailKey = (customerEmail ?? '').trim().toLowerCase();
+
+    const limitChecks = [
+      { bucket: `create-charge:ip:${ip}`,         max: 10 },
+      { bucket: `create-charge:email:${emailKey}`, max: 5  },
+    ];
+    for (const { bucket, max } of limitChecks) {
+      if (!bucket.endsWith(':')) {
+        const { data: hit } = await supabase.rpc('rate_limit_hit', {
+          p_bucket: bucket, p_max: max, p_window_s: 60,
+        });
+        if (hit === true) {
+          console.warn('[rate-limit] blocked', bucket, '>', max, '/60s');
+          return json({
+            error: 'Muitas tentativas em pouco tempo. Aguarde um minuto e tente novamente.',
+          }, 429);
+        }
+      }
+    }
     const holdExpiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
     const now = new Date().toISOString();
     // Busca reserva pending ativa do mesmo usuário na mesma suíte
