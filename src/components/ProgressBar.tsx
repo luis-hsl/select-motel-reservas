@@ -1,4 +1,5 @@
 import { TOTAL_STEPS } from '../store/useStore'
+import { InstagramInline } from './InstagramLink'
 
 const STEP_LABELS = ['Pacote', 'Tipo', 'Data', 'Suíte', 'Refeição', 'Bebida', 'Surpresa', 'Dados', 'Pagamento']
 
@@ -38,6 +39,9 @@ export default function ProgressBar({ currentStep }: Props) {
             />
           </div>
         </div>
+
+        {/* Instagram (desktop only) */}
+        <InstagramInline />
       </div>
     </header>
   )

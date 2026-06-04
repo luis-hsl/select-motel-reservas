@@ -2,6 +2,7 @@ import './index.css'
 import { useMemo, useEffect } from 'react'
 import { trackStep } from './lib/tracking'
 import ProgressBar from './components/ProgressBar'
+import { InstagramFab } from './components/InstagramLink'
 import ReservaSidebar from './components/ReservaSidebar'
 import CardPaymentReturn from './components/CardPaymentReturn'
 import StepPacote from './pages/StepPacote'
@@ -69,6 +70,8 @@ export default function App() {
           <ReservaSidebar />
         </div>
       </div>
+
+      <InstagramFab />
     </div>
   )
 }

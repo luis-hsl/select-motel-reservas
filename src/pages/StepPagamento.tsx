@@ -3,6 +3,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
 import { getSessionToken } from '../lib/tracking'
+import Reviews from '../components/Reviews'
 
 function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -436,7 +437,10 @@ export default function StepPagamento() {
             </div>
           ) : (
             /* Payment buttons — each is a direct action */
-            <div className="space-y-3">
+            <div className="space-y-4">
+              {/* Reviews — social proof acima dos botões de pagamento */}
+              <Reviews />
+
               {/* PIX button */}
               <button
                 onClick={generatePixCharge}
