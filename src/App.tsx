@@ -1,5 +1,6 @@
 import './index.css'
-import { useMemo } from 'react'
+import { useMemo, useEffect } from 'react'
+import { trackStep } from './lib/tracking'
 import ProgressBar from './components/ProgressBar'
 import ReservaSidebar from './components/ReservaSidebar'
 import CardPaymentReturn from './components/CardPaymentReturn'
@@ -35,6 +36,20 @@ export default function App() {
     const ref = p.get('ref')
     return p.get('payment') === 'ok' && ref ? ref : null
   }, [])
+
+  // Tracking anônimo do onboarding — só quando estiver no fluxo normal,
+  // não na tela de retorno do pagamento (que já foi convertida).
+  useEffect(() => {
+    if (paymentReturn) return
+    trackStep(currentStep)
+  }, [currentStep, paymentReturn])
+
+  // Heartbeat a cada 30s pra manter sessão "ativa" no painel admin
+  useEffect(() => {
+    if (paymentReturn) return
+    const id = setInterval(() => trackStep(currentStep), 30_000)
+    return () => clearInterval(id)
+  }, [currentStep, paymentReturn])
 
   if (paymentReturn) {
     return <CardPaymentReturn reservationId={paymentReturn} />

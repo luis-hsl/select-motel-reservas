@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
+import { getSessionToken } from '../lib/tracking'
 
 function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -56,6 +57,7 @@ export default function StepPagamento() {
     type,
     observations: observations?.trim() || null,
     lgpdConsentAt: consentAt,   // ISO timestamp do "Li e aceito" — rastro legal
+    trackingSessionToken: getSessionToken(),  // pra marcar a sessão como convertida
   }
   const total = totalAmount()
   const checkout = checkOut()

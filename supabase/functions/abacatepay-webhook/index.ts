@@ -111,6 +111,21 @@ Deno.serve(async (req: Request) => {
 
   console.log('Reservation updated to paid:', reservationId)
 
+  // Marca a sessão de onboarding como convertida (se vier session_token no metadata)
+  // O frontend repassa o session_token via extras.tracking_session_token
+  const { data: reservationRow } = await supabase
+    .from('reservations')
+    .select('extras')
+    .eq('id', reservationId)
+    .maybeSingle<{ extras: { trackingSessionToken?: string } | null }>()
+  const trackingToken = reservationRow?.extras?.trackingSessionToken
+  if (trackingToken) {
+    await supabase.rpc('onboarding_mark_converted', {
+      p_session_token:  trackingToken,
+      p_reservation_id: reservationId,
+    })
+  }
+
   // Enfileira notificação (garantia de entrega via process-notifications-queue + cron).
   // O worker processa de 1 em 1 minuto com backoff exponencial e até 10 tentativas.
   const { error: queueErr } = await supabase
