@@ -186,17 +186,30 @@ export default function StepPacote() {
         Cada pacote inclui decoração e experiências exclusivas.
       </p>
 
+      {/*
+         No mobile, a ordem visual é Bronze → Prata → Ouro (mais barato primeiro,
+         pra não chocar com o preço alto logo de cara). No desktop fica natural
+         (Ouro → Prata → Bronze) com Ouro destacado no meio do grid de 3.
+         Conseguimos isso via CSS `order` que respeita o array mas reposiciona
+         visualmente no mobile.
+      */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {PACKAGES.map((pkg) => {
           const id = pkg.id as PkgId
           const th = THEME[id]
           const isSel = selected?.id === pkg.id
 
+          // Ordem visual no mobile: Bronze (1) → Prata (2) → Ouro (3)
+          // No desktop (sm+) volta à ordem do array (Ouro → Prata → Bronze).
+          const mobileOrder = id === 'bronze' ? 'order-1'
+                            : id === 'prata'  ? 'order-2'
+                            :                   'order-3'
+
           return (
             <button
               key={pkg.id}
               onClick={() => choose(pkg)}
-              className="relative text-left rounded-2xl overflow-hidden outline-none transition-all duration-300"
+              className={`${mobileOrder} sm:order-none relative text-left rounded-2xl overflow-hidden outline-none transition-all duration-300`}
               style={{
                 background: th.bg,
                 border: `1px solid ${th.border}`,
