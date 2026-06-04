@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { metaEvents } from '../lib/metaPixel'
 
 interface Reservation {
   id: string
@@ -44,6 +45,11 @@ export default function CardPaymentReturn({ reservationId }: { reservationId: st
       value: Number(reservation.total_amount) || 0,
       currency: 'BRL',
       transaction_id: reservation.id,
+    })
+    // Meta Pixel — Purchase (Cartão)
+    metaEvents.purchase({
+      value:   Number(reservation.total_amount) || 0,
+      orderId: reservation.id,
     })
   }, [phase, reservation])
 

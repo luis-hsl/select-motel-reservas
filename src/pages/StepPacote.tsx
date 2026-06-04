@@ -4,6 +4,7 @@ import { PACKAGES } from '../data'
 import { useStore } from '../store/useStore'
 import type { Package } from '../types'
 import Faq from '../components/Faq'
+import { metaEvents } from '../lib/metaPixel'
 
 function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -153,6 +154,14 @@ export default function StepPacote() {
         transaction_id: pkg.id,
       })
     }
+
+    // Meta Pixel — ViewContent
+    metaEvents.viewContent({
+      id:       pkg.id,
+      name:     pkg.label,
+      category: 'package',
+      value:    pkg.price_period,
+    })
 
     setTimeout(nextStep, 300)
   }

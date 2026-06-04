@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../store/useStore'
 import LegalModal, { type LegalKind } from '../components/LegalModal'
+import { metaEvents } from '../lib/metaPixel'
 
 function maskCPF(v: string) {
   return v.replace(/\D/g, '').slice(0, 11)
@@ -68,6 +69,9 @@ export default function StepDados() {
         transaction_id: email.trim().toLowerCase(),
       })
     }
+
+    // Meta Pixel — Lead
+    metaEvents.lead()
 
     nextStep()
   }

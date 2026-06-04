@@ -111,19 +111,62 @@ Deno.serve(async (req: Request) => {
 
   console.log('Reservation updated to paid:', reservationId)
 
-  // Marca a sessão de onboarding como convertida (se vier session_token no metadata)
-  // O frontend repassa o session_token via extras.tracking_session_token
+  // Lê a reserva inteira (precisamos do customer pra Meta CAPI + tracking)
   const { data: reservationRow } = await supabase
     .from('reservations')
-    .select('extras')
+    .select('id, customer_name, customer_email, customer_phone, total_amount, package_id, extras')
     .eq('id', reservationId)
-    .maybeSingle<{ extras: { trackingSessionToken?: string } | null }>()
+    .maybeSingle<{
+      id: string
+      customer_name:  string
+      customer_email: string
+      customer_phone: string
+      total_amount:   number
+      package_id:     string
+      extras: {
+        trackingSessionToken?: string
+        metaInitCheckoutEventId?: string
+      } | null
+    }>()
+
+  // Marca a sessão de onboarding como convertida
   const trackingToken = reservationRow?.extras?.trackingSessionToken
   if (trackingToken) {
     await supabase.rpc('onboarding_mark_converted', {
       p_session_token:  trackingToken,
       p_reservation_id: reservationId,
     })
+  }
+
+  // Meta Conversions API — Purchase server-side (dedup com Pixel via event_id)
+  // O event_id usado aqui é o reservationId — o front também usa pra deduplicação
+  if (reservationRow) {
+    try {
+      await supabase.functions.invoke('meta-capi', {
+        body: {
+          event_name: 'Purchase',
+          event_id:   reservationRow.id,
+          user_data: {
+            email: reservationRow.customer_email,
+            phone: reservationRow.customer_phone,
+            name:  reservationRow.customer_name,
+            city:  'Ivaiporã',
+            state: 'PR',
+            country: 'br',
+          },
+          custom_data: {
+            value:        Number(reservationRow.total_amount),
+            currency:     'BRL',
+            content_type: 'product',
+            content_ids:  [reservationRow.package_id],
+            order_id:     reservationRow.id,
+          },
+          event_source_url: 'https://www.selectreservas.com.br/',
+        },
+      })
+    } catch (e) {
+      console.error('meta-capi Purchase failed (non-fatal):', e)
+    }
   }
 
   // Enfileira notificação (garantia de entrega via process-notifications-queue + cron).

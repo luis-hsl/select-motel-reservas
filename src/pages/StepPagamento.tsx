@@ -4,6 +4,7 @@ import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
 import { getSessionToken } from '../lib/tracking'
 import Reviews from '../components/Reviews'
+import { metaEvents } from '../lib/metaPixel'
 
 function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -91,6 +92,8 @@ export default function StepPagamento() {
       value: total,
       currency: 'BRL',
     })
+    // Meta Pixel — InitiateCheckout
+    metaEvents.initiateCheckout({ value: total })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -106,7 +109,13 @@ export default function StepPagamento() {
       currency: 'BRL',
       transaction_id: reservationId,
     })
-  }, [reservationId, paymentSource, total])
+    // Meta Pixel — Purchase (PIX)
+    metaEvents.purchase({
+      value:       total,
+      orderId:     reservationId,
+      contentIds:  pkg ? [pkg.id] : [],
+    })
+  }, [reservationId, paymentSource, total, pkg])
 
   // Poll DB every 3s for PIX payment confirmation
   useEffect(() => {

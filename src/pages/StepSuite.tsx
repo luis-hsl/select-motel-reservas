@@ -4,6 +4,7 @@ import { SUITES } from '../data'
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
 import type { Suite, SuiteCategory } from '../types'
+import { metaEvents } from '../lib/metaPixel'
 
 function toWebP(url: string, width = 600): string {
   if (!url || url.startsWith('/')) return url
@@ -114,6 +115,9 @@ export default function StepSuite() {
         transaction_id: suite.id,
       })
     }
+
+    // Meta Pixel — AddToCart (sinal mais forte que ViewContent)
+    metaEvents.addToCart({ id: suite.id, name: suite.name })
 
     setTimeout(nextStep, 300)
   }
