@@ -63,17 +63,14 @@ export function InstagramFab() {
       />
 
       <span
-        className="relative flex items-center gap-2 pl-3 pr-4 py-3 rounded-full shadow-lg"
+        className="relative flex items-center justify-center w-12 h-12 rounded-full shadow-lg"
         style={{
           background:
             'linear-gradient(135deg, #f09433 0%, #e6683c 30%, #dc2743 60%, #bc1888 100%)',
           boxShadow: '0 8px 24px rgba(0,0,0,0.5), 0 0 0 2px rgba(255,255,255,0.08)',
         }}
       >
-        <IgGlyph className="w-5 h-5 text-white" />
-        <span className="text-xs font-semibold text-white whitespace-nowrap">
-          @{HANDLE}
-        </span>
+        <IgGlyph className="w-6 h-6 text-white" />
       </span>
     </a>
   )
