@@ -1,9 +1,28 @@
 // Tracking anônimo do onboarding. Sem PII até o usuário preencher StepDados.
 // session_token persiste em localStorage por 30 dias (renovado a cada uso).
 
-const STORAGE_KEY  = 'select-tracking-session'
-const TTL_DAYS     = 30
-const ENDPOINT     = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-onboarding`
+const STORAGE_KEY    = 'select-tracking-session'
+const DISABLED_KEY   = 'select-tracking-disabled'   // 'true' = não trackeia este browser
+const TTL_DAYS       = 30
+const ENDPOINT       = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-onboarding`
+
+// ?notrack=1 → desliga (persistente). ?notrack=0 → religa.
+if (typeof window !== 'undefined') {
+  const p = new URLSearchParams(window.location.search)
+  const flag = p.get('notrack')
+  if (flag === '1') {
+    try { localStorage.setItem(DISABLED_KEY, 'true') } catch { /* noop */ }
+    console.info('[tracking] desativado neste browser. Use ?notrack=0 pra religar.')
+  } else if (flag === '0') {
+    try { localStorage.removeItem(DISABLED_KEY) } catch { /* noop */ }
+    console.info('[tracking] reativado neste browser.')
+  }
+}
+
+function trackingDisabled(): boolean {
+  if (typeof localStorage === 'undefined') return false
+  try { return localStorage.getItem(DISABLED_KEY) === 'true' } catch { return false }
+}
 
 function uuid(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -59,6 +78,7 @@ let lastTrack: { step: number; at: number } | null = null
  * Idempotente: chamadas rápidas pra mesma step são ignoradas.
  */
 export async function trackStep(step: number): Promise<void> {
+  if (trackingDisabled()) return
   if (lastTrack && lastTrack.step === step && Date.now() - lastTrack.at < 5000) return
   lastTrack = { step, at: Date.now() }
 

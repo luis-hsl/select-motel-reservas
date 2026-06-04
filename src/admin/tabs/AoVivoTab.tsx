@@ -131,9 +131,42 @@ export default function AoVivoTab() {
     ? ((stats.converted / sessions.length) * 100).toFixed(1)
     : '0'
 
+  async function handleWipe() {
+    const msg = `Apagar TODAS as ${sessions.length} sessões de onboarding? Essa ação não pode ser desfeita.`
+    if (!confirm(msg)) return
+    await (supabase as unknown as {
+      from: (t: string) => { delete: () => { neq: (k: string, v: string) => Promise<unknown> } }
+    })
+      .from('onboarding_sessions')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000')  // delete sem WHERE não passa no PostgREST
+    setSessions([])
+  }
+
   return (
     <div className="space-y-6">
-      <h2 className="text-white/80 text-sm">Ao vivo · Onboarding</h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-white/80 text-sm">Ao vivo · Onboarding</h2>
+        <div className="flex items-center gap-2">
+          <a
+            href="/?notrack=1"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[10px] tracking-wide uppercase text-white/40 hover:text-white/70 border border-white/10 hover:border-white/30 rounded-lg px-2.5 py-1.5"
+            title="Abre o site em uma nova aba marcando este browser como dev (não trackeia)"
+          >
+            Não trackear este browser
+          </a>
+          {sessions.length > 0 && (
+            <button
+              onClick={handleWipe}
+              className="text-[10px] tracking-wide uppercase text-red-400/70 hover:text-red-300 border border-red-500/20 hover:border-red-500/40 rounded-lg px-2.5 py-1.5"
+            >
+              Apagar tudo
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* ───── Métricas ───── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
