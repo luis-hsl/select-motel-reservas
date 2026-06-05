@@ -552,11 +552,3 @@ function GlowDivider({ color }: { color: string }) {
   )
 }
 
-function PriceRow({ label, value, color }: { label: string; value: number; color: string }) {
-  return (
-    <div className="flex items-baseline justify-between">
-      <span className="text-[10px] uppercase tracking-widest" style={{ color: 'rgba(180,150,80,0.45)' }}>{label}</span>
-      <span className="text-xs font-semibold" style={{ color }}>{fmt(value)}</span>
-    </div>
-  )
-}
