@@ -265,14 +265,6 @@ export default function StepPacote() {
                   ))}
                 </ul>
 
-                <div className="border-t pt-3 mb-3 text-center" style={{ borderColor: `${th.dividerColor}40` }}>
-                  <p className="text-[10px] tracking-widest uppercase" style={{ color: th.labelColor }}>
-                    Investimento
-                  </p>
-                  <p className="text-[10px] mt-0.5" style={{ color: `${th.labelColor}99` }}>
-                    Confira no botão abaixo
-                  </p>
-                </div>
 
                 {/* Ver detalhes button */}
                 <div className="border-t pb-4 pt-3" style={{ borderColor: `${th.dividerColor}25` }}>
