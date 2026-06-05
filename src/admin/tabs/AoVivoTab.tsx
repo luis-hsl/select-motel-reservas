@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase'
 
 const STEP_NAMES = ['Pacote','Tipo','Data','Suíte','Refeição','Bebida','Surpresa','Dados','Pagamento']
 const ACTIVE_WINDOW_MS = 2 * 60 * 1000           // < 2min = "ativo agora"
-const HISTORY_PAGE_SIZE = 100
+const CHUNK_SIZE       = 1000                     // fetch em batches até esgotar (sem limite total)
 
 interface Session {
   id:              string
@@ -68,20 +68,25 @@ export default function AoVivoTab() {
     let cancelled = false
 
     async function load() {
-      const { data } = await (supabase as unknown as {
-        from: (t: string) => {
-          select: (s: string) => {
-            order: (k: string, o: { ascending: boolean }) => {
-              limit: (n: number) => Promise<{ data: Session[] | null }>
-            }
-          }
-        }
-      })
-        .from('onboarding_sessions')
-        .select('*')
-        .order('last_active_at', { ascending: false })
-        .limit(HISTORY_PAGE_SIZE)
-      if (!cancelled && data) setSessions(data)
+      // PostgREST limita a 1000 por request — então fazemos chunks até esgotar.
+      // Assim a aba 'Ao Vivo' não tem limite efetivo de sessões.
+      const all: Session[] = []
+      let from = 0
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const supa = supabase as any
+      while (true) {
+        if (cancelled) return
+        const { data, error } = await supa
+          .from('onboarding_sessions')
+          .select('*')
+          .order('last_active_at', { ascending: false })
+          .range(from, from + CHUNK_SIZE - 1)
+        if (error || !data || data.length === 0) break
+        all.push(...(data as Session[]))
+        if (data.length < CHUNK_SIZE) break
+        from += CHUNK_SIZE
+      }
+      if (!cancelled) setSessions(all)
       setLoading(false)
     }
     load()
@@ -173,7 +178,7 @@ export default function AoVivoTab() {
         <StatCard label="Ativos agora" value={stats.active}      hint="< 2 min sem inatividade" pulse />
         <StatCard label="Hoje"         value={stats.todayCount}  hint="iniciaram o onboarding" />
         <StatCard label="Convertidos"  value={stats.converted}   hint={`taxa ${conversionRate}%`} />
-        <StatCard label="Total visto"  value={sessions.length}   hint={`últimas ${HISTORY_PAGE_SIZE}`} />
+        <StatCard label="Total visto"  value={sessions.length}   hint="todas as sessões" />
       </div>
 
       {/* ───── Funil ───── */}
