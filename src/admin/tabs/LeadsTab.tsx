@@ -55,10 +55,7 @@ export default function LeadsTab() {
   async function load() {
     setLoading(true)
     setLoadError(null)
-    const { data, error } = await supabase
-      .from('leads')
-      .select('*')
-      .order('created_at', { ascending: false })
+    const { data, error } = await supabase.rpc('get_leads')
     if (error) {
       setLoadError(error.message)
       setLeads([])
@@ -69,7 +66,7 @@ export default function LeadsTab() {
   }
 
   async function updateStatus(id: string, status: string) {
-    await supabase.from('leads').update({ status }).eq('id', id)
+    await supabase.rpc('update_lead_status', { lead_id: id, new_status: status })
     setLeads(prev => prev.map(l => l.id === id ? { ...l, status: status as Lead['status'] } : l))
   }
 

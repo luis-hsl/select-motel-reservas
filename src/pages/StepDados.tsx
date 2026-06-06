@@ -76,18 +76,18 @@ export default function StepDados() {
     metaEvents.lead()
 
     // Salva lead no Supabase (checkout abandonado)
-    supabase.from('leads').insert({
-      name:         name.trim(),
-      phone:        phone.trim(),
-      email:        email.trim(),
-      package_id:   pkg?.id ?? null,
-      type:         type ?? null,
-      suite_id:     suite?.id ?? null,
-      check_in:     checkIn?.toISOString() ?? null,
-      drink:        drink ?? null,
-      food:         food ?? null,
-      total_amount: totalAmount() || null,
-      observations: obs.trim() || null,
+    supabase.rpc('insert_lead', {
+      p_name:         name.trim(),
+      p_phone:        phone.trim(),
+      p_email:        email.trim(),
+      p_package_id:   pkg?.id ?? null,
+      p_type:         type ?? null,
+      p_suite_id:     suite?.id ?? null,
+      p_check_in:     checkIn?.toISOString() ?? null,
+      p_drink:        drink ?? null,
+      p_food:         food ?? null,
+      p_total_amount: totalAmount() || null,
+      p_observations: obs.trim() || null,
     }).then(() => {/* silencioso */})
 
     nextStep()

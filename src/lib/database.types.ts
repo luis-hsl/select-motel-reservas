@@ -242,6 +242,29 @@ export type Database = {
         Args: { p_check_in: string; p_check_out: string }
         Returns: { suite_id: string }[]
       }
+      get_leads: {
+        Args: Record<string, never>
+        Returns: {
+          id: string; name: string; phone: string; email: string
+          package_id: string | null; type: string | null; suite_id: string | null
+          check_in: string | null; drink: string | null; food: string | null
+          total_amount: number | null; observations: string | null
+          status: string; created_at: string
+        }[]
+      }
+      update_lead_status: {
+        Args: { lead_id: string; new_status: string }
+        Returns: undefined
+      }
+      insert_lead: {
+        Args: {
+          p_name: string; p_phone: string; p_email: string
+          p_package_id: string | null; p_type: string | null; p_suite_id: string | null
+          p_check_in: string | null; p_drink: string | null; p_food: string | null
+          p_total_amount: number | null; p_observations: string | null
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
