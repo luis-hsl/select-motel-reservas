@@ -1,16 +1,17 @@
 import { useStore } from '../store/useStore'
 
-function fmt(v: number) {
-  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
-
 const TIPOS = [
   {
     id: 'overnight' as const,
     label: 'PERNOITE',
     subtitle: 'Uma noite inteira para criar memórias inesquecíveis.',
-    detail: 'Check-in às 00h · Check-out às 12h do dia seguinte',
-    // Simula LED underglow no rodapé + teto âmbar quente — referência da foto enviada
+    notice: 'Check-in a partir das 22h',
+    noticeIcon: (
+      <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+        <circle cx="5.5" cy="5.5" r="4.5" stroke="currentColor" strokeWidth="0.9" />
+        <path d="M5.5 3.2v2.5l1.6 1.1" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
     bg: [
       'radial-gradient(ellipse at 50% 110%, rgba(210,90,10,0.75) 0%, transparent 50%)',
       'radial-gradient(ellipse at 15% 100%, rgba(190,70,8,0.55) 0%, transparent 42%)',
@@ -23,17 +24,21 @@ const TIPOS = [
     ring: 'rgba(220,130,35,0.4)',
     divider: '#b06020',
     titleColor: 'linear-gradient(180deg,#fce8b0 0%,#e8a830 50%,#a06010 100%)',
-    subtitleColor: 'rgba(230,185,110,0.6)',
-    detailColor: 'rgba(200,150,80,0.45)',
-    priceColor: '#e8b840',
+    subtitleColor: 'rgba(230,185,110,0.55)',
+    detailColor: 'rgba(200,150,80,0.5)',
     glowBottom: 'rgba(210,90,10,0.35)',
   },
   {
     id: 'period' as const,
     label: 'PERÍODO',
-    subtitle: 'Aproveite algumas horas para vocês dois.',
-    detail: 'Horários: a cada 2h, das 00h às 22h',
-    // Simula luz natural dourada lateral + velas — referência da foto enviada
+    subtitle: 'Algumas horas só de vocês dois.',
+    notice: 'Duração de 2 horas',
+    noticeIcon: (
+      <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+        <circle cx="5.5" cy="5.5" r="4.5" stroke="currentColor" strokeWidth="0.9" />
+        <path d="M5.5 3.2v2.5l1.6 1.1" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
     bg: [
       'radial-gradient(ellipse at 80% 25%, rgba(210,160,55,0.45) 0%, transparent 58%)',
       'radial-gradient(ellipse at 90% 60%, rgba(180,120,35,0.35) 0%, transparent 48%)',
@@ -46,9 +51,8 @@ const TIPOS = [
     ring: 'rgba(200,160,60,0.35)',
     divider: '#9a7828',
     titleColor: 'linear-gradient(180deg,#f8e8b0 0%,#d4a020 50%,#8a6010 100%)',
-    subtitleColor: 'rgba(215,175,100,0.6)',
-    detailColor: 'rgba(190,145,70,0.45)',
-    priceColor: '#d8ac40',
+    subtitleColor: 'rgba(215,175,100,0.55)',
+    detailColor: 'rgba(190,145,70,0.5)',
     glowBottom: 'rgba(180,120,30,0.2)',
   },
 ] as const
@@ -61,9 +65,6 @@ export default function StepTipo() {
     setType(t)
     setTimeout(nextStep, 300)
   }
-
-  const price = (id: 'period' | 'overnight') =>
-    id === 'period' ? pkg.price_period : pkg.price_overnight
 
   return (
     <div>
@@ -100,7 +101,7 @@ export default function StepTipo() {
                 minHeight: '280px',
               }}
             >
-              {/* Bottom glow strip — simula LED underglow da foto */}
+              {/* Bottom glow strip */}
               <div
                 className="absolute bottom-0 left-0 right-0 h-1 rounded-b-2xl"
                 style={{
@@ -109,61 +110,53 @@ export default function StepTipo() {
                 }}
               />
 
-              {/* Content — posicionado em baixo/esquerda como nas fotos */}
-              <div className="flex flex-col justify-between h-full p-7 xl:p-9" style={{ minHeight: '280px' }}>
+              <div className="flex flex-col justify-end h-full p-7 xl:p-9" style={{ minHeight: '280px' }}>
 
-                {/* Top: price chip */}
-                <div className="flex justify-end">
+                {/* Divider line */}
+                <div className="flex items-center gap-2 mb-5">
                   <div
-                    className="rounded-xl px-3 py-1.5 text-right"
-                    style={{ background: `${opt.divider}20`, border: `1px solid ${opt.divider}40` }}
-                  >
-                    <p className="text-[9px] tracking-widest uppercase mb-0.5" style={{ color: opt.detailColor }}>
-                      {opt.id === 'period' ? 'Período' : 'Pernoite'}
-                    </p>
-                    <p className="font-serif text-lg font-semibold" style={{ color: opt.priceColor }}>
-                      {fmt(price(opt.id))}
-                    </p>
-                  </div>
+                    className="h-px w-8"
+                    style={{ background: opt.divider, boxShadow: `0 0 6px ${opt.divider}` }}
+                  />
                 </div>
 
-                {/* Bottom: title + text */}
-                <div>
-                  {/* Divider line */}
-                  <div className="flex items-center gap-2 mb-4">
-                    <div
-                      className="h-px w-6"
-                      style={{ background: opt.divider, boxShadow: `0 0 6px ${opt.divider}` }}
-                    />
-                  </div>
+                {/* Title */}
+                <h2
+                  className="font-serif font-bold text-transparent bg-clip-text leading-none mb-3"
+                  style={{
+                    fontSize: 'clamp(2.6rem, 8vw, 3.4rem)',
+                    letterSpacing: '0.08em',
+                    backgroundImage: opt.titleColor,
+                  }}
+                >
+                  {opt.label}
+                </h2>
 
-                  {/* Title */}
-                  <h2
-                    className="font-serif font-bold tracking-widest mb-3 text-transparent bg-clip-text leading-none"
-                    style={{
-                      fontSize: 'clamp(2.2rem, 7vw, 2.8rem)',
-                      backgroundImage: opt.titleColor,
-                    }}
-                  >
-                    {opt.label}
-                  </h2>
+                {/* Subtitle */}
+                <p
+                  className="text-xs tracking-wide leading-relaxed mb-4"
+                  style={{ color: opt.subtitleColor }}
+                >
+                  {opt.subtitle}
+                </p>
 
-                  {/* Subtitle */}
-                  <p
-                    className="text-[11px] tracking-wider uppercase leading-relaxed mb-2"
-                    style={{ color: opt.subtitleColor }}
-                  >
-                    {opt.subtitle}
-                  </p>
-
-                  {/* Detail */}
-                  <p className="text-[10px] tracking-wide" style={{ color: opt.detailColor }}>
-                    {opt.detail}
-                  </p>
+                {/* Notice badge */}
+                <div
+                  className="inline-flex items-center gap-1.5 self-start px-3 py-1.5 rounded-full"
+                  style={{
+                    background: `${opt.divider}18`,
+                    border: `1px solid ${opt.divider}40`,
+                    color: opt.detailColor,
+                  }}
+                >
+                  {opt.noticeIcon}
+                  <span className="text-[10px] tracking-widest uppercase font-medium">
+                    {opt.notice}
+                  </span>
                 </div>
               </div>
 
-              {/* Selected ring check */}
+              {/* Selected check */}
               {isSel && (
                 <div
                   className="absolute top-4 left-4 w-5 h-5 rounded-full flex items-center justify-center"
