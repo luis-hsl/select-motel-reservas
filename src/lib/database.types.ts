@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      leads: {
+        Row: {
+          id: string
+          name: string
+          phone: string
+          email: string
+          package_id: string | null
+          type: string | null
+          suite_id: string | null
+          check_in: string | null
+          drink: string | null
+          food: string | null
+          total_amount: number | null
+          observations: string | null
+          status: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          phone: string
+          email: string
+          package_id?: string | null
+          type?: string | null
+          suite_id?: string | null
+          check_in?: string | null
+          drink?: string | null
+          food?: string | null
+          total_amount?: number | null
+          observations?: string | null
+          status?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          phone?: string
+          email?: string
+          package_id?: string | null
+          type?: string | null
+          suite_id?: string | null
+          check_in?: string | null
+          drink?: string | null
+          food?: string | null
+          total_amount?: number | null
+          observations?: string | null
+          status?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       packages: {
         Row: {
           highlighted: boolean

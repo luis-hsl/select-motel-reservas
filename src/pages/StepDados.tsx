@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useStore } from '../store/useStore'
 import LegalModal, { type LegalKind } from '../components/LegalModal'
 import { metaEvents } from '../lib/metaPixel'
+import { supabase } from '../lib/supabase'
 
 function maskCPF(v: string) {
   return v.replace(/\D/g, '').slice(0, 11)
@@ -37,7 +38,8 @@ function maskPhone(v: string) {
 }
 
 export default function StepDados() {
-  const { setCustomer, setObservations, observations: storedObs, setConsentAt, nextStep, prevStep } = useStore()
+  const { setCustomer, setObservations, observations: storedObs, setConsentAt, nextStep, prevStep,
+    package: pkg, type, suite, checkIn, drink, food, totalAmount } = useStore()
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
@@ -72,6 +74,21 @@ export default function StepDados() {
 
     // Meta Pixel — Lead
     metaEvents.lead()
+
+    // Salva lead no Supabase (checkout abandonado)
+    supabase.from('leads').insert({
+      name:         name.trim(),
+      phone:        phone.trim(),
+      email:        email.trim(),
+      package_id:   pkg?.id ?? null,
+      type:         type ?? null,
+      suite_id:     suite?.id ?? null,
+      check_in:     checkIn?.toISOString() ?? null,
+      drink:        drink ?? null,
+      food:         food ?? null,
+      total_amount: totalAmount() || null,
+      observations: obs.trim() || null,
+    }).then(() => {/* silencioso */})
 
     nextStep()
   }
