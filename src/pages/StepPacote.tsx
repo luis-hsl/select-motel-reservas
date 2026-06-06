@@ -392,23 +392,6 @@ function PackageModal({ id, pkg, detail, visible, onClose, onSelect }: ModalProp
         {/* Divider */}
         <div className="px-6"><GlowDivider color={t.dividerColor} /></div>
 
-        {/* Prices */}
-        <div className="px-6 py-5 grid grid-cols-2 gap-3">
-          {[
-            { label: 'Período', value: pkg.price_period },
-            { label: 'Pernoite', value: pkg.price_overnight },
-          ].map(({ label, value }) => (
-            <div
-              key={label}
-              className="rounded-xl p-3 text-center"
-              style={{ background: `${t.dividerColor}15`, border: `1px solid ${t.dividerColor}30` }}
-            >
-              <p className="text-[9px] tracking-widest uppercase mb-1" style={{ color: t.labelColor }}>{label}</p>
-              <p className="font-serif text-xl font-semibold" style={{ color: t.priceColor }}>{fmt(value)}</p>
-            </div>
-          ))}
-        </div>
-
         {/* O que está incluído */}
         <Section title="O que está incluído" color={t.accentColor} dividerColor={t.dividerColor}>
           <ul className="space-y-3 mb-4">
