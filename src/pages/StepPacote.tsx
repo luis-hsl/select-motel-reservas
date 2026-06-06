@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { PACKAGES } from '../data'
 import { useStore } from '../store/useStore'
@@ -140,13 +140,6 @@ export default function StepPacote() {
   const { package: selected, setPackage, nextStep } = useStore()
   const [detailId, setDetailId] = useState<PkgId | null>(null)
   const [visible, setVisible] = useState(false)
-  const ctaRef = useRef<HTMLButtonElement>(null)
-
-  useEffect(() => {
-    if (!selected) return
-    requestAnimationFrame(() => ctaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
-  }, [selected?.id])
-
   function choose(pkg: Package) {
     setPackage(pkg)
 
@@ -168,6 +161,8 @@ export default function StepPacote() {
       category: 'package',
       value:    pkg.price_period,
     })
+
+    setTimeout(nextStep, 300)
   }
 
   function openDetail(id: PkgId, e: React.MouseEvent) {
@@ -219,10 +214,9 @@ export default function StepPacote() {
                             :                   'order-3'
 
           return (
-            <button
+            <div
               key={pkg.id}
-              onClick={() => choose(pkg)}
-              className={`${mobileOrder} sm:order-none relative text-left rounded-2xl overflow-hidden outline-none transition-all duration-300`}
+              className={`${mobileOrder} sm:order-none relative text-left rounded-2xl overflow-hidden transition-all duration-300`}
               style={{
                 background: th.bg,
                 border: `1px solid ${th.border}`,
@@ -270,19 +264,26 @@ export default function StepPacote() {
                 </ul>
 
 
-                {/* Ver detalhes button */}
-                <div className="border-t pb-4 pt-3" style={{ borderColor: `${th.dividerColor}25` }}>
+                {/* Ações */}
+                <div className="border-t pb-4 pt-3 grid grid-cols-2 gap-2" style={{ borderColor: `${th.dividerColor}25` }}>
                   <button
                     onClick={(e) => openDetail(id, e)}
-                    className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-[11px] tracking-widest uppercase font-medium transition-all duration-200 hover:opacity-90 active:scale-95"
+                    className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-[11px] tracking-widest uppercase font-medium transition-all duration-200 hover:opacity-90 active:scale-95"
                     style={{
                       color: th.accentColor,
                       border: `1px solid ${th.dividerColor}50`,
                       background: `${th.dividerColor}12`,
                     }}
                   >
-                    Ver pacote completo
+                    Detalhes
                     <span className="text-[10px]">↗</span>
+                  </button>
+                  <button
+                    onClick={() => choose(pkg)}
+                    className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-[11px] tracking-wide uppercase font-semibold text-black transition-all duration-200 hover:opacity-90 active:scale-95"
+                    style={{ background: th.badgeBg }}
+                  >
+                    {isSel ? '✓ Escolhido' : 'Escolher'}
                   </button>
                 </div>
               </div>
@@ -294,27 +295,9 @@ export default function StepPacote() {
                   </svg>
                 </div>
               )}
-            </button>
+            </div>
           )
         })}
-      </div>
-
-      <div className="mt-6">
-        <button
-          ref={ctaRef}
-          onClick={() => { if (selected) nextStep() }}
-          disabled={!selected}
-          className={[
-            'flex items-center gap-2 px-8 py-3.5 rounded-lg text-sm font-semibold transition-all duration-200',
-            selected
-              ? 'bg-gradient-to-r from-gold-700 to-gold-500 text-black hover:from-gold-600 hover:to-gold-400'
-              : 'bg-gold-900/20 text-gold-800/40 cursor-not-allowed',
-          ].join(' ')}
-        >
-          {selected
-            ? `Continuar com Pacote ${selected.id.charAt(0).toUpperCase() + selected.id.slice(1)} →`
-            : 'Escolha um pacote para continuar'}
-        </button>
       </div>
 
       {/* Detail Modal */}
