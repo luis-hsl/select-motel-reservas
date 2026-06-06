@@ -46,6 +46,7 @@ function waLink(phone: string) {
 export default function LeadsTab() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
 
@@ -53,11 +54,17 @@ export default function LeadsTab() {
 
   async function load() {
     setLoading(true)
-    const { data } = await supabase
+    setLoadError(null)
+    const { data, error } = await supabase
       .from('leads')
       .select('*')
       .order('created_at', { ascending: false })
-    setLeads((data as Lead[]) ?? [])
+    if (error) {
+      setLoadError(error.message)
+      setLeads([])
+    } else {
+      setLeads((data as Lead[]) ?? [])
+    }
     setLoading(false)
   }
 
@@ -84,6 +91,14 @@ export default function LeadsTab() {
   const newCount = leads.filter(l => l.status === 'new').length
 
   if (loading) return <div className="text-white/30 py-16 text-center text-sm">Carregando...</div>
+
+  if (loadError) return (
+    <div className="py-16 text-center">
+      <p className="text-red-400/70 text-sm mb-1">Erro ao carregar leads</p>
+      <p className="text-white/25 text-xs font-mono">{loadError}</p>
+      <button onClick={load} className="mt-4 text-xs text-gold-500 hover:text-gold-400 underline">Tentar novamente</button>
+    </div>
+  )
 
   return (
     <div>
