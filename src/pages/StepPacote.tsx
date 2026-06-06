@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { PACKAGES } from '../data'
 import { useStore } from '../store/useStore'
@@ -140,6 +140,12 @@ export default function StepPacote() {
   const { package: selected, setPackage, nextStep } = useStore()
   const [detailId, setDetailId] = useState<PkgId | null>(null)
   const [visible, setVisible] = useState(false)
+  const ctaRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (!selected) return
+    requestAnimationFrame(() => ctaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
+  }, [selected?.id])
 
   function choose(pkg: Package) {
     setPackage(pkg)
@@ -162,8 +168,6 @@ export default function StepPacote() {
       category: 'package',
       value:    pkg.price_period,
     })
-
-    setTimeout(nextStep, 300)
   }
 
   function openDetail(id: PkgId, e: React.MouseEvent) {
@@ -293,6 +297,24 @@ export default function StepPacote() {
             </button>
           )
         })}
+      </div>
+
+      <div className="mt-6">
+        <button
+          ref={ctaRef}
+          onClick={() => { if (selected) nextStep() }}
+          disabled={!selected}
+          className={[
+            'flex items-center gap-2 px-8 py-3.5 rounded-lg text-sm font-semibold transition-all duration-200',
+            selected
+              ? 'bg-gradient-to-r from-gold-700 to-gold-500 text-black hover:from-gold-600 hover:to-gold-400'
+              : 'bg-gold-900/20 text-gold-800/40 cursor-not-allowed',
+          ].join(' ')}
+        >
+          {selected
+            ? `Continuar com Pacote ${selected.id.charAt(0).toUpperCase() + selected.id.slice(1)} →`
+            : 'Escolha um pacote para continuar'}
+        </button>
       </div>
 
       {/* Detail Modal */}

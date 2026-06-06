@@ -1,3 +1,4 @@
+import { useRef, useEffect } from 'react'
 import { useStore } from '../store/useStore'
 
 const TIPOS = [
@@ -59,11 +60,17 @@ const TIPOS = [
 
 export default function StepTipo() {
   const { package: pkg, type, setType, nextStep, prevStep } = useStore()
+  const ctaRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (!type) return
+    requestAnimationFrame(() => ctaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
+  }, [type])
+
   if (!pkg) return null
 
   function choose(t: 'period' | 'overnight') {
     setType(t)
-    setTimeout(nextStep, 300)
   }
 
   return (
@@ -170,6 +177,24 @@ export default function StepTipo() {
             </button>
           )
         })}
+      </div>
+
+      <div className="mt-6">
+        <button
+          ref={ctaRef}
+          onClick={() => { if (type) nextStep() }}
+          disabled={!type}
+          className={[
+            'flex items-center gap-2 px-8 py-3.5 rounded-lg text-sm font-semibold transition-all duration-200',
+            type
+              ? 'bg-gradient-to-r from-gold-700 to-gold-500 text-black hover:from-gold-600 hover:to-gold-400'
+              : 'bg-gold-900/20 text-gold-800/40 cursor-not-allowed',
+          ].join(' ')}
+        >
+          {type
+            ? `Continuar com ${type === 'overnight' ? 'Pernoite' : 'Período'} →`
+            : 'Selecione uma opção para continuar'}
+        </button>
       </div>
     </div>
   )
