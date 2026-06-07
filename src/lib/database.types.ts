@@ -262,6 +262,7 @@ export type Database = {
           p_package_id: string | null; p_type: string | null; p_suite_id: string | null
           p_check_in: string | null; p_drink: string | null; p_food: string | null
           p_total_amount: number | null; p_observations: string | null
+          p_session_token?: string | null
         }
         Returns: undefined
       }

@@ -3,6 +3,7 @@ import { useStore } from '../store/useStore'
 import LegalModal, { type LegalKind } from '../components/LegalModal'
 import { metaEvents } from '../lib/metaPixel'
 import { supabase } from '../lib/supabase'
+import { getSessionToken } from '../lib/tracking'
 
 function maskCPF(v: string) {
   return v.replace(/\D/g, '').slice(0, 11)
@@ -88,6 +89,7 @@ export default function StepDados() {
       p_food:         food ?? null,
       p_total_amount: totalAmount() || null,
       p_observations: obs.trim() || null,
+      p_session_token: getSessionToken(),
     }).then(() => {/* silencioso */})
 
     nextStep()
