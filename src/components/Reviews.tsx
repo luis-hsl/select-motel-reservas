@@ -5,8 +5,6 @@
 // configuram publicidade enganosa (CDC Art. 37) com risco de multa pelo
 // PROCON / sanção do Ministério da Justiça.
 
-import { useState, useRef } from 'react'
-
 interface Review {
   name:   string
   date:   string
@@ -41,8 +39,6 @@ const REVIEWS: Review[] = [
   },
 ]
 
-const DRAG_THRESHOLD = 50 // px mínimos para mudar de card
-
 function Stars({ n }: { n: number }) {
   return (
     <div className="flex gap-0.5" aria-label={`${n} de 5 estrelas`}>
@@ -60,44 +56,29 @@ function initials(name: string) {
   return name.split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase()).join('')
 }
 
+// Duplicamos o array para criar o loop seamless:
+// a faixa tem 2× os cards, a animação vai de 0 → -50% (= 1 ciclo completo),
+// depois reinicia de 0 — ficando imperceptível.
+const TRACK = [...REVIEWS, ...REVIEWS]
+
 export default function Reviews() {
-  const [current, setCurrent] = useState(0)
-  const [dragOffset, setDragOffset] = useState(0)
-  const [dragging, setDragging] = useState(false)
-  const startX = useRef(0)
   const avg = REVIEWS.reduce((s, r) => s + r.rating, 0) / REVIEWS.length
 
-  function onPointerDown(e: React.PointerEvent) {
-    startX.current = e.clientX
-    setDragging(true)
-    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-  }
-
-  function onPointerMove(e: React.PointerEvent) {
-    if (!dragging) return
-    const delta = e.clientX - startX.current
-    // limita o arraste nas bordas
-    const maxDrag = current === 0 && delta > 0 ? Math.min(delta * 0.3, 40)
-                  : current === REVIEWS.length - 1 && delta < 0 ? Math.max(delta * 0.3, -40)
-                  : delta
-    setDragOffset(maxDrag)
-  }
-
-  function onPointerUp() {
-    if (!dragging) return
-    setDragging(false)
-    if (dragOffset < -DRAG_THRESHOLD && current < REVIEWS.length - 1) {
-      setCurrent(c => c + 1)
-    } else if (dragOffset > DRAG_THRESHOLD && current > 0) {
-      setCurrent(c => c - 1)
-    }
-    setDragOffset(0)
-  }
-
-  const translateX = -(current * 100) + (dragOffset / 3)   // /3 = resistência suave em %
-
   return (
-    <section className="rounded-2xl border border-gold-900/30 bg-white/[0.02] p-4 sm:p-5 select-none">
+    <section className="rounded-2xl border border-gold-900/30 bg-white/[0.02] p-4 sm:p-5">
+      <style>{`
+        @keyframes reviews-marquee {
+          from { transform: translateX(0); }
+          to   { transform: translateX(-50%); }
+        }
+        .reviews-track {
+          animation: reviews-marquee 28s linear infinite;
+        }
+        .reviews-track:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
+
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
         <Stars n={5} />
@@ -105,32 +86,26 @@ export default function Reviews() {
           <span className="text-gold-300 font-semibold">{avg.toFixed(1)}</span>
           <span className="text-white/40"> · {REVIEWS.length}+ avaliações</span>
         </div>
-        <span className="text-white/15 text-[10px] ml-auto tracking-wide">← arraste →</span>
       </div>
 
-      {/* Track arrastável */}
+      {/* Faixas com fade nas bordas */}
       <div
-        className="overflow-hidden cursor-grab active:cursor-grabbing"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerLeave={onPointerUp}
+        className="overflow-hidden relative"
+        style={{
+          maskImage: 'linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%)',
+        }}
       >
-        <div
-          className="flex"
-          style={{
-            transform: `translateX(${translateX}%)`,
-            transition: dragging ? 'none' : 'transform 0.4s cubic-bezier(0.25,0.46,0.45,0.94)',
-          }}
-        >
-          {REVIEWS.map((r) => (
+        <div className="reviews-track flex gap-3" style={{ width: 'max-content' }}>
+          {TRACK.map((r, i) => (
             <article
-              key={r.name + r.date}
-              className="w-full shrink-0 border border-white/5 rounded-xl p-3 bg-white/[0.015] pointer-events-none"
+              key={i}
+              className="border border-white/5 rounded-xl p-3 bg-white/[0.015] flex-shrink-0"
+              style={{ width: '270px' }}
             >
               <div className="flex items-start gap-3">
                 <div
-                  className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-[11px] font-semibold text-black"
+                  className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-[10px] font-semibold text-black"
                   style={{ background: 'linear-gradient(135deg,#c8a035,#e8c060)' }}
                   aria-hidden
                 >
@@ -142,28 +117,12 @@ export default function Reviews() {
                     <span className="text-white/30 text-[10px] shrink-0">{r.date}</span>
                   </div>
                   <Stars n={r.rating} />
-                  <p className="text-white/65 text-xs leading-relaxed mt-1.5">{r.text}</p>
+                  <p className="text-white/60 text-xs leading-relaxed mt-1.5 line-clamp-3">{r.text}</p>
                 </div>
               </div>
             </article>
           ))}
         </div>
-      </div>
-
-      {/* Dots */}
-      <div className="flex justify-center items-center gap-1.5 mt-3">
-        {REVIEWS.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setCurrent(i)}
-            aria-label={`Review ${i + 1}`}
-            className="h-1.5 rounded-full transition-all duration-300"
-            style={{
-              width: i === current ? '1.5rem' : '0.375rem',
-              background: i === current ? '#c9a84c' : 'rgba(255,255,255,0.15)',
-            }}
-          />
-        ))}
       </div>
     </section>
   )
