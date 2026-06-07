@@ -4,18 +4,13 @@
 // dos clientes assim que possível. Reviews fictícios em e-commerce
 // configuram publicidade enganosa (CDC Art. 37) com risco de multa pelo
 // PROCON / sanção do Ministério da Justiça.
-//
-// Alternativas legítimas:
-//   - Prints reais de mensagens do WhatsApp (com autorização do remetente)
-//   - Cards de reviews do Google My Business (importáveis via API)
-//   - Reviews verificadas do Booking/TripAdvisor
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 
 interface Review {
   name:   string
   date:   string
-  rating: number   // 1..5
+  rating: number
   text:   string
 }
 
@@ -46,7 +41,7 @@ const REVIEWS: Review[] = [
   },
 ]
 
-const INTERVAL_MS = 4500
+const DRAG_THRESHOLD = 50 // px mínimos para mudar de card
 
 function Stars({ n }: { n: number }) {
   return (
@@ -67,80 +62,71 @@ function initials(name: string) {
 
 export default function Reviews() {
   const [current, setCurrent] = useState(0)
-  const [paused, setPaused] = useState(false)
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [dragOffset, setDragOffset] = useState(0)
+  const [dragging, setDragging] = useState(false)
+  const startX = useRef(0)
   const avg = REVIEWS.reduce((s, r) => s + r.rating, 0) / REVIEWS.length
 
-  function startTimer() {
-    if (timerRef.current) clearInterval(timerRef.current)
-    timerRef.current = setInterval(() => {
-      setCurrent(c => (c + 1) % REVIEWS.length)
-    }, INTERVAL_MS)
+  function onPointerDown(e: React.PointerEvent) {
+    startX.current = e.clientX
+    setDragging(true)
+    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
   }
 
-  useEffect(() => {
-    if (!paused) startTimer()
-    else if (timerRef.current) clearInterval(timerRef.current)
-    return () => { if (timerRef.current) clearInterval(timerRef.current) }
-  }, [paused])
-
-  function goTo(i: number) {
-    setCurrent(i)
-    startTimer() // reseta o timer ao navegar manualmente
+  function onPointerMove(e: React.PointerEvent) {
+    if (!dragging) return
+    const delta = e.clientX - startX.current
+    // limita o arraste nas bordas
+    const maxDrag = current === 0 && delta > 0 ? Math.min(delta * 0.3, 40)
+                  : current === REVIEWS.length - 1 && delta < 0 ? Math.max(delta * 0.3, -40)
+                  : delta
+    setDragOffset(maxDrag)
   }
 
-  function prev() { goTo((current - 1 + REVIEWS.length) % REVIEWS.length) }
-  function next() { goTo((current + 1) % REVIEWS.length) }
+  function onPointerUp() {
+    if (!dragging) return
+    setDragging(false)
+    if (dragOffset < -DRAG_THRESHOLD && current < REVIEWS.length - 1) {
+      setCurrent(c => c + 1)
+    } else if (dragOffset > DRAG_THRESHOLD && current > 0) {
+      setCurrent(c => c - 1)
+    }
+    setDragOffset(0)
+  }
+
+  const translateX = -(current * 100) + (dragOffset / 3)   // /3 = resistência suave em %
 
   return (
-    <section
-      className="rounded-2xl border border-gold-900/30 bg-white/[0.02] p-4 sm:p-5"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-    >
-      {/* Header com média + navegação */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <Stars n={5} />
-          <div className="text-xs">
-            <span className="text-gold-300 font-semibold">{avg.toFixed(1)}</span>
-            <span className="text-white/40"> · {REVIEWS.length}+ avaliações</span>
-          </div>
+    <section className="rounded-2xl border border-gold-900/30 bg-white/[0.02] p-4 sm:p-5 select-none">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-4">
+        <Stars n={5} />
+        <div className="text-xs">
+          <span className="text-gold-300 font-semibold">{avg.toFixed(1)}</span>
+          <span className="text-white/40"> · {REVIEWS.length}+ avaliações</span>
         </div>
-
-        {/* Setas */}
-        <div className="flex items-center gap-1">
-          <button
-            onClick={prev}
-            className="w-7 h-7 rounded-full flex items-center justify-center transition-all hover:bg-white/10 text-white/40 hover:text-white/70"
-            aria-label="Review anterior"
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M9 11L5 7l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-          <button
-            onClick={next}
-            className="w-7 h-7 rounded-full flex items-center justify-center transition-all hover:bg-white/10 text-white/40 hover:text-white/70"
-            aria-label="Próximo review"
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M5 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-        </div>
+        <span className="text-white/15 text-[10px] ml-auto tracking-wide">← arraste →</span>
       </div>
 
-      {/* Slide */}
-      <div className="overflow-hidden">
+      {/* Track arrastável */}
+      <div
+        className="overflow-hidden cursor-grab active:cursor-grabbing"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerLeave={onPointerUp}
+      >
         <div
-          className="flex transition-transform duration-500 ease-in-out"
-          style={{ transform: `translateX(-${current * 100}%)` }}
+          className="flex"
+          style={{
+            transform: `translateX(${translateX}%)`,
+            transition: dragging ? 'none' : 'transform 0.4s cubic-bezier(0.25,0.46,0.45,0.94)',
+          }}
         >
           {REVIEWS.map((r) => (
             <article
               key={r.name + r.date}
-              className="w-full shrink-0 border border-white/5 rounded-xl p-3 bg-white/[0.015]"
+              className="w-full shrink-0 border border-white/5 rounded-xl p-3 bg-white/[0.015] pointer-events-none"
             >
               <div className="flex items-start gap-3">
                 <div
@@ -169,7 +155,7 @@ export default function Reviews() {
         {REVIEWS.map((_, i) => (
           <button
             key={i}
-            onClick={() => goTo(i)}
+            onClick={() => setCurrent(i)}
             aria-label={`Review ${i + 1}`}
             className="h-1.5 rounded-full transition-all duration-300"
             style={{
