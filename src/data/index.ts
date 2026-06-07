@@ -5,7 +5,6 @@ export const PACKAGES: Package[] = [
     id: 'ouro',
     label: 'Pacote Ouro',
     tagline: 'A experiência completa',
-    highlighted: true,
     includes: [
       'Decoração romântica',
       'Jantar completo (com entrada) — ou Sushi',
@@ -20,6 +19,7 @@ export const PACKAGES: Package[] = [
     id: 'prata',
     label: 'Pacote Prata',
     tagline: 'Requinte e sabor',
+    highlighted: true,
     includes: [
       'Decoração romântica',
       'Fondue',
