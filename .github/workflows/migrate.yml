@@ -53,12 +53,9 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_ed25519 \
             ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "
-            echo '=== função get_leads existe? ===';
+            echo '=== funções leads existem? ===';
             docker exec supabase-db psql -U postgres -d postgres -c \
-              \"SELECT proname, pg_get_function_identity_arguments(oid) AS args FROM pg_proc WHERE proname = 'get_leads';\";
-            echo '=== grants ===';
-            docker exec supabase-db psql -U postgres -d postgres -c \
-              \"SELECT grantee, privilege_type FROM information_schema.role_routine_grants WHERE routine_name = 'get_leads';\";
+              \"SELECT proname, pg_get_function_identity_arguments(oid) AS args FROM pg_proc WHERE proname IN ('get_leads','insert_lead','update_lead_status') ORDER BY proname;\";
             echo '=== PostgREST logs (últimas 30 linhas) ===';
             cd /opt/supabase/app && sudo docker compose logs --tail=30 rest;
           "
