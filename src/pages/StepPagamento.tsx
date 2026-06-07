@@ -353,7 +353,26 @@ export default function StepPagamento() {
       <div className="lg:grid lg:grid-cols-2 lg:gap-10 xl:gap-14 lg:items-start">
         {/* Left: Summary */}
         <div>
-          <div className="border border-gold-800/40 rounded-xl overflow-hidden mb-6 lg:mb-0">
+          {/* Mobile: resumo compacto */}
+          <div className="lg:hidden border border-gold-800/40 rounded-xl p-3 mb-4">
+            <p className="text-[9px] tracking-widests uppercase text-gold-500/60 mb-2">Resumo</p>
+            <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-xs text-gold-400/80 mb-2">
+              {suite && <span>{suite.name}</span>}
+              {type && <span>· {type === 'period' ? 'Período' : 'Pernoite'}</span>}
+              {pkg && <span>· {pkg.label}</span>}
+              {foodLabel(food) && <span>· {foodLabel(food)}</span>}
+              {drinkLabel(drink) && <span>· {drinkLabel(drink)}</span>}
+            </div>
+            {checkIn && <p className="text-[11px] text-gold-600/60">Check-in: {fmtDt(checkIn)}</p>}
+            {checkout && <p className="text-[11px] text-gold-600/60">Check-out: {fmtDt(checkout)}</p>}
+            <div className="border-t border-gold-900/40 mt-2.5 pt-2 flex items-baseline justify-between">
+              <span className="text-[9px] tracking-widests uppercase text-gold-600/60">Total</span>
+              <span className="font-serif text-xl font-semibold gold-gradient">{fmt(total)}</span>
+            </div>
+          </div>
+
+          {/* Desktop: resumo completo */}
+          <div className="hidden lg:block border border-gold-800/40 rounded-xl overflow-hidden mb-6 lg:mb-0">
             <div className="bg-gold-900/20 px-5 py-3 border-b border-gold-800/30">
               <p className="text-[10px] tracking-widest uppercase text-gold-500/60">Resumo da reserva</p>
             </div>
