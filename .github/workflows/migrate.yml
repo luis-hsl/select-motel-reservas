@@ -37,7 +37,7 @@ jobs:
             ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
             "for f in \$(ls /tmp/supabase-migrations/*.sql | sort); do
                echo \"Running \$f...\";
-               docker exec supabase-db \
+               docker exec -i supabase-db \
                  psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f /dev/stdin < \$f \
                  && echo \"OK: \$f\" \
                  || echo \"FAILED: \$f\";
