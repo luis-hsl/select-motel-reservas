@@ -276,10 +276,18 @@ export default function StepPacote() {
                   </button>
                   <button
                     onClick={() => choose(pkg)}
-                    className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-[11px] tracking-wide uppercase font-semibold text-black transition-all duration-200 hover:opacity-90 active:scale-95"
-                    style={{ background: th.badgeBg }}
+                    className="flex items-center justify-center gap-1.5 py-3 rounded-lg text-xs tracking-wide uppercase font-bold text-black transition-all duration-200 hover:opacity-90 active:scale-95"
+                    style={{
+                      background: th.badgeBg,
+                      boxShadow: isSel
+                        ? `0 0 18px ${th.accentColor}90`
+                        : `0 0 22px ${th.accentColor}55, inset 0 1px 0 rgba(255,255,255,0.15)`,
+                    }}
                   >
-                    {isSel ? '✓ Escolhido' : 'Escolher'}
+                    {isSel
+                      ? <><span>✓</span> Escolhido</>
+                      : <>Escolher <span className="text-sm leading-none">→</span></>
+                    }
                   </button>
                 </div>
               </div>
