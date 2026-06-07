@@ -6,10 +6,6 @@ import type { Package } from '../types'
 import Faq from '../components/Faq'
 import { metaEvents } from '../lib/metaPixel'
 
-function fmt(v: number) {
-  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
-
 type PkgId = 'ouro' | 'prata' | 'bronze'
 
 const THEME: Record<PkgId, {
@@ -329,7 +325,7 @@ interface ModalProps {
   onSelect: () => void
 }
 
-function PackageModal({ id, pkg, detail, visible, onClose, onSelect }: ModalProps) {
+function PackageModal({ id, pkg: _pkg, detail, visible, onClose, onSelect }: ModalProps) {
   const t = THEME[id]
 
   return (
