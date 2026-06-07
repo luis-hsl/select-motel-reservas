@@ -42,3 +42,9 @@ jobs:
                  && echo \"OK: \$f\" \
                  || echo \"SKIP/ERROR: \$f\";
              done"
+
+      - name: Reload PostgREST schema cache
+        run: |
+          ssh -i ~/.ssh/id_ed25519 \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
+            "cd /opt/supabase/app && sudo docker compose restart rest"
