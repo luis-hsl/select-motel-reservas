@@ -369,9 +369,14 @@ export default function StepPagamento() {
             </div>
             {checkIn && <p className="text-[11px] text-gold-600/60">Check-in: {fmtDt(checkIn)}</p>}
             {checkout && <p className="text-[11px] text-gold-600/60">Check-out: {fmtDt(checkout)}</p>}
-            <div className="border-t border-gold-900/40 mt-2.5 pt-2 flex items-baseline justify-between">
-              <span className="text-[9px] tracking-widests uppercase text-gold-600/60">Total</span>
-              <span className="font-serif text-xl font-semibold gold-gradient">{fmt(total)}</span>
+            <div className="border-t border-gold-900/40 mt-2.5 pt-2">
+              <div className="flex items-baseline justify-between mb-0.5">
+                <span className="text-[9px] tracking-widests uppercase text-gold-600/60">Total</span>
+                <span className="font-serif text-xl font-semibold gold-gradient">{fmt(total)}</span>
+              </div>
+              <p className="text-right text-[10px]" style={{ color: 'rgba(201,168,76,0.45)' }}>
+                ou em até 3x de {installment(total, 3)} no cartão
+              </p>
             </div>
           </div>
 
