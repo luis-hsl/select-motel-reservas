@@ -74,9 +74,6 @@ export default function Reviews() {
         .reviews-track {
           animation: reviews-marquee 28s linear infinite;
         }
-        .reviews-track:hover {
-          animation-play-state: paused;
-        }
       `}</style>
 
       {/* Header */}
