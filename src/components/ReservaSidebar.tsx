@@ -12,9 +12,10 @@ function fmtDt(d: Date) {
 }
 
 export default function ReservaSidebar() {
-  const { package: pkg, drink, food, type, suite, checkIn, checkOut, totalAmount } = useStore()
+  const { package: pkg, drink, food, type, suite, checkIn, checkOut, totalAmount, currentStep } = useStore()
   const total = totalAmount()
   const checkout = checkOut()
+  const showPrice = currentStep >= 9
 
   return (
     <>
@@ -37,20 +38,22 @@ export default function ReservaSidebar() {
             {checkIn ? <Row label="Check-in" value={fmtDt(checkIn)} /> : null}
             {checkout ? <Row label="Check-out" value={fmtDt(checkout)} highlight /> : null}
 
-            <div className="border-t border-gold-800/30 pt-4">
-              <div className="flex items-baseline justify-between">
-                <span className="text-[10px] tracking-widest uppercase text-gold-600/60">Total</span>
-                {total > 0
-                  ? <span className="font-serif text-2xl font-semibold gold-gradient">{fmt(total)}</span>
-                  : <span className="text-gold-800/50 text-sm">—</span>
-                }
+            {showPrice && (
+              <div className="border-t border-gold-800/30 pt-4">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-[10px] tracking-widests uppercase text-gold-600/60">Total</span>
+                  {total > 0
+                    ? <span className="font-serif text-2xl font-semibold gold-gradient">{fmt(total)}</span>
+                    : <span className="text-gold-800/50 text-sm">—</span>
+                  }
+                </div>
+                {type && (
+                  <p className="text-[11px] text-gold-700/50 mt-1">
+                    {type === 'period' ? 'Período promocional' : 'Pernoite'}
+                  </p>
+                )}
               </div>
-              {type && (
-                <p className="text-[11px] text-gold-700/50 mt-1">
-                  {type === 'period' ? 'Período promocional' : 'Pernoite'}
-                </p>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </aside>
@@ -78,7 +81,7 @@ export default function ReservaSidebar() {
                 </>
               )}
             </div>
-            {total > 0 && (
+            {showPrice && total > 0 && (
               <span className="font-serif text-lg font-semibold gold-gradient shrink-0 ml-3">
                 {fmt(total)}
               </span>
