@@ -91,27 +91,18 @@ export default function StepTipo() {
           return (
             <div
               key={opt.id}
-              className="relative text-left rounded-2xl overflow-hidden transition-all duration-300"
+              className="relative text-left rounded-2xl overflow-hidden transition-all duration-300 flex flex-col"
               style={{
                 background: opt.bg,
                 border: `1px solid ${isSel ? opt.ring : opt.border}`,
                 boxShadow: isSel
                   ? `0 0 0 2px ${opt.ring}, 0 0 40px ${opt.glowBottom}, inset 0 0 50px rgba(0,0,0,0.45)`
                   : `inset 0 0 50px rgba(0,0,0,0.55), 0 0 20px ${opt.glowBottom}`,
-                minHeight: '280px',
+                minHeight: '300px',
               }}
             >
-              {/* Bottom glow strip */}
-              <div
-                className="absolute bottom-0 left-0 right-0 h-1 rounded-b-2xl"
-                style={{
-                  background: `linear-gradient(to right, transparent, ${opt.divider}90, transparent)`,
-                  boxShadow: `0 0 12px 4px ${opt.divider}60`,
-                }}
-              />
-
-              <div className="flex flex-col justify-end h-full p-7 xl:p-9 pb-4" style={{ minHeight: '280px' }}>
-
+              {/* Content — cresce e empurra botão para baixo */}
+              <div className="flex-1 flex flex-col justify-end p-7 xl:p-9 pb-3">
                 {/* Divider line */}
                 <div className="flex items-center gap-2 mb-5">
                   <div
@@ -142,7 +133,7 @@ export default function StepTipo() {
 
                 {/* Notice badge */}
                 <div
-                  className="inline-flex items-center gap-1.5 self-start px-3 py-1.5 rounded-full mb-5"
+                  className="inline-flex items-center gap-1.5 self-start px-3 py-1.5 rounded-full"
                   style={{
                     background: `${opt.divider}18`,
                     border: `1px solid ${opt.divider}40`,
@@ -154,8 +145,13 @@ export default function StepTipo() {
                     {opt.notice}
                   </span>
                 </div>
+              </div>
 
-                {/* Escolher button */}
+              {/* Botão fixo no rodapé */}
+              <div
+                className="px-7 xl:px-9 pb-5 pt-3 border-t"
+                style={{ borderColor: `${opt.divider}25` }}
+              >
                 <button
                   onClick={() => choose(opt.id)}
                   className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-[0.98]"
@@ -168,6 +164,15 @@ export default function StepTipo() {
                   {isSel ? '✓ Escolhido' : 'Escolher'}
                 </button>
               </div>
+
+              {/* Bottom glow strip */}
+              <div
+                className="absolute bottom-0 left-0 right-0 h-1 rounded-b-2xl pointer-events-none"
+                style={{
+                  background: `linear-gradient(to right, transparent, ${opt.divider}90, transparent)`,
+                  boxShadow: `0 0 12px 4px ${opt.divider}60`,
+                }}
+              />
 
               {/* Selected check */}
               {isSel && (
