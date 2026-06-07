@@ -38,9 +38,9 @@ jobs:
             "for f in \$(ls /tmp/supabase-migrations/*.sql | sort); do
                echo \"Running \$f...\";
                docker exec supabase-db \
-                 psql -U postgres -d postgres -f /dev/stdin < \$f \
+                 psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f /dev/stdin < \$f \
                  && echo \"OK: \$f\" \
-                 || echo \"SKIP/ERROR: \$f\";
+                 || echo \"FAILED: \$f\";
              done"
 
       - name: Reload PostgREST schema cache
