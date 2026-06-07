@@ -154,14 +154,22 @@ export default function StepTipo() {
               >
                 <button
                   onClick={() => choose(opt.id)}
-                  className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-[0.98]"
-                  style={{
-                    background: isSel ? opt.divider : `${opt.divider}30`,
-                    border: `1px solid ${opt.divider}60`,
-                    color: isSel ? '#000' : opt.subtitleColor,
+                  className="w-full py-3 rounded-xl text-sm font-bold tracking-wide transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2"
+                  style={isSel ? {
+                    background: opt.divider,
+                    color: '#000',
+                    boxShadow: `0 0 18px ${opt.divider}90`,
+                  } : {
+                    background: `linear-gradient(135deg, ${opt.divider}ee, ${opt.divider}bb)`,
+                    border: `1px solid ${opt.divider}`,
+                    color: 'rgba(255,245,215,0.95)',
+                    boxShadow: `0 0 22px ${opt.divider}55, inset 0 1px 0 rgba(255,255,255,0.08)`,
                   }}
                 >
-                  {isSel ? '✓ Escolhido' : 'Escolher'}
+                  {isSel
+                    ? <><span>✓</span> Escolhido</>
+                    : <>Escolher <span className="text-base leading-none">→</span></>
+                  }
                 </button>
               </div>
 
