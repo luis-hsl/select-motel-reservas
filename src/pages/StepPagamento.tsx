@@ -35,6 +35,10 @@ function fmtTime(d: Date) {
   return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
 
+function installment(total: number, n: number) {
+  return (total / n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
 interface PixCharge {
   reservationId: string
   brCode: string
@@ -408,9 +412,14 @@ export default function StepPagamento() {
                 </div>
               )}
 
-              <div className="border-t border-gold-900/40 pt-3 flex items-baseline justify-between">
-                <span className="text-[10px] tracking-widest uppercase text-gold-600/60">Total</span>
-                <span className="font-serif text-2xl font-semibold gold-gradient">{fmt(total)}</span>
+              <div className="border-t border-gold-900/40 pt-3">
+                <div className="flex items-baseline justify-between mb-1">
+                  <span className="text-[10px] tracking-widest uppercase text-gold-600/60">Total</span>
+                  <span className="font-serif text-2xl font-semibold gold-gradient">{fmt(total)}</span>
+                </div>
+                <p className="text-right text-[11px]" style={{ color: 'rgba(201,168,76,0.45)' }}>
+                  ou em até 3x de {installment(total, 3)} no cartão
+                </p>
               </div>
             </div>
           </div>
@@ -520,7 +529,10 @@ export default function StepPagamento() {
                       <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="1.8" />
                       <path d="M2 10h20" stroke="currentColor" strokeWidth="1.8" />
                     </svg>
-                    Pagar {fmt(total)} com Cartão
+                    <span className="flex flex-col items-start leading-tight">
+                      <span>Pagar com Cartão</span>
+                      <span className="text-[11px] font-normal opacity-70">em até 3x de {installment(total, 3)}</span>
+                    </span>
                   </>
                 )}
               </button>
