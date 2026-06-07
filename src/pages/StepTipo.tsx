@@ -1,4 +1,3 @@
-import { useRef, useEffect } from 'react'
 import { useStore } from '../store/useStore'
 
 const TIPOS = [
@@ -60,17 +59,12 @@ const TIPOS = [
 
 export default function StepTipo() {
   const { package: pkg, type, setType, nextStep, prevStep } = useStore()
-  const ctaRef = useRef<HTMLButtonElement>(null)
-
-  useEffect(() => {
-    if (!type) return
-    requestAnimationFrame(() => ctaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
-  }, [type])
 
   if (!pkg) return null
 
   function choose(t: 'period' | 'overnight') {
     setType(t)
+    nextStep()
   }
 
   return (
@@ -95,13 +89,12 @@ export default function StepTipo() {
         {TIPOS.map((opt) => {
           const isSel = type === opt.id
           return (
-            <button
+            <div
               key={opt.id}
-              onClick={() => choose(opt.id)}
-              className="relative text-left rounded-2xl overflow-hidden outline-none transition-all duration-300 active:scale-[0.98]"
+              className="relative text-left rounded-2xl overflow-hidden transition-all duration-300"
               style={{
                 background: opt.bg,
-                border: `1px solid ${opt.border}`,
+                border: `1px solid ${isSel ? opt.ring : opt.border}`,
                 boxShadow: isSel
                   ? `0 0 0 2px ${opt.ring}, 0 0 40px ${opt.glowBottom}, inset 0 0 50px rgba(0,0,0,0.45)`
                   : `inset 0 0 50px rgba(0,0,0,0.55), 0 0 20px ${opt.glowBottom}`,
@@ -117,7 +110,7 @@ export default function StepTipo() {
                 }}
               />
 
-              <div className="flex flex-col justify-end h-full p-7 xl:p-9" style={{ minHeight: '280px' }}>
+              <div className="flex flex-col justify-end h-full p-7 xl:p-9 pb-4" style={{ minHeight: '280px' }}>
 
                 {/* Divider line */}
                 <div className="flex items-center gap-2 mb-5">
@@ -149,7 +142,7 @@ export default function StepTipo() {
 
                 {/* Notice badge */}
                 <div
-                  className="inline-flex items-center gap-1.5 self-start px-3 py-1.5 rounded-full"
+                  className="inline-flex items-center gap-1.5 self-start px-3 py-1.5 rounded-full mb-5"
                   style={{
                     background: `${opt.divider}18`,
                     border: `1px solid ${opt.divider}40`,
@@ -161,6 +154,19 @@ export default function StepTipo() {
                     {opt.notice}
                   </span>
                 </div>
+
+                {/* Escolher button */}
+                <button
+                  onClick={() => choose(opt.id)}
+                  className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-[0.98]"
+                  style={{
+                    background: isSel ? opt.divider : `${opt.divider}30`,
+                    border: `1px solid ${opt.divider}60`,
+                    color: isSel ? '#000' : opt.subtitleColor,
+                  }}
+                >
+                  {isSel ? '✓ Escolhido' : 'Escolher'}
+                </button>
               </div>
 
               {/* Selected check */}
@@ -174,28 +180,11 @@ export default function StepTipo() {
                   </svg>
                 </div>
               )}
-            </button>
+            </div>
           )
         })}
       </div>
 
-      <div className="mt-6">
-        <button
-          ref={ctaRef}
-          onClick={() => { if (type) nextStep() }}
-          disabled={!type}
-          className={[
-            'flex items-center gap-2 px-8 py-3.5 rounded-lg text-sm font-semibold transition-all duration-200',
-            type
-              ? 'bg-gradient-to-r from-gold-700 to-gold-500 text-black hover:from-gold-600 hover:to-gold-400'
-              : 'bg-gold-900/20 text-gold-800/40 cursor-not-allowed',
-          ].join(' ')}
-        >
-          {type
-            ? `Continuar com ${type === 'overnight' ? 'Pernoite' : 'Período'} →`
-            : 'Selecione uma opção para continuar'}
-        </button>
-      </div>
     </div>
   )
 }
