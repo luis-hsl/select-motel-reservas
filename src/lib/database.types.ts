@@ -249,7 +249,10 @@ export type Database = {
           package_id: string | null; type: string | null; suite_id: string | null
           check_in: string | null; drink: string | null; food: string | null
           total_amount: number | null; observations: string | null
-          status: string; created_at: string
+          status: string; created_at: string; session_token: string | null
+          utm_source: string | null; utm_medium: string | null
+          utm_campaign: string | null; utm_content: string | null
+          referrer: string | null; device: string | null
         }[]
       }
       update_lead_status: {
