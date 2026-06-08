@@ -12,8 +12,8 @@ export const PACKAGES: Package[] = [
       'Vinho ou frisante',
     ],
     note: 'Ao escolher Sushi, a entrada não está inclusa.',
-    price_period: 1200,
-    price_overnight: 2500,
+    price_period: 1199,
+    price_overnight: 2499,
   },
   {
     id: 'prata',
@@ -26,8 +26,8 @@ export const PACKAGES: Package[] = [
       'Pizza ou pratos',
       'Vinho ou frisante',
     ],
-    price_period: 800,
-    price_overnight: 2000,
+    price_period: 799,
+    price_overnight: 1999,
   },
   {
     id: 'bronze',
