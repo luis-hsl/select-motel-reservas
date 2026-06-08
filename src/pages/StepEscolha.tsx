@@ -87,15 +87,19 @@ export default function StepEscolha() {
   const canContinue = !!picked && name.trim() && rawPhone.length >= 10 &&
                       cpfValid && acceptedTerms
 
-  /* show form with slight delay so card selection animation completes */
+  /* show form with slight delay so card selection animation completes,
+     then scroll smoothly into view once the expansion starts */
   useEffect(() => {
     if (picked && !formVisible) {
       const t = setTimeout(() => {
         setFormVisible(true)
+        // double-rAF: garante que o DOM refluiu e a expansão já começou
         requestAnimationFrame(() =>
-          formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          requestAnimationFrame(() =>
+            formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          )
         )
-      }, 250)
+      }, 320)
       return () => clearTimeout(t)
     }
   }, [picked])
@@ -184,12 +188,15 @@ export default function StepEscolha() {
       {/* Formulário de dados — aparece ao selecionar */}
       <div
         ref={formRef}
-        className="max-w-3xl mx-auto overflow-hidden transition-all duration-500 ease-out"
+        className="max-w-3xl mx-auto overflow-hidden"
         style={{
-          opacity:   formVisible ? 1 : 0,
-          transform: formVisible ? 'translateY(0)' : 'translateY(24px)',
-          maxHeight: formVisible ? '900px' : '0px',
+          opacity:    formVisible ? 1 : 0,
+          transform:  formVisible ? 'translateY(0)' : 'translateY(28px)',
+          maxHeight:  formVisible ? '1100px' : '0px',
           pointerEvents: formVisible ? 'auto' : 'none',
+          transition: formVisible
+            ? 'opacity 0.55s ease-out, transform 0.55s cubic-bezier(0.22,1,0.36,1), max-height 0.65s cubic-bezier(0.22,1,0.36,1)'
+            : 'opacity 0.3s ease-in, transform 0.3s ease-in, max-height 0.3s ease-in',
         }}
       >
         <div className="mt-8 pt-7 border-t border-gold-800/25">
