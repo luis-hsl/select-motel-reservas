@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useStore } from '../store/useStore'
 import type { ReservationMode } from '../types'
 
@@ -35,11 +36,17 @@ const OPTIONS: Option[] = [
 ]
 
 export default function StepEscolha() {
-  const { setMode, nextStep } = useStore()
+  const { mode: storedMode, setMode, nextStep } = useStore()
+  const [picked, setPicked] = useState<ReservationMode | null>(storedMode)
 
   function pick(mode: ReservationMode) {
-    setMode(mode)
-    setTimeout(nextStep, 250)
+    setPicked(mode)
+  }
+
+  function advance() {
+    if (!picked) return
+    setMode(picked)
+    setTimeout(nextStep, 200)
   }
 
   return (
@@ -72,19 +79,37 @@ export default function StepEscolha() {
       {/* ─── Cards (mobile: horizontais lado a lado / desktop: maiores) ─── */}
       <div className="grid grid-cols-2 gap-3 sm:gap-5 max-w-3xl mx-auto">
         {OPTIONS.map((opt) => (
-          <OptionCard key={opt.id} opt={opt} onPick={() => pick(opt.id)} />
+          <OptionCard
+            key={opt.id}
+            opt={opt}
+            selected={picked === opt.id}
+            onPick={() => pick(opt.id)}
+          />
         ))}
       </div>
 
-      {/* ─── Rodapé sutil ─── */}
-      <p className="text-center text-[10px] tracking-[0.3em] uppercase text-gold-800/40 mt-8">
-        Toque em uma das opções
-      </p>
+      {/* ─── Botão continuar ─── */}
+      <div className="max-w-3xl mx-auto mt-6 sm:mt-8">
+        <button
+          onClick={advance}
+          disabled={!picked}
+          className={[
+            'w-full px-6 py-3.5 rounded-xl text-sm font-semibold transition-all duration-300',
+            picked
+              ? 'bg-gradient-to-r from-gold-700 to-gold-500 text-black hover:from-gold-600 hover:to-gold-400 active:scale-[0.98]'
+              : 'bg-gold-900/20 text-gold-800/40 cursor-not-allowed',
+          ].join(' ')}
+        >
+          {picked
+            ? <>Continuar com {picked === 'package' ? 'pacote' : 'experiência'} <span>→</span></>
+            : 'Escolha uma opção acima'}
+        </button>
+      </div>
     </div>
   )
 }
 
-function OptionCard({ opt, onPick }: { opt: Option; onPick: () => void }) {
+function OptionCard({ opt, selected, onPick }: { opt: Option; selected: boolean; onPick: () => void }) {
   const recommended = !!opt.recommended
 
   return (
@@ -92,12 +117,15 @@ function OptionCard({ opt, onPick }: { opt: Option; onPick: () => void }) {
       type="button"
       onClick={onPick}
       aria-label={`Escolher ${opt.label}`}
+      aria-pressed={selected}
       className={[
         'group relative overflow-hidden rounded-md border outline-none',
         'transition-all duration-500 active:scale-[0.97] focus-visible:ring-1 focus-visible:ring-gold-500',
-        recommended
-          ? 'border-gold-600/60 hover:border-gold-400'
-          : 'border-gold-900/50 hover:border-gold-700/80',
+        selected
+          ? 'border-gold-400 shadow-lg shadow-gold-500/25'
+          : recommended
+            ? 'border-gold-600/60 hover:border-gold-400'
+            : 'border-gold-900/50 hover:border-gold-700/80',
       ].join(' ')}
       style={{
         background: recommended
