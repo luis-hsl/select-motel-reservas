@@ -201,12 +201,30 @@ Deno.serve(async (req: Request) => {
     const typeLabel = TYPE_LABEL[ex.type ?? r.type] ?? (ex.type ?? r.type)
     lines.push(`⏱ *Tipo:* ${typeLabel}`)
     lines.push('')
-    lines.push(`📦 *Pacote:* ${ex.packageLabel ?? r.package_id}`)
-    if (Array.isArray(ex.includes) && ex.includes.length) {
-      lines.push(`   • ${ex.includes.join('\n   • ')}`)
+
+    // ─── MODE: package vs experience ───
+    const mode = (ex as { mode?: string }).mode ?? 'package'
+
+    if (mode === 'experience') {
+      lines.push(`🎨 *Modo:* Experiência personalizada (a la carte)`)
+      const items = (ex as { selectedItems?: Array<{ label: string; price: number; category: string }> }).selectedItems ?? []
+      if (items.length) {
+        const byCat: Record<string, typeof items> = { food: [], drink: [], extra: [] }
+        items.forEach((i) => { (byCat[i.category] ??= []).push(i) })
+        if (byCat.food?.length)  lines.push(`🍽 *Comidas:* ${byCat.food.map(i => i.label).join(', ')}`)
+        if (byCat.drink?.length) lines.push(`🥂 *Bebidas:* ${byCat.drink.map(i => i.label).join(', ')}`)
+        if (byCat.extra?.length) lines.push(`✨ *Extras:* ${byCat.extra.map(i => i.label).join(', ')}`)
+      } else {
+        lines.push(`   • Sem itens adicionais (só a suíte)`)
+      }
+    } else {
+      lines.push(`📦 *Pacote:* ${ex.packageLabel ?? r.package_id}`)
+      if (Array.isArray(ex.includes) && ex.includes.length) {
+        lines.push(`   • ${ex.includes.join('\n   • ')}`)
+      }
+      if (ex.drink) lines.push(`🥂 *Bebida escolhida:* ${DRINK_LABEL[ex.drink] ?? ex.drink}`)
+      if (ex.food)  lines.push(`🍽 *Comida escolhida:* ${FOOD_LABEL[ex.food]  ?? ex.food}`)
     }
-    if (ex.drink) lines.push(`🥂 *Bebida escolhida:* ${DRINK_LABEL[ex.drink] ?? ex.drink}`)
-    if (ex.food)  lines.push(`🍽 *Comida escolhida:* ${FOOD_LABEL[ex.food]  ?? ex.food}`)
     if (ex.observations) {
       lines.push('')
       lines.push(`📝 *Observações do cliente*`)

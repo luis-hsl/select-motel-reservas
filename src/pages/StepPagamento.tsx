@@ -48,22 +48,24 @@ interface PixCharge {
 
 export default function StepPagamento() {
   const {
-    package: pkg, type, suite, checkIn, checkOut,
+    mode, package: pkg, type, suite, checkIn, checkOut,
     customerName, customerPhone, customerEmail, customerTaxId,
-    totalAmount, prevStep, drink, food, observations, consentAt,
+    totalAmount, prevStep, drink, food, observations, consentAt, selectedItems,
   } = useStore()
   // Snapshot do que o cliente escolheu — vai na coluna extras (jsonb) da reserva
   // e é usado pra montar a mensagem que o motel recebe quando o pagamento confirma.
   const extras = {
+    mode:         mode ?? 'package',
     packageId:    pkg?.id    ?? null,
     packageLabel: pkg?.label ?? null,
     includes:     pkg?.includes ?? [],
     drink,
     food,
     type,
+    selectedItems,                            // a la carte (modo experiência)
     observations: observations?.trim() || null,
-    lgpdConsentAt: consentAt,   // ISO timestamp do "Li e aceito" — rastro legal
-    trackingSessionToken: getSessionToken(),  // pra marcar a sessão como convertida
+    lgpdConsentAt: consentAt,
+    trackingSessionToken: getSessionToken(),
   }
   const total = totalAmount()
   const checkout = checkOut()
@@ -142,7 +144,9 @@ export default function StepPagamento() {
   }, [pixCharge?.reservationId])
 
   async function generatePixCharge() {
-    if (!pkg || !type || !suite || !checkIn || !checkout) {
+    // Modo pacote precisa de pkg; modo experiência não (só suíte + tipo + data).
+    const missingPackage = mode === 'package' && !pkg
+    if (missingPackage || !type || !suite || !checkIn || !checkout) {
       setError('Dados da reserva incompletos. Volte e preencha novamente.')
       return
     }
@@ -153,7 +157,8 @@ export default function StepPagamento() {
       'abacatepay-create-charge',
       {
         body: {
-          packageId: pkg.id,
+          packageId: pkg?.id ?? null,
+          mode:      mode ?? 'package',
           type,
           suiteId: suite.id,
           checkIn: checkIn.toISOString(),
@@ -185,7 +190,9 @@ export default function StepPagamento() {
   }
 
   async function handleCardPayment() {
-    if (!pkg || !type || !suite || !checkIn || !checkout) {
+    // Modo pacote precisa de pkg; modo experiência não (só suíte + tipo + data).
+    const missingPackage = mode === 'package' && !pkg
+    if (missingPackage || !type || !suite || !checkIn || !checkout) {
       setError('Dados da reserva incompletos. Volte e preencha novamente.')
       return
     }
@@ -196,7 +203,8 @@ export default function StepPagamento() {
       'abacatepay-create-charge',
       {
         body: {
-          packageId: pkg.id,
+          packageId: pkg?.id ?? null,
+          mode:      mode ?? 'package',
           type,
           suiteId: suite.id,
           checkIn: checkIn.toISOString(),

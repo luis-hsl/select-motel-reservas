@@ -1,12 +1,17 @@
-import { TOTAL_STEPS } from '../store/useStore'
+import { getTotalSteps } from '../store/useStore'
+import { useStore } from '../store/useStore'
 import { InstagramInline } from './InstagramLink'
 
-const STEP_LABELS = ['Pacote', 'Tipo', 'Data', 'Suíte', 'Refeição', 'Bebida', 'Surpresa', 'Dados', 'Pagamento']
+const STEP_LABELS_PACKAGE    = ['Início', 'Pacote', 'Tipo', 'Data', 'Suíte', 'Extras', 'Dados', 'Pagamento']
+const STEP_LABELS_EXPERIENCE = ['Início', 'Tipo', 'Data', 'Suíte', 'Cardápio', 'Dados', 'Pagamento']
 
 interface Props { currentStep: number }
 
 export default function ProgressBar({ currentStep }: Props) {
-  const pct = ((currentStep - 1) / (TOTAL_STEPS - 1)) * 100
+  const mode = useStore((s) => s.mode)
+  const totalSteps = getTotalSteps(mode)
+  const labels = mode === 'experience' ? STEP_LABELS_EXPERIENCE : STEP_LABELS_PACKAGE
+  const pct = ((currentStep - 1) / Math.max(1, totalSteps - 1)) * 100
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-gold-800/20" style={{ background: '#0a0806' }}>
@@ -26,10 +31,10 @@ export default function ProgressBar({ currentStep }: Props) {
         <div className="flex-1 max-w-xs sm:max-w-sm xl:max-w-md">
           <div className="flex items-center justify-between mb-1">
             <span className="text-[10px] tracking-widest uppercase text-gold-600/60">
-              {String(currentStep).padStart(2, '0')} / {String(TOTAL_STEPS).padStart(2, '0')}
+              {String(currentStep).padStart(2, '0')} / {String(totalSteps).padStart(2, '0')}
             </span>
             <span className="text-[10px] tracking-widest uppercase text-gold-500/80">
-              {STEP_LABELS[currentStep - 1]}
+              {labels[currentStep - 1] ?? ''}
             </span>
           </div>
           <div className="h-[1px] bg-gold-900/50 rounded-full overflow-hidden">

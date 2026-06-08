@@ -5,31 +5,42 @@ import ProgressBar from './components/ProgressBar'
 import { InstagramFab } from './components/InstagramLink'
 import ReservaSidebar from './components/ReservaSidebar'
 import CardPaymentReturn from './components/CardPaymentReturn'
+import StepEscolha from './pages/StepEscolha'
 import StepPacote from './pages/StepPacote'
 import StepTipo from './pages/StepTipo'
 import StepData from './pages/StepData'
 import StepSuite from './pages/StepSuite'
-import StepRefeicao from './pages/StepRefeicao'
-import StepBebida from './pages/StepBebida'
-import StepPresente from './pages/StepPresente'
+import StepExtras from './pages/StepExtras'
 import StepDados from './pages/StepDados'
 import StepPagamento from './pages/StepPagamento'
 import { useStore } from './store/useStore'
 
-const STEPS: Record<number, React.ComponentType> = {
-  1: StepPacote,
+// O fluxo muda conforme o modo escolhido na step 1 (StepEscolha):
+//   PACOTE:      Escolha → Pacote → Tipo → Data → Suíte → Extras → Dados → Pagamento  (8 steps)
+//   EXPERIÊNCIA: Escolha → Tipo  → Data → Suíte → Cardápio → Dados → Pagamento        (7 steps)
+const STEPS_PACKAGE: Record<number, React.ComponentType> = {
+  1: StepEscolha,
+  2: StepPacote,
+  3: StepTipo,
+  4: StepData,
+  5: StepSuite,
+  6: StepExtras,
+  7: StepDados,
+  8: StepPagamento,
+}
+
+const STEPS_EXPERIENCE: Record<number, React.ComponentType> = {
+  1: StepEscolha,
   2: StepTipo,
   3: StepData,
   4: StepSuite,
-  5: StepRefeicao,
-  6: StepBebida,
-  7: StepPresente,
-  8: StepDados,
-  9: StepPagamento,
+  5: StepExtras,
+  6: StepDados,
+  7: StepPagamento,
 }
 
 export default function App() {
-  const { currentStep } = useStore()
+  const { currentStep, mode } = useStore()
 
   // Detect return from AbacatePay card payment page
   const paymentReturn = useMemo(() => {
@@ -38,14 +49,12 @@ export default function App() {
     return p.get('payment') === 'ok' && ref ? ref : null
   }, [])
 
-  // Tracking anônimo do onboarding — só quando estiver no fluxo normal,
-  // não na tela de retorno do pagamento (que já foi convertida).
+  // Tracking anônimo do onboarding
   useEffect(() => {
     if (paymentReturn) return
     trackStep(currentStep)
   }, [currentStep, paymentReturn])
 
-  // Heartbeat a cada 30s pra manter sessão "ativa" no painel admin
   useEffect(() => {
     if (paymentReturn) return
     const id = setInterval(() => trackStep(currentStep), 30_000)
@@ -56,7 +65,8 @@ export default function App() {
     return <CardPaymentReturn reservationId={paymentReturn} />
   }
 
-  const StepComponent = STEPS[currentStep] ?? StepPacote
+  const STEPS = mode === 'experience' ? STEPS_EXPERIENCE : STEPS_PACKAGE
+  const StepComponent = STEPS[currentStep] ?? StepEscolha
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">

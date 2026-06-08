@@ -23,6 +23,23 @@ export interface Suite {
   cleaning_buffer_h: number
   room_number: number
   packageIds: PackageName[]
+  /** Preço base oculto quando o cliente está montando a Experiência (modo a la carte). */
+  price_period_alacarte?:    number | null
+  price_overnight_alacarte?: number | null
+}
+
+export type ReservationMode = 'package' | 'experience'
+
+export type ItemCategory = 'food' | 'drink' | 'extra'
+
+export interface ExperienceItem {
+  id:          string
+  category:    ItemCategory
+  label:       string
+  description?: string | null
+  price:       number   // 0 no modo pacote (incluso); >0 no modo experiência
+  photo_url?:  string | null
+  sort_order:  number
 }
 
 export interface ReservationState {

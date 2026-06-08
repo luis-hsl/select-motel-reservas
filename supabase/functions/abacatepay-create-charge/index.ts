@@ -37,7 +37,7 @@ Deno.serve(async (req)=>{
     status: 405
   });
   try {
-    const { packageId, type, suiteId, checkIn, checkOut, customerName, customerPhone, customerEmail, customerTaxId, totalAmount, appOrigin, paymentMethod = 'pix', extras = {} } = await req.json();
+    const { packageId, mode = 'package', type, suiteId, checkIn, checkOut, customerName, customerPhone, customerEmail, customerTaxId, totalAmount, appOrigin, paymentMethod = 'pix', extras = {} } = await req.json();
     const supabase = createClient(Deno.env.get('SUPABASE_URL'), Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'));
 
     // -------- Rate limit (anti-spam) --------
@@ -81,7 +81,8 @@ Deno.serve(async (req)=>{
       console.log('Reusing reservation:', reservationId, '| new method:', paymentMethod);
     } else {
       const { data: reservation, error: insertError } = await supabase.from('reservations').insert({
-        package_id: packageId,
+        package_id: packageId,  // null no modo experiência
+        mode,
         type,
         suite_id: suiteId,
         check_in: checkIn,

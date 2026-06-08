@@ -1,11 +1,20 @@
 import { create } from 'zustand'
-import type { Package, Suite, ReservationType } from '../types'
+import type { Package, Suite, ReservationType, ReservationMode, ExperienceItem } from '../types'
 
 interface StoreState {
   currentStep: number
+  mode: ReservationMode | null      // 'package' | 'experience' (set no StepEscolha)
+
+  // ────── PACKAGE MODE ──────
   package: Package | null
   drink: 'vinho' | 'frisante' | 'drinque' | null
   food: 'jantar' | 'sushi' | 'pizza' | null
+
+  // ────── EXPERIENCE MODE ──────
+  // Items selecionados (cada um com seu preço, somam no total)
+  selectedItems: ExperienceItem[]
+
+  // ────── SHARED ──────
   type: ReservationType | null
   suite: Suite | null
   checkIn: Date | null
@@ -16,7 +25,9 @@ interface StoreState {
   observations: string
   consentAt: string | null
 
+  // ────── SETTERS ──────
   setStep: (step: number) => void
+  setMode: (mode: ReservationMode) => void
   setPackage: (pkg: Package) => void
   setDrink: (drink: 'vinho' | 'frisante' | 'drinque') => void
   setFood: (food: 'jantar' | 'sushi' | 'pizza') => void
@@ -26,17 +37,24 @@ interface StoreState {
   setCustomer: (name: string, phone: string, email: string, taxId: string) => void
   setObservations: (obs: string) => void
   setConsentAt: (iso: string) => void
+  toggleItem: (item: ExperienceItem) => void
+  clearItems: () => void
+  reset: () => void
+
+  // ────── COMPUTED ──────
   totalAmount: () => number
   checkOut: () => Date | null
   nextStep: () => void
   prevStep: () => void
 }
 
-export const useStore = create<StoreState>((set, get) => ({
+const INITIAL = {
   currentStep: 1,
+  mode: null,
   package: null,
   drink: null,
   food: null,
+  selectedItems: [] as ExperienceItem[],
   type: null,
   suite: null,
   checkIn: null,
@@ -46,8 +64,13 @@ export const useStore = create<StoreState>((set, get) => ({
   customerTaxId: '',
   observations: '',
   consentAt: null,
+}
+
+export const useStore = create<StoreState>((set, get) => ({
+  ...INITIAL,
 
   setStep: (step) => set({ currentStep: step }),
+  setMode: (mode) => set({ mode }),
   setPackage: (pkg) => set({ package: pkg }),
   setDrink: (drink) => set({ drink }),
   setFood: (food) => set({ food }),
@@ -59,10 +82,38 @@ export const useStore = create<StoreState>((set, get) => ({
   setObservations: (observations) => set({ observations }),
   setConsentAt: (consentAt) => set({ consentAt }),
 
+  toggleItem: (item) => set((s) => {
+    const exists = s.selectedItems.find((i) => i.id === item.id)
+    return {
+      selectedItems: exists
+        ? s.selectedItems.filter((i) => i.id !== item.id)
+        : [...s.selectedItems, item],
+    }
+  }),
+  clearItems: () => set({ selectedItems: [] }),
+  reset: () => set(INITIAL),
+
   totalAmount: () => {
-    const { package: pkg, type } = get()
-    if (!pkg || !type) return 0
-    return type === 'period' ? pkg.price_period : pkg.price_overnight
+    const { mode, package: pkg, type, suite, selectedItems } = get()
+    if (!type) return 0
+
+    // ─── Modo Pacote: preço fixo do pacote por tipo ───
+    if (mode === 'package' || (!mode && pkg)) {
+      if (!pkg) return 0
+      return type === 'period' ? pkg.price_period : pkg.price_overnight
+    }
+
+    // ─── Modo Experiência: suíte + itens ───
+    if (mode === 'experience') {
+      const suitePrice = !suite ? 0
+        : type === 'period'
+          ? Number(suite.price_period_alacarte ?? 0)
+          : Number(suite.price_overnight_alacarte ?? 0)
+      const itemsTotal = selectedItems.reduce((sum, i) => sum + Number(i.price || 0), 0)
+      return suitePrice + itemsTotal
+    }
+
+    return 0
   },
 
   checkOut: () => {
@@ -77,4 +128,18 @@ export const useStore = create<StoreState>((set, get) => ({
   prevStep: () => set((s) => ({ currentStep: Math.max(1, s.currentStep - 1) })),
 }))
 
-export const TOTAL_STEPS = 9
+// Total de steps muda por modo:
+//   Pacote:     Escolha → Pacote → Tipo → Data → Suíte → Extras → Dados → Pagamento  (8)
+//   Experiência:Escolha → Tipo  → Data → Suíte → Cardápio → Dados → Pagamento        (7)
+export const TOTAL_STEPS_BY_MODE: Record<ReservationMode, number> = {
+  package:    8,
+  experience: 7,
+}
+
+/** Retorna o total de steps com base no mode escolhido (default 8 enquanto não escolheu). */
+export function getTotalSteps(mode: ReservationMode | null): number {
+  return mode ? TOTAL_STEPS_BY_MODE[mode] : 8
+}
+
+// Mantido pra compatibilidade com imports antigos
+export const TOTAL_STEPS = 8
