@@ -133,7 +133,7 @@ const DETAIL: Record<PkgId, PackageDetail> = {
 }
 
 export default function StepPacote() {
-  const { package: selected, setPackage, nextStep } = useStore()
+  const { package: selected, setPackage, nextStep, prevStep } = useStore()
   const [detailId, setDetailId] = useState<PkgId | null>(null)
   const [visible, setVisible] = useState(false)
   function choose(pkg: Package) {
@@ -182,6 +182,14 @@ export default function StepPacote() {
 
   return (
     <div>
+      <button
+        onClick={prevStep}
+        className="flex items-center gap-1 text-gold-700/60 text-sm mb-6 hover:text-gold-500 transition-colors"
+        aria-label="Voltar pra escolha de pacote ou experiência"
+      >
+        <span>←</span> Voltar pra escolha
+      </button>
+
       <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light mb-2 leading-tight">
         Qual pacote<br />
         <span className="gold-gradient font-semibold italic pr-1 lg:pr-3">você prefere?</span>
