@@ -30,7 +30,7 @@ const OPTIONS: Option[] = [
     id:      'experience',
     numeral: 'II',
     label:   'monte sua experiência',
-    whisper: 'a la carte',
+    whisper: 'sob medida',
     hook:    'Selecione cada detalhe da sua noite.',
   },
 ]
