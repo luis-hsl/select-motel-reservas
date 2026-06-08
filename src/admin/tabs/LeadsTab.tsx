@@ -140,6 +140,7 @@ export default function LeadsTab() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [expandedPhones, setExpandedPhones] = useState<Set<string>>(new Set())
 
   useEffect(() => { load() }, [])
 
@@ -178,8 +179,33 @@ export default function LeadsTab() {
     })
   }, [leads, search, statusFilter])
 
-  const newCount = leads.filter(l => l.status === 'new').length
-  const convertedCount = leads.filter(l => l.status === 'converted').length
+  // Agrupa por telefone — mais recente como principal, anteriores como tentativas
+  const dedupedLeads = useMemo(() => {
+    const phoneMap = new Map<string, { main: Lead; attempts: Lead[] }>()
+    // já vem ordenado por created_at desc do backend — o primeiro de cada phone é o mais recente
+    filtered.forEach(lead => {
+      const phone = lead.phone.replace(/\D/g, '') || lead.phone
+      const entry = phoneMap.get(phone)
+      if (!entry) {
+        phoneMap.set(phone, { main: lead, attempts: [] })
+      } else {
+        entry.attempts.push(lead)
+      }
+    })
+    return [...phoneMap.values()]
+  }, [filtered])
+
+  const newCount      = dedupedLeads.filter(e => e.main.status === 'new').length
+  const convertedCount = dedupedLeads.filter(e => e.main.status === 'converted').length
+  const totalSubmissions = filtered.length
+
+  function toggleExpand(phone: string) {
+    setExpandedPhones(prev => {
+      const next = new Set(prev)
+      next.has(phone) ? next.delete(phone) : next.add(phone)
+      return next
+    })
+  }
 
   if (loading) return <div className="text-white/30 py-16 text-center text-sm">Carregando...</div>
 
@@ -223,12 +249,15 @@ export default function LeadsTab() {
 
       {/* Summary */}
       <div className="flex flex-wrap gap-x-5 gap-y-1 mb-5 text-xs">
-        <span className="text-white/35">{filtered.length} lead{filtered.length !== 1 ? 's' : ''}</span>
+        <span className="text-white/60 font-medium">{dedupedLeads.length} pessoa{dedupedLeads.length !== 1 ? 's' : ''} únicas</span>
+        {totalSubmissions > dedupedLeads.length && (
+          <span className="text-white/25">{totalSubmissions} submissões no total</span>
+        )}
         {newCount > 0 && <span className="text-blue-400/70">{newCount} aguardando contato</span>}
         {convertedCount > 0 && <span className="text-green-400/70">{convertedCount} convertido{convertedCount !== 1 ? 's' : ''}</span>}
       </div>
 
-      {filtered.length === 0 ? (
+      {dedupedLeads.length === 0 ? (
         <div className="text-center py-16">
           <p className="text-white/30 text-lg mb-1">
             {search || statusFilter !== 'all' ? 'Nenhum lead encontrado' : 'Nenhum lead ainda'}
@@ -241,7 +270,10 @@ export default function LeadsTab() {
         </div>
       ) : (
         <div className="space-y-3">
-          {filtered.map(l => (
+          {dedupedLeads.map(({ main: l, attempts }) => {
+            const phone = l.phone.replace(/\D/g, '') || l.phone
+            const isExpanded = expandedPhones.has(phone)
+            return (
             <div key={l.id} className="bg-white/[0.03] border border-white/8 rounded-xl p-4 space-y-3">
 
               {/* Header: nome + status + data + selector */}
@@ -319,8 +351,35 @@ export default function LeadsTab() {
               {l.observations && (
                 <p className="italic text-white/25 text-xs border-t border-white/5 pt-2">"{l.observations}"</p>
               )}
+
+              {/* Tentativas anteriores */}
+              {attempts.length > 0 && (
+                <div className="border-t border-white/5 pt-2">
+                  <button
+                    onClick={() => toggleExpand(phone)}
+                    className="text-[11px] text-white/30 hover:text-white/60 transition-colors flex items-center gap-1"
+                  >
+                    <span>{isExpanded ? '▾' : '▸'}</span>
+                    {attempts.length} tentativa{attempts.length > 1 ? 's' : ''} anterior{attempts.length > 1 ? 'es' : ''}
+                  </button>
+                  {isExpanded && (
+                    <div className="mt-2 space-y-2 pl-3 border-l border-white/5">
+                      {attempts.map(a => (
+                        <div key={a.id} className="text-[11px] text-white/30 flex flex-wrap gap-x-3 gap-y-0.5">
+                          <span className="tabular-nums">{fmtDate(a.created_at)}</span>
+                          {a.package_id && <span>Pacote {capitalize(a.package_id)}</span>}
+                          {a.type && <span>{a.type === 'period' ? 'Período' : 'Pernoite'}</span>}
+                          {a.suite_id && <span>Suíte {a.suite_id.replace('suite-', '')}</span>}
+                          {a.total_amount != null && <span className="text-gold-700/60">{fmtBRL(a.total_amount)}</span>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>
