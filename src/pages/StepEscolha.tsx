@@ -1,42 +1,36 @@
 import { useStore } from '../store/useStore'
 import type { ReservationMode } from '../types'
 
-const OPTIONS: Array<{
-  id:        ReservationMode
-  label:     string
-  tagline:   string
-  hook:      string
-  bullets:   string[]
-  badge?:    string
-  gradient:  string
-  accent:    string
-}> = [
+/**
+ * StepEscolha — direção editorial luxury (referência: revistas de hotelaria
+ * tipo Cereal, Monocle). Cormorant italic dominante, dingbats discretos,
+ * cards horizontais compactos no mobile (~155px de altura cada).
+ */
+
+type Option = {
+  id:           ReservationMode
+  numeral:      string   // 'I' / 'II' — numeral romano editorial
+  label:        string   // 'pacote' (lowercase + serif italic)
+  whisper:      string   // tagline curtíssima — uppercase tracking generoso
+  hook:         string   // 1 linha de hook (aparece só ≥sm)
+  recommended?: boolean  // pacote = recommended (em vez de badge agressivo)
+}
+
+const OPTIONS: Option[] = [
   {
-    id:       'package',
-    label:    'PACOTE',
-    tagline:  'Tudo pronto, melhor preço',
-    hook:     'Você escolhe Bronze, Prata ou Ouro — já vem com tudo combinado.',
-    bullets: [
-      'Suíte + decoração + refeição + bebida',
-      'Preço fechado e mais vantajoso',
-      'Pronto em poucos cliques',
-    ],
-    badge:    'Mais escolhido',
-    gradient: 'linear-gradient(135deg, rgba(232,192,96,0.10) 0%, rgba(200,160,53,0.18) 100%)',
-    accent:   '#e8c060',
+    id:          'package',
+    numeral:     'I',
+    label:       'pacote',
+    whisper:     'tudo pronto',
+    hook:        'Bronze, Prata ou Ouro — combinação fechada.',
+    recommended: true,
   },
   {
-    id:       'experience',
-    label:    'EXPERIÊNCIA',
-    tagline:  'Monte do seu jeito',
-    hook:     'Escolha cada detalhe — a suíte e os itens que combinam com vocês.',
-    bullets: [
-      'Selecione comidas, bebidas e extras à parte',
-      'Personalização total',
-      'Pague só o que escolher',
-    ],
-    gradient: 'linear-gradient(135deg, rgba(160,100,40,0.12) 0%, rgba(120,70,20,0.18) 100%)',
-    accent:   '#d4a020',
+    id:      'experience',
+    numeral: 'II',
+    label:   'experiência',
+    whisper: 'a la carte',
+    hook:    'Selecione cada detalhe da sua noite.',
   },
 ]
 
@@ -45,78 +39,176 @@ export default function StepEscolha() {
 
   function pick(mode: ReservationMode) {
     setMode(mode)
-    // Modo experiência pula a step de Pacote (vai direto pra Tipo).
-    // Esse "pulo" é gerenciado em App.tsx que troca o STEPS dict por mode.
     setTimeout(nextStep, 250)
   }
 
   return (
-    <div>
-      <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light mb-2 leading-tight">
-        Como você quer<br />
-        <span className="gold-gradient font-semibold italic pr-1">reservar?</span>
+    <div className="relative">
+      {/* ─── Ornamento de topo ─── */}
+      <div className="flex items-center gap-3 mb-6 sm:mb-8">
+        <span className="block h-px flex-1 bg-gradient-to-r from-transparent via-gold-700/40 to-gold-700/40" />
+        <span className="text-[9px] tracking-[0.5em] uppercase text-gold-600/60">
+          Reserva
+        </span>
+        <span className="block h-px flex-1 bg-gradient-to-l from-transparent via-gold-700/40 to-gold-700/40" />
+      </div>
+
+      {/* ─── Título editorial ─── */}
+      <h1 className="text-center mb-1 leading-none">
+        <span className="block font-serif italic font-light text-gold-200/90"
+              style={{ fontSize: 'clamp(2.4rem, 7vw, 3.6rem)', letterSpacing: '-0.02em' }}>
+          escolha
+        </span>
+        <span className="block font-serif italic gold-gradient"
+              style={{ fontSize: 'clamp(2.4rem, 7vw, 3.6rem)', letterSpacing: '-0.02em' }}>
+          seu caminho
+        </span>
       </h1>
-      <p className="text-gold-700/70 text-sm mb-6 sm:mb-8">
-        Escolha um dos nossos pacotes ou monte sua própria experiência.
+
+      <p className="text-center text-[10px] tracking-[0.4em] uppercase text-gold-700/50 mt-4 mb-7 sm:mb-10">
+        — duas formas de viver a noite —
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl">
+      {/* ─── Cards (mobile: horizontais lado a lado / desktop: maiores) ─── */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-5 max-w-3xl mx-auto">
         {OPTIONS.map((opt) => (
-          <button
-            key={opt.id}
-            onClick={() => pick(opt.id)}
-            className="group relative text-left rounded-2xl overflow-hidden border border-gold-800/40 outline-none transition-all duration-300 active:scale-[0.98] hover:border-gold-600/60"
-            style={{
-              background: opt.gradient,
-              minHeight: '260px',
-              boxShadow: 'inset 0 0 60px rgba(0,0,0,0.5)',
-            }}
-          >
-            {opt.badge && (
-              <div className="absolute top-0 left-0 right-0 flex justify-center z-10">
-                <span
-                  className="text-[9px] tracking-[0.3em] uppercase font-semibold px-4 py-1 rounded-b-xl text-black"
-                  style={{ background: opt.accent }}
-                >
-                  {opt.badge}
-                </span>
-              </div>
-            )}
-
-            <div className="flex flex-col h-full justify-between p-6 sm:p-7" style={{ minHeight: '260px' }}>
-              <div>
-                <p className="text-[10px] tracking-[0.4em] uppercase mb-3" style={{ color: opt.accent }}>
-                  {opt.tagline}
-                </p>
-                <h2
-                  className="font-serif font-bold tracking-widest mb-3 text-transparent bg-clip-text leading-none"
-                  style={{
-                    fontSize: 'clamp(2rem, 5vw, 2.6rem)',
-                    backgroundImage: `linear-gradient(180deg, ${opt.accent} 0%, #8a6010 100%)`,
-                  }}
-                >
-                  {opt.label}
-                </h2>
-                <p className="text-sm text-gold-300/70 leading-relaxed">{opt.hook}</p>
-              </div>
-
-              <ul className="mt-5 space-y-1.5">
-                {opt.bullets.map((b) => (
-                  <li key={b} className="flex items-start gap-2 text-xs text-gold-300/70">
-                    <span className="shrink-0 mt-0.5 text-[10px]" style={{ color: opt.accent }}>✦</span>
-                    {b}
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mt-5 flex items-center justify-between text-[11px] tracking-widest uppercase">
-                <span className="text-gold-700/60">Toque pra continuar</span>
-                <span className="transition-transform group-hover:translate-x-1" style={{ color: opt.accent }}>→</span>
-              </div>
-            </div>
-          </button>
+          <OptionCard key={opt.id} opt={opt} onPick={() => pick(opt.id)} />
         ))}
       </div>
+
+      {/* ─── Rodapé sutil ─── */}
+      <p className="text-center text-[10px] tracking-[0.3em] uppercase text-gold-800/40 mt-8">
+        Toque em uma das opções
+      </p>
     </div>
+  )
+}
+
+function OptionCard({ opt, onPick }: { opt: Option; onPick: () => void }) {
+  const recommended = !!opt.recommended
+
+  return (
+    <button
+      type="button"
+      onClick={onPick}
+      aria-label={`Escolher ${opt.label}`}
+      className={[
+        'group relative overflow-hidden rounded-md border outline-none',
+        'transition-all duration-500 active:scale-[0.97] focus-visible:ring-1 focus-visible:ring-gold-500',
+        recommended
+          ? 'border-gold-600/60 hover:border-gold-400'
+          : 'border-gold-900/50 hover:border-gold-700/80',
+      ].join(' ')}
+      style={{
+        background: recommended
+          // pacote: fundo levemente mais luminoso (intenção: chamar atenção sem badge)
+          ? 'radial-gradient(ellipse at 50% 0%, rgba(201,168,76,0.16) 0%, transparent 65%), linear-gradient(180deg, #0d0a05 0%, #060403 100%)'
+          : 'radial-gradient(ellipse at 50% 0%, rgba(154,125,10,0.10) 0%, transparent 65%), linear-gradient(180deg, #0a0805 0%, #050302 100%)',
+        boxShadow: recommended
+          ? 'inset 0 1px 0 rgba(252,211,77,0.10), 0 1px 30px rgba(201,168,76,0.07)'
+          : 'inset 0 1px 0 rgba(255,255,255,0.04)',
+        minHeight: '155px',
+      }}
+    >
+      {/* Borda superior cintilante — pacote tem brilho mais forte */}
+      <span
+        aria-hidden
+        className="absolute top-0 left-1/2 -translate-x-1/2 h-px"
+        style={{
+          width: recommended ? '70%' : '50%',
+          background: recommended
+            ? 'linear-gradient(90deg, transparent, #fcd34d, transparent)'
+            : 'linear-gradient(90deg, transparent, rgba(201,168,76,0.5), transparent)',
+        }}
+      />
+
+      {/* "Recomendado" — substitui o badge — apenas um asterisco/dingbat discreto */}
+      {recommended && (
+        <span
+          aria-hidden
+          className="absolute top-2.5 right-2.5 text-gold-400 text-[11px] leading-none animate-pulse"
+          style={{ animationDuration: '3.5s' }}
+        >
+          ✦
+        </span>
+      )}
+
+      {/* Conteúdo */}
+      <div className="relative flex flex-col items-center justify-center text-center h-full px-3 py-5 sm:py-7">
+        {/* Numeral romano — element editorial */}
+        <span
+          className="block font-serif font-light leading-none mb-1.5"
+          style={{
+            fontSize: 'clamp(0.85rem, 2vw, 1rem)',
+            color: recommended ? 'rgba(252,211,77,0.65)' : 'rgba(184,150,12,0.55)',
+            letterSpacing: '0.15em',
+          }}
+        >
+          {opt.numeral}.
+        </span>
+
+        {/* Divisor fino */}
+        <span
+          aria-hidden
+          className="block h-px w-6 mb-3"
+          style={{
+            background: recommended
+              ? 'linear-gradient(90deg, transparent, rgba(252,211,77,0.6), transparent)'
+              : 'linear-gradient(90deg, transparent, rgba(154,125,10,0.5), transparent)',
+          }}
+        />
+
+        {/* Label — Cormorant italic, lowercase + ponto editorial */}
+        <h2
+          className={[
+            'font-serif italic leading-none mb-3',
+            recommended ? 'gold-gradient' : 'text-gold-300/85',
+          ].join(' ')}
+          style={{
+            fontSize: 'clamp(1.6rem, 5.5vw, 2.5rem)',
+            letterSpacing: '-0.02em',
+            fontWeight: 400,
+          }}
+        >
+          {opt.label}<span className="opacity-60">.</span>
+        </h2>
+
+        {/* Whisper — uppercase, tracking generoso */}
+        <span
+          className="text-[9px] sm:text-[10px] tracking-[0.4em] uppercase"
+          style={{ color: recommended ? 'rgba(252,211,77,0.75)' : 'rgba(184,150,12,0.55)' }}
+        >
+          {opt.whisper}
+        </span>
+
+        {/* Hook só em sm+ (mobile economiza espaço) */}
+        <p className="hidden sm:block mt-3 text-[11px] text-gold-300/55 leading-relaxed max-w-[18ch]">
+          {opt.hook}
+        </p>
+
+        {/* Indicador "→" inferior, aparece no hover */}
+        <span
+          aria-hidden
+          className={[
+            'absolute bottom-2.5 left-1/2 -translate-x-1/2',
+            'text-[10px] tracking-[0.3em] uppercase opacity-0',
+            'transition-all duration-500 group-hover:opacity-100 group-active:opacity-100',
+            'group-hover:translate-y-0 translate-y-1',
+          ].join(' ')}
+          style={{ color: recommended ? '#fcd34d' : '#C9A84C' }}
+        >
+          escolher →
+        </span>
+      </div>
+
+      {/* Glow inferior sutil (pacote: mais visível) */}
+      <span
+        aria-hidden
+        className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-3/4 h-12 blur-2xl"
+        style={{
+          background: recommended ? 'rgba(201,168,76,0.35)' : 'rgba(154,125,10,0.18)',
+        }}
+      />
+    </button>
   )
 }
