@@ -60,20 +60,23 @@ const OPTIONS: Option[] = [
 export default function StepEscolha() {
   const {
     mode: storedMode, setMode,
+    customerName, customerPhone, customerTaxId, observations: storedObs, consentAt,
     setCustomer, setObservations, setConsentAt,
     nextStep,
     package: pkg, type, suite, checkIn, drink, food, totalAmount,
   } = useStore()
 
-  const [picked, setPicked]           = useState<ReservationMode | null>(storedMode)
-  const [formVisible, setFormVisible] = useState(false)
+  const hasStoredData = !!(customerName && customerPhone && customerTaxId)
 
-  /* form fields */
-  const [name,             setName]             = useState('')
-  const [phone,            setPhone]            = useState('')
-  const [taxId,            setTaxId]            = useState('')
-  const [obs,              setObs]              = useState('')
-  const [acceptedTerms,    setAcceptedTerms]    = useState(false)
+  const [picked, setPicked]           = useState<ReservationMode | null>(storedMode)
+  const [formVisible, setFormVisible] = useState(!!storedMode && hasStoredData)
+
+  /* form fields — pré-populados com dados do store se o usuário voltou */
+  const [name,             setName]             = useState(customerName  || '')
+  const [phone,            setPhone]            = useState(customerPhone || '')
+  const [taxId,            setTaxId]            = useState(customerTaxId ? maskCPF(customerTaxId) : '')
+  const [obs,              setObs]              = useState(storedObs     || '')
+  const [acceptedTerms,    setAcceptedTerms]    = useState(!!consentAt)
   const [whatsappConsent,  setWhatsappConsent]  = useState(false)
   const [legalOpen,        setLegalOpen]        = useState<LegalKind | null>(null)
 
