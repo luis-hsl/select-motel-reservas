@@ -6,9 +6,9 @@ type FoodId = 'jantar' | 'sushi' | 'pizza'
 
 interface Opcao { id: FoodId; label: string; sub: string; imgKey: string | null; imgFallback: string }
 
-const JANTAR: Opcao = { id: 'jantar', label: 'Jantar', sub: 'Prato completo com entrada', imgKey: null,              imgFallback: '/jantar.webp' }
-const SUSHI:  Opcao = { id: 'sushi',  label: 'Sushi',  sub: 'Combinado premium',          imgKey: null,              imgFallback: '/sushi.webp'  }
-const PIZZA:  Opcao = { id: 'pizza',  label: 'Pizza',  sub: 'Pizza artesanal',             imgKey: 'pizza_photo_url', imgFallback: ''             }
+const JANTAR: Opcao = { id: 'jantar', label: 'Jantar', sub: 'Prato completo com entrada', imgKey: null,               imgFallback: '/jantar.webp' }
+const SUSHI:  Opcao = { id: 'sushi',  label: 'Sushi',  sub: 'Combinado premium',          imgKey: null,               imgFallback: '/sushi.webp'  }
+const PIZZA:  Opcao = { id: 'pizza',  label: 'Pizza',  sub: 'Pizza artesanal',             imgKey: 'pizza_photo_url',  imgFallback: ''             }
 
 const OPCOES_POR_PACOTE: Record<string, Opcao[]> = {
   ouro:   [JANTAR, SUSHI],
@@ -22,9 +22,9 @@ const SUBTITULO: Record<string, string> = {
   bronze: 'Incluída no Pacote Bronze. A pizza artesanal já está reservada para vocês.',
 }
 
-const NOTA: Partial<Record<FoodId, string>> = {
-  jantar: '✦ O jantar inclui entrada — tábua de frios com salame, lombo, queijo, amendoim e azeitonas.',
-  sushi:  '⚠ O sushi não inclui entrada — o combinado premium é servido diretamente.',
+const NOTA: Partial<Record<FoodId, { icon: 'check' | 'warn'; text: string }>> = {
+  jantar: { icon: 'check', text: 'O jantar inclui entrada — tábua de frios com salame, lombo, queijo, amendoim e azeitonas.' },
+  sushi:  { icon: 'warn',  text: 'O sushi não inclui entrada — o combinado premium é servido diretamente.' },
 }
 
 const GOLD_BORDER = 'rgba(180,140,40,0.5)'
@@ -42,8 +42,10 @@ export default function StepRefeicao() {
   const ctaRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
-    const keys = opcoes.filter(o => o.imgKey).map(o => o.imgKey as string)
-    if (keys.length === 0) return
+    const keys = [
+      ...opcoes.filter(o => o.imgKey).map(o => o.imgKey as string),
+      'fondue_photo_url',
+    ]
     supabase.from('settings').select('key, value').in('key', keys).then(({ data }) => {
       const v: Record<string, string> = {}
       data?.forEach(r => { if (r.value) v[r.key] = r.value })
@@ -71,7 +73,10 @@ export default function StepRefeicao() {
     nextStep()
   }
 
-  const isSingle = opcoes.length === 1
+  const isSingle   = opcoes.length === 1
+  const fondueUrl  = remoteUrls['fondue_photo_url'] ?? '/fondue.webp'
+  const gridClass  = isSingle ? 'grid-cols-1 max-w-xs' : 'grid-cols-1 sm:grid-cols-2 max-w-xl'
+  const nota       = selected ? NOTA[selected] : null
 
   return (
     <div>
@@ -86,7 +91,8 @@ export default function StepRefeicao() {
       </h1>
       <p className="text-gold-700/70 text-sm mb-8 sm:mb-10">{SUBTITULO[pkgId]}</p>
 
-      <div className={`grid gap-3 ${isSingle ? 'grid-cols-1 max-w-xs' : 'grid-cols-1 sm:grid-cols-2 max-w-xl'}`}>
+      {/* Opções de refeição */}
+      <div className={`grid gap-3 ${gridClass}`}>
         {opcoes.map(opt => {
           const isSel = selected === opt.id
           const img   = imgFor(opt)
@@ -129,11 +135,68 @@ export default function StepRefeicao() {
         })}
       </div>
 
-      {selected && NOTA[selected] && (
-        <div className="mt-4 max-w-xl px-4 py-3 rounded-xl border border-gold-800/30 bg-gold-900/10">
-          <p className="text-xs text-gold-300/80">{NOTA[selected]}</p>
+      {/* Nota de jantar/sushi (Ouro) */}
+      {nota && (
+        <div
+          className="mt-3 flex items-start gap-2.5 px-4 py-3 rounded-xl"
+          style={{
+            background: nota.icon === 'check' ? 'rgba(201,168,76,0.06)' : 'rgba(180,100,30,0.08)',
+            border: nota.icon === 'check' ? '1px solid rgba(201,168,76,0.22)' : '1px solid rgba(200,120,40,0.28)',
+            maxWidth: isSingle ? '20rem' : '36rem',
+          }}
+        >
+          {nota.icon === 'check' ? (
+            <svg className="w-3.5 h-3.5 shrink-0 mt-[2px]" viewBox="0 0 14 14" fill="none" style={{ color: 'rgba(201,168,76,0.7)' }}>
+              <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1" />
+              <path d="M4.5 7l2 2 3-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          ) : (
+            <svg className="w-3.5 h-3.5 shrink-0 mt-[2px]" viewBox="0 0 14 14" fill="none" style={{ color: 'rgba(210,140,60,0.8)' }}>
+              <path d="M7 1.5L12.5 12H1.5L7 1.5z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" />
+              <path d="M7 5.5v3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+              <circle cx="7" cy="10" r="0.6" fill="currentColor" />
+            </svg>
+          )}
+          <p className="text-xs leading-relaxed" style={{ color: nota.icon === 'check' ? 'rgba(220,185,110,0.85)' : 'rgba(220,160,80,0.85)' }}>
+            {nota.text}
+          </p>
         </div>
       )}
+
+      {/* Fondue — sempre incluído */}
+      <div className={`mt-6 ${isSingle ? 'max-w-xs' : 'max-w-xl'}`}>
+        <p className="text-[9px] tracking-widest uppercase text-gold-600/45 mb-2">Também incluído</p>
+        <div
+          className="relative rounded-2xl overflow-hidden"
+          style={{
+            border: `1px solid ${GOLD_BORDER}`,
+            boxShadow: `0 0 0 2px ${GOLD_RING}, 0 4px 30px ${GOLD_GLOW}, inset 0 0 40px rgba(0,0,0,0.3)`,
+            minHeight: 160,
+          }}
+        >
+          <div className="absolute inset-0">
+            <img src={fondueUrl} alt="Fondue" className="w-full h-full object-cover" draggable={false} />
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.15) 55%, rgba(0,0,0,0) 100%)' }} />
+          </div>
+
+          {/* Checkmark fixo — sempre incluído */}
+          <div className="absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center z-10" style={{ background: '#c9a84c', boxShadow: `0 0 12px ${GOLD_GLOW}` }}>
+            <svg className="w-3 h-3 text-black" fill="none" viewBox="0 0 12 12">
+              <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+
+          <div className="relative z-10 flex flex-col justify-end h-full p-4" style={{ minHeight: 160 }}>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-px w-6" style={{ background: '#c9a84c', boxShadow: '0 0 6px #c9a84c' }} />
+            </div>
+            <h2 className="font-serif font-bold tracking-widest text-transparent bg-clip-text leading-none mb-1" style={{ fontSize: 'clamp(1.1rem,3vw,1.5rem)', backgroundImage: GOLD_NAME }}>
+              FONDUE
+            </h2>
+            <p className="text-white/45 text-[11px] tracking-wide">Fondue de chocolate — incluído no pacote</p>
+          </div>
+        </div>
+      </div>
 
       <div className="mt-6">
         <button
