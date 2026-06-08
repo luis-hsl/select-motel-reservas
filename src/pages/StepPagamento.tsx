@@ -88,6 +88,9 @@ export default function StepPagamento() {
       .then(({ data }) => { if (data?.value) setWhatsappNum(data.value) })
   }, [])
 
+  // Scroll para o topo ao entrar na tela de pagamento
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior }) }, [])
+
   // Google Ads — conversion "Iniciar finalização de compra"
   // dispara uma vez quando o cliente chega na tela de pagamento, com o valor da reserva.
   useEffect(() => {
@@ -355,11 +358,11 @@ export default function StepPagamento() {
       </button>
 
       <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-light mb-2 leading-tight">
-        Pagamento e<br />
-        <span className="gold-gradient font-semibold italic">confirmação</span>
+        Sua noite está<br />
+        <span className="gold-gradient font-semibold italic">quase garantida</span>
       </h1>
       <p className="text-gold-700/70 text-sm mb-7">
-        Revise e escolha a forma de pagamento.
+        Revise o pedido abaixo e escolha como pagar — é rápido e seguro.
       </p>
 
       <div className="lg:grid lg:grid-cols-2 lg:gap-10 xl:gap-14 lg:items-start">
@@ -377,14 +380,17 @@ export default function StepPagamento() {
             </div>
             {checkIn && <p className="text-[11px] text-gold-600/60">Check-in: {fmtDt(checkIn)}</p>}
             {checkout && <p className="text-[11px] text-gold-600/60">Check-out: {fmtDt(checkout)}</p>}
-            <div className="border-t border-gold-900/40 mt-2.5 pt-2">
-              <div className="flex items-baseline justify-between mb-0.5">
-                <span className="text-[9px] tracking-widests uppercase text-gold-600/60">Total</span>
-                <span className="font-serif text-xl font-semibold gold-gradient">{fmt(total)}</span>
+            <div className="border-t border-gold-900/40 mt-2.5 pt-2.5">
+              <div className="flex items-baseline justify-between mb-1.5">
+                <span className="text-[9px] tracking-widest uppercase text-gold-600/60">Total</span>
+                <span className="font-serif text-2xl font-semibold gold-gradient">{fmt(total)}</span>
               </div>
-              <p className="text-right text-[10px]" style={{ color: 'rgba(201,168,76,0.45)' }}>
-                ou em até 3x de {installment(total, 3)} no cartão
-              </p>
+              <div className="flex justify-end">
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium"
+                      style={{ background: 'rgba(201,168,76,0.12)', border: '1px solid rgba(201,168,76,0.3)', color: 'rgba(230,195,100,0.9)' }}>
+                  ou 3× de {installment(total, 3)} no cartão
+                </span>
+              </div>
             </div>
           </div>
 
@@ -425,14 +431,17 @@ export default function StepPagamento() {
                 </div>
               )}
 
-              <div className="border-t border-gold-900/40 pt-3">
-                <div className="flex items-baseline justify-between mb-1">
+              <div className="border-t border-gold-900/40 pt-4">
+                <div className="flex items-baseline justify-between mb-2">
                   <span className="text-[10px] tracking-widest uppercase text-gold-600/60">Total</span>
-                  <span className="font-serif text-2xl font-semibold gold-gradient">{fmt(total)}</span>
+                  <span className="font-serif text-3xl font-semibold gold-gradient">{fmt(total)}</span>
                 </div>
-                <p className="text-right text-[11px]" style={{ color: 'rgba(201,168,76,0.45)' }}>
-                  ou em até 3x de {installment(total, 3)} no cartão
-                </p>
+                <div className="flex justify-end">
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[12px] font-medium"
+                        style={{ background: 'rgba(201,168,76,0.12)', border: '1px solid rgba(201,168,76,0.3)', color: 'rgba(230,195,100,0.9)' }}>
+                    ou 3× de {installment(total, 3)} no cartão
+                  </span>
+                </div>
               </div>
             </div>
           </div>
