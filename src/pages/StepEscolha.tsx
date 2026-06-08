@@ -1,45 +1,152 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useStore } from '../store/useStore'
+import LegalModal, { type LegalKind } from '../components/LegalModal'
+import { metaEvents } from '../lib/metaPixel'
+import { supabase } from '../lib/supabase'
+import { getSessionToken } from '../lib/tracking'
 import type { ReservationMode } from '../types'
 
-type Option = {
-  id:          ReservationMode
-  label:       string
-  sublabel:    string
-  desc:        string
-  bullets?:    string[]
-  recommended?: boolean
+/* ── helpers ── */
+function maskCPF(v: string) {
+  return v.replace(/\D/g, '').slice(0, 11)
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+}
+function isValidCPF(raw: string): boolean {
+  if (raw.length !== 11) return false
+  if (/^(\d)\1+$/.test(raw)) return false
+  const d = raw.split('').map(Number)
+  for (const k of [9, 10] as const) {
+    let sum = 0
+    for (let i = 0; i < k; i++) sum += d[i] * (k + 1 - i)
+    const rest = (sum * 10) % 11
+    if ((rest === 10 ? 0 : rest) !== d[k]) return false
+  }
+  return true
+}
+function maskPhone(v: string) {
+  const d = v.replace(/\D/g, '').slice(0, 11)
+  if (!d) return ''
+  if (d.length <= 2)  return `(${d}`
+  if (d.length <= 7)  return `(${d.slice(0,2)}) ${d.slice(2)}`
+  if (d.length <= 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`
+  return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`
 }
 
+/* ── option data ── */
+type Option = {
+  id: ReservationMode
+  label: string
+  sublabel: string
+  desc: string
+  bullets?: string[]
+  recommended?: boolean
+}
 const OPTIONS: Option[] = [
   {
-    id:          'package',
-    label:       'pacote',
-    sublabel:    'experiência completa',
-    desc:        'Tudo incluso num único pacote.',
-    bullets:     ['Gastronomia', 'Bebida', 'Fondue', 'Decoração'],
+    id: 'package', label: 'pacote', sublabel: 'experiência completa',
+    desc: 'Tudo incluso num único pacote.',
+    bullets: ['Gastronomia', 'Bebida', 'Fondue', 'Decoração'],
     recommended: true,
   },
   {
-    id:      'experience',
-    label:   'monte sua\nexperiência',
-    sublabel: 'do seu jeito',
-    desc:    'Só a suíte decorada, ou adicione fondue, bebida e refeição como quiser.',
+    id: 'experience', label: 'monte sua\nexperiência', sublabel: 'do seu jeito',
+    desc: 'Só a suíte decorada, ou adicione fondue, bebida e refeição como quiser.',
   },
 ]
 
+/* ── component ── */
 export default function StepEscolha() {
-  const { mode: storedMode, setMode, nextStep } = useStore()
-  const [picked, setPicked] = useState<ReservationMode | null>(storedMode)
+  const {
+    mode: storedMode, setMode,
+    setCustomer, setObservations, setConsentAt,
+    nextStep,
+    package: pkg, type, suite, checkIn, drink, food, totalAmount,
+  } = useStore()
+
+  const [picked, setPicked]           = useState<ReservationMode | null>(storedMode)
+  const [formVisible, setFormVisible] = useState(false)
+
+  /* form fields */
+  const [name,          setName]          = useState('')
+  const [phone,         setPhone]         = useState('')
+  const [email,         setEmail]         = useState('')
+  const [taxId,         setTaxId]         = useState('')
+  const [obs,           setObs]           = useState('')
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
+  const [legalOpen,     setLegalOpen]     = useState<LegalKind | null>(null)
+
+  const formRef = useRef<HTMLDivElement>(null)
+  const ctaRef  = useRef<HTMLButtonElement>(null)
+
+  const rawCPF   = taxId.replace(/\D/g, '')
+  const rawPhone = phone.replace(/\D/g, '')
+  const cpfValid = isValidCPF(rawCPF)
+  const cpfError = rawCPF.length === 11 && !cpfValid
+  const canContinue = !!picked && name.trim() && rawPhone.length >= 10 &&
+                      email.includes('@') && cpfValid && acceptedTerms
+
+  /* show form with slight delay so card selection animation completes */
+  useEffect(() => {
+    if (picked && !formVisible) {
+      const t = setTimeout(() => {
+        setFormVisible(true)
+        requestAnimationFrame(() =>
+          formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        )
+      }, 250)
+      return () => clearTimeout(t)
+    }
+  }, [picked])
+
+  /* scroll CTA into view when form becomes valid */
+  useEffect(() => {
+    if (!canContinue) return
+    requestAnimationFrame(() =>
+      ctaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    )
+  }, [canContinue])
 
   function pick(mode: ReservationMode) {
     setPicked(mode)
   }
 
   function advance() {
-    if (!picked) return
+    if (!canContinue || !picked) return
     setMode(picked)
-    setTimeout(nextStep, 200)
+    setCustomer(name.trim(), phone.trim(), email.trim(), rawCPF)
+    setObservations(obs.trim())
+    setConsentAt(new Date().toISOString())
+
+    /* Google Ads — lead */
+    const gtag = (window as unknown as { gtag?: (...a: unknown[]) => void }).gtag
+    if (typeof gtag === 'function') {
+      gtag('event', 'conversion', {
+        send_to: 'AW-18204610844/RO0FCNWRkrgcEJyi0ehD',
+        value: 1.0, currency: 'BRL',
+        transaction_id: email.trim().toLowerCase(),
+      })
+    }
+    metaEvents.lead()
+
+    /* salva lead */
+    supabase.rpc('insert_lead', {
+      p_name:         name.trim(),
+      p_phone:        phone.trim(),
+      p_email:        email.trim(),
+      p_package_id:   pkg?.id ?? null,
+      p_type:         type ?? null,
+      p_suite_id:     suite?.id ?? null,
+      p_check_in:     checkIn?.toISOString() ?? null,
+      p_drink:        drink ?? null,
+      p_food:         food ?? null,
+      p_total_amount: totalAmount() || null,
+      p_observations: obs.trim() || null,
+      p_session_token: getSessionToken(),
+    }).then(() => {})
+
+    nextStep()
   }
 
   return (
@@ -48,11 +155,11 @@ export default function StepEscolha() {
       <div className="text-center mb-8 sm:mb-12">
         <h1 className="leading-none mb-3">
           <span className="block font-serif italic font-light text-gold-200/90"
-                style={{ fontSize: 'clamp(2.2rem, 6.5vw, 3.4rem)', letterSpacing: '-0.02em' }}>
+                style={{ fontSize: 'clamp(2.2rem,6.5vw,3.4rem)', letterSpacing: '-0.02em' }}>
             como você
           </span>
           <span className="block font-serif italic gold-gradient"
-                style={{ fontSize: 'clamp(2.2rem, 6.5vw, 3.4rem)', letterSpacing: '-0.02em' }}>
+                style={{ fontSize: 'clamp(2.2rem,6.5vw,3.4rem)', letterSpacing: '-0.02em' }}>
             prefere reservar?
           </span>
         </h1>
@@ -63,7 +170,7 @@ export default function StepEscolha() {
 
       {/* Cards */}
       <div className="grid grid-cols-2 gap-3 sm:gap-5 max-w-3xl mx-auto">
-        {OPTIONS.map((opt) => (
+        {OPTIONS.map(opt => (
           <OptionCard
             key={opt.id}
             opt={opt}
@@ -73,177 +180,200 @@ export default function StepEscolha() {
         ))}
       </div>
 
+      {/* Formulário de dados — aparece ao selecionar */}
+      <div
+        ref={formRef}
+        className="max-w-3xl mx-auto overflow-hidden transition-all duration-500 ease-out"
+        style={{
+          opacity:   formVisible ? 1 : 0,
+          transform: formVisible ? 'translateY(0)' : 'translateY(24px)',
+          maxHeight: formVisible ? '900px' : '0px',
+          pointerEvents: formVisible ? 'auto' : 'none',
+        }}
+      >
+        <div className="mt-8 pt-7 border-t border-gold-800/25">
+          <p className="text-[10px] tracking-[0.45em] uppercase text-gold-600/50 mb-6 text-center">
+            seus dados
+          </p>
+
+          <div className="space-y-4 max-w-md mx-auto lg:max-w-none">
+            <Field label="Nome completo">
+              <input
+                type="text" value={name} onChange={e => setName(e.target.value)}
+                placeholder="Seu nome"
+                className="w-full bg-black/60 border border-gold-900/40 rounded-lg px-4 py-3 text-sm text-gold-200 placeholder-gold-900/50 outline-none focus:border-gold-600/60 transition-colors"
+              />
+            </Field>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="WhatsApp">
+                <input
+                  type="tel" inputMode="numeric" value={phone}
+                  onChange={e => setPhone(maskPhone(e.target.value))}
+                  placeholder="(00) 00000-0000"
+                  className="w-full bg-black/60 border border-gold-900/40 rounded-lg px-4 py-3 text-sm text-gold-200 placeholder-gold-900/50 outline-none focus:border-gold-600/60 transition-colors"
+                />
+              </Field>
+              <Field label="E-mail">
+                <input
+                  type="email" value={email} onChange={e => setEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                  className="w-full bg-black/60 border border-gold-900/40 rounded-lg px-4 py-3 text-sm text-gold-200 placeholder-gold-900/50 outline-none focus:border-gold-600/60 transition-colors"
+                />
+              </Field>
+            </div>
+
+            <Field label="CPF">
+              <input
+                type="text" inputMode="numeric" value={taxId}
+                onChange={e => setTaxId(maskCPF(e.target.value))}
+                placeholder="000.000.000-00"
+                className={[
+                  'w-full bg-black/60 rounded-lg px-4 py-3 text-sm text-gold-200 placeholder-gold-900/50 outline-none transition-colors border',
+                  cpfError ? 'border-red-500/60 focus:border-red-400' : 'border-gold-900/40 focus:border-gold-600/60',
+                ].join(' ')}
+              />
+              {cpfError && <p className="text-[11px] text-red-400/80 mt-1">CPF inválido — confira os números.</p>}
+            </Field>
+
+            <Field label="Observações (opcional)">
+              <textarea
+                value={obs} onChange={e => setObs(e.target.value.slice(0,500))}
+                placeholder="Ex: ligar a hidromassagem, servir os pratos às 21h…"
+                rows={2}
+                className="w-full bg-black/60 border border-gold-900/40 rounded-lg px-4 py-3 text-sm text-gold-200 placeholder-gold-900/50 outline-none focus:border-gold-600/60 transition-colors resize-none"
+              />
+            </Field>
+
+            {/* LGPD */}
+            <label className="flex items-start gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox" checked={acceptedTerms}
+                onChange={e => setAcceptedTerms(e.target.checked)}
+                className="mt-0.5 w-4 h-4 accent-gold-500 cursor-pointer shrink-0"
+              />
+              <span className="text-[11px] text-gold-700/75 leading-relaxed">
+                Li e concordo com os{' '}
+                <button type="button" onClick={() => setLegalOpen('terms')}
+                        className="text-gold-400 underline underline-offset-2 hover:text-gold-300">
+                  Termos de Uso
+                </button>{' '}
+                e com a{' '}
+                <button type="button" onClick={() => setLegalOpen('privacy')}
+                        className="text-gold-400 underline underline-offset-2 hover:text-gold-300">
+                  Política de Privacidade
+                </button>
+                . Autorizo o tratamento dos meus dados para fins da reserva, nos termos da LGPD.
+              </span>
+            </label>
+          </div>
+        </div>
+      </div>
+
       {/* CTA */}
-      <div className="max-w-3xl mx-auto mt-6 sm:mt-8">
+      <div
+        className="max-w-3xl mx-auto transition-all duration-500"
+        style={{ marginTop: formVisible ? '1.5rem' : '1.5rem' }}
+      >
         <button
+          ref={ctaRef}
           onClick={advance}
-          disabled={!picked}
+          disabled={!canContinue}
           className={[
-            'w-full px-6 py-3.5 rounded-xl text-sm font-semibold transition-all duration-300',
-            picked
+            'w-full px-6 py-4 rounded-xl text-sm font-semibold transition-all duration-300',
+            canContinue
               ? 'bg-gradient-to-r from-gold-700 to-gold-500 text-black hover:from-gold-600 hover:to-gold-400 active:scale-[0.98]'
               : 'bg-gold-900/20 text-gold-800/40 cursor-not-allowed',
           ].join(' ')}
         >
-          {picked
-            ? <>Continuar com {picked === 'package' ? 'pacote' : 'experiência'} →</>
-            : 'Escolha uma opção'}
+          {!picked
+            ? 'Escolha uma opção acima'
+            : !formVisible
+              ? 'Preencha seus dados para continuar'
+              : canContinue
+                ? <>Continuar com {picked === 'package' ? 'pacote' : 'experiência'} →</>
+                : 'Preencha seus dados para continuar'}
         </button>
       </div>
+
+      {legalOpen && <LegalModal kind={legalOpen} onClose={() => setLegalOpen(null)} />}
     </div>
   )
 }
 
+/* ── OptionCard ── */
 function OptionCard({ opt, selected, onPick }: { opt: Option; selected: boolean; onPick: () => void }) {
   const rec = !!opt.recommended
-
-  /* ── Camadas de gradiente para o efeito 3D/iluminação ── */
   const bgBase = rec
-    ? [
-        'radial-gradient(ellipse at 50% -10%, rgba(252,211,77,0.22) 0%, transparent 55%)',
-        'radial-gradient(ellipse at 80% 90%, rgba(201,168,76,0.10) 0%, transparent 50%)',
-        'radial-gradient(ellipse at 20% 80%, rgba(160,120,30,0.08) 0%, transparent 45%)',
-        'linear-gradient(180deg, #100c04 0%, #060402 100%)',
-      ].join(', ')
-    : [
-        'radial-gradient(ellipse at 50% -10%, rgba(184,150,40,0.14) 0%, transparent 55%)',
-        'radial-gradient(ellipse at 75% 85%, rgba(140,110,20,0.07) 0%, transparent 45%)',
-        'linear-gradient(180deg, #0b0805 0%, #040302 100%)',
-      ].join(', ')
-
-  const borderColor = selected
-    ? 'rgba(220,175,60,0.9)'
-    : rec
-      ? 'rgba(201,168,76,0.45)'
-      : 'rgba(140,110,20,0.35)'
-
-  const boxShadow = selected
-    ? [
-        `0 0 0 1.5px ${rec ? 'rgba(252,211,77,0.5)' : 'rgba(180,145,40,0.45)'}`,
-        `0 0 40px ${rec ? 'rgba(201,168,76,0.22)' : 'rgba(140,110,20,0.18)'}`,
-        'inset 0 0 60px rgba(0,0,0,0.55)',
-        `inset 0 1px 0 ${rec ? 'rgba(252,211,77,0.20)' : 'rgba(201,168,76,0.12)'}`,
-      ].join(', ')
-    : [
-        'inset 0 0 50px rgba(0,0,0,0.6)',
-        `inset 0 1px 0 ${rec ? 'rgba(252,211,77,0.10)' : 'rgba(180,150,40,0.06)'}`,
-        `0 2px 20px rgba(0,0,0,0.4)`,
-      ].join(', ')
+    ? ['radial-gradient(ellipse at 50% -10%, rgba(252,211,77,0.22) 0%, transparent 55%)',
+       'radial-gradient(ellipse at 80% 90%, rgba(201,168,76,0.10) 0%, transparent 50%)',
+       'linear-gradient(180deg, #100c04 0%, #060402 100%)'].join(', ')
+    : ['radial-gradient(ellipse at 50% -10%, rgba(184,150,40,0.14) 0%, transparent 55%)',
+       'linear-gradient(180deg, #0b0805 0%, #040302 100%)'].join(', ')
 
   return (
     <button
-      type="button"
-      onClick={onPick}
-      aria-pressed={selected}
+      type="button" onClick={onPick} aria-pressed={selected}
       className="relative overflow-hidden rounded-2xl outline-none text-center transition-all duration-500 active:scale-[0.97] focus-visible:ring-1 focus-visible:ring-gold-500"
       style={{
-        background:   bgBase,
-        border:       `1px solid ${borderColor}`,
-        boxShadow,
-        minHeight:    '220px',
-        transform:    selected ? 'translateY(-2px)' : 'translateY(0)',
+        background: bgBase,
+        border: `1px solid ${selected ? 'rgba(220,175,60,0.9)' : rec ? 'rgba(201,168,76,0.45)' : 'rgba(140,110,20,0.35)'}`,
+        boxShadow: selected
+          ? [`0 0 0 1.5px ${rec ? 'rgba(252,211,77,0.5)' : 'rgba(180,145,40,0.45)'}`,
+             `0 0 40px ${rec ? 'rgba(201,168,76,0.22)' : 'rgba(140,110,20,0.18)'}`,
+             'inset 0 0 60px rgba(0,0,0,0.55)',
+             `inset 0 1px 0 ${rec ? 'rgba(252,211,77,0.20)' : 'rgba(201,168,76,0.12)'}`].join(', ')
+          : ['inset 0 0 50px rgba(0,0,0,0.6)',
+             `inset 0 1px 0 ${rec ? 'rgba(252,211,77,0.10)' : 'rgba(180,150,40,0.06)'}`,
+             '0 2px 20px rgba(0,0,0,0.4)'].join(', '),
+        minHeight: '220px',
+        transform: selected ? 'translateY(-2px)' : 'translateY(0)',
       }}
     >
-      {/* Feixe de luz vindo do topo */}
-      <span
-        aria-hidden
-        className="absolute top-0 left-1/2 -translate-x-1/2 pointer-events-none"
-        style={{
-          width:   rec ? '55%' : '40%',
-          height:  '140px',
-          background: rec
-            ? 'linear-gradient(to bottom, rgba(252,211,77,0.18) 0%, transparent 100%)'
-            : 'linear-gradient(to bottom, rgba(201,168,76,0.10) 0%, transparent 100%)',
-          filter:  'blur(18px)',
-        }}
-      />
+      {/* Feixe de luz */}
+      <span aria-hidden className="absolute top-0 left-1/2 -translate-x-1/2 pointer-events-none"
+            style={{ width: rec ? '55%' : '40%', height: '140px',
+                     background: rec ? 'linear-gradient(to bottom, rgba(252,211,77,0.18) 0%, transparent 100%)' : 'linear-gradient(to bottom, rgba(201,168,76,0.10) 0%, transparent 100%)',
+                     filter: 'blur(18px)' }} />
+      <span aria-hidden className="absolute top-0 left-1/2 -translate-x-1/2 h-px"
+            style={{ width: rec ? '75%' : '55%',
+                     background: rec ? 'linear-gradient(90deg, transparent, rgba(252,211,77,0.9), transparent)' : 'linear-gradient(90deg, transparent, rgba(201,168,76,0.6), transparent)' }} />
 
-      {/* Linha de luz no topo */}
-      <span
-        aria-hidden
-        className="absolute top-0 left-1/2 -translate-x-1/2 h-px"
-        style={{
-          width: rec ? '75%' : '55%',
-          background: rec
-            ? 'linear-gradient(90deg, transparent, rgba(252,211,77,0.9), transparent)'
-            : 'linear-gradient(90deg, transparent, rgba(201,168,76,0.6), transparent)',
-        }}
-      />
-
-      {/* Glow inferior */}
-      <span
-        aria-hidden
-        className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none"
-        style={{
-          background: rec
-            ? 'linear-gradient(to top, rgba(201,168,76,0.07) 0%, transparent 100%)'
-            : 'linear-gradient(to top, rgba(140,110,20,0.05) 0%, transparent 100%)',
-        }}
-      />
-
-      {/* Checkmark quando selecionado */}
+      {/* Checkmark */}
       {selected && (
-        <span
-          className="absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center z-10"
-          style={{ background: rec ? '#c9a84c' : '#9a7828', boxShadow: '0 0 10px rgba(201,168,76,0.5)' }}
-        >
+        <span className="absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center z-10"
+              style={{ background: rec ? '#c9a84c' : '#9a7828', boxShadow: '0 0 10px rgba(201,168,76,0.5)' }}>
           <svg className="w-3 h-3 text-black" fill="none" viewBox="0 0 12 12">
             <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </span>
       )}
 
-      {/* Conteúdo central */}
       <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 py-6 sm:py-8" style={{ minHeight: '220px' }}>
+        <span aria-hidden className="block h-px mb-4"
+              style={{ width: '2rem',
+                       background: rec ? 'linear-gradient(90deg, transparent, rgba(252,211,77,0.7), transparent)' : 'linear-gradient(90deg, transparent, rgba(154,125,10,0.5), transparent)',
+                       boxShadow: rec ? '0 0 6px rgba(252,211,77,0.4)' : '0 0 4px rgba(184,150,12,0.3)' }} />
 
-        {/* Divisor luminoso */}
-        <span
-          aria-hidden
-          className="block h-px mb-4"
-          style={{
-            width: '2rem',
-            background: rec
-              ? 'linear-gradient(90deg, transparent, rgba(252,211,77,0.7), transparent)'
-              : 'linear-gradient(90deg, transparent, rgba(184,150,12,0.55), transparent)',
-            boxShadow: rec ? '0 0 6px rgba(252,211,77,0.4)' : '0 0 4px rgba(184,150,12,0.3)',
-          }}
-        />
-
-        {/* Label principal */}
-        <h2
-          className={['font-serif italic whitespace-pre-line mb-2', rec ? 'gold-gradient' : 'text-gold-300/80'].join(' ')}
-          style={{
-            fontSize:      'clamp(1.05rem, 3.5vw, 2rem)',
-            letterSpacing: '-0.01em',
-            fontWeight:    400,
-            lineHeight:    '1.1',
-          }}
-        >
+        <h2 className={['font-serif italic whitespace-pre-line mb-2', rec ? 'gold-gradient' : 'text-gold-300/80'].join(' ')}
+            style={{ fontSize: 'clamp(1.05rem,3.5vw,2rem)', letterSpacing: '-0.01em', fontWeight: 400, lineHeight: '1.1' }}>
           {opt.label}
         </h2>
 
-        {/* Sublabel */}
-        <span
-          className="block text-[9px] sm:text-[10px] tracking-[0.4em] uppercase mb-3"
-          style={{ color: rec ? 'rgba(252,211,77,0.6)' : 'rgba(184,150,12,0.5)' }}
-        >
+        <span className="block text-[9px] sm:text-[10px] tracking-[0.4em] uppercase mb-3"
+              style={{ color: rec ? 'rgba(252,211,77,0.6)' : 'rgba(184,150,12,0.5)' }}>
           {opt.sublabel}
         </span>
 
-        {/* Descrição */}
-        <p
-          className="text-[10px] sm:text-[11px] leading-relaxed"
-          style={{ color: rec ? 'rgba(220,185,110,0.6)' : 'rgba(180,150,80,0.5)', maxWidth: '18ch' }}
-        >
+        <p className="text-[10px] sm:text-[11px] leading-relaxed"
+           style={{ color: rec ? 'rgba(220,185,110,0.6)' : 'rgba(180,150,80,0.5)', maxWidth: '18ch' }}>
           {opt.desc}
         </p>
 
-        {/* Bullets */}
         {opt.bullets && opt.bullets.length > 0 && (
           <div className="flex flex-wrap justify-center gap-x-1.5 gap-y-1 mt-3">
             {opt.bullets.map((b, i) => (
-              <span key={b} className="text-[9px] uppercase tracking-wide"
-                    style={{ color: 'rgba(201,168,76,0.45)' }}>
+              <span key={b} className="text-[9px] uppercase tracking-wide" style={{ color: 'rgba(201,168,76,0.45)' }}>
                 {i > 0 && <span className="mr-1.5 opacity-40">·</span>}{b}
               </span>
             ))}
@@ -251,5 +381,14 @@ function OptionCard({ opt, selected, onPick }: { opt: Option; selected: boolean;
         )}
       </div>
     </button>
+  )
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-[10px] tracking-widest uppercase text-gold-600/60 mb-2">{label}</label>
+      {children}
+    </div>
   )
 }

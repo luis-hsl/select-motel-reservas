@@ -11,13 +11,12 @@ import StepTipo from './pages/StepTipo'
 import StepData from './pages/StepData'
 import StepSuite from './pages/StepSuite'
 import StepExtras from './pages/StepExtras'
-import StepDados from './pages/StepDados'
 import StepPagamento from './pages/StepPagamento'
 import { useStore } from './store/useStore'
 
-// O fluxo muda conforme o modo escolhido na step 1 (StepEscolha):
-//   PACOTE:      Escolha → Pacote → Tipo → Data → Suíte → Extras → Dados → Pagamento  (8 steps)
-//   EXPERIÊNCIA: Escolha → Tipo  → Data → Suíte → Cardápio → Dados → Pagamento        (7 steps)
+// Dados coletados inline no StepEscolha — StepDados removido do fluxo.
+//   PACOTE:      Escolha → Pacote → Tipo → Data → Suíte → Extras → Pagamento  (7 steps)
+//   EXPERIÊNCIA: Escolha → Tipo  → Data → Suíte → Extras → Pagamento          (6 steps)
 const STEPS_PACKAGE: Record<number, React.ComponentType> = {
   1: StepEscolha,
   2: StepPacote,
@@ -25,8 +24,7 @@ const STEPS_PACKAGE: Record<number, React.ComponentType> = {
   4: StepData,
   5: StepSuite,
   6: StepExtras,
-  7: StepDados,
-  8: StepPagamento,
+  7: StepPagamento,
 }
 
 const STEPS_EXPERIENCE: Record<number, React.ComponentType> = {
@@ -35,8 +33,7 @@ const STEPS_EXPERIENCE: Record<number, React.ComponentType> = {
   3: StepData,
   4: StepSuite,
   5: StepExtras,
-  6: StepDados,
-  7: StepPagamento,
+  6: StepPagamento,
 }
 
 export default function App() {
