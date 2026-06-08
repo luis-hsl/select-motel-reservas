@@ -71,7 +71,6 @@ export default function StepEscolha() {
   /* form fields */
   const [name,             setName]             = useState('')
   const [phone,            setPhone]            = useState('')
-  const [email,            setEmail]            = useState('')
   const [taxId,            setTaxId]            = useState('')
   const [obs,              setObs]              = useState('')
   const [acceptedTerms,    setAcceptedTerms]    = useState(false)
@@ -86,7 +85,7 @@ export default function StepEscolha() {
   const cpfValid = isValidCPF(rawCPF)
   const cpfError = rawCPF.length === 11 && !cpfValid
   const canContinue = !!picked && name.trim() && rawPhone.length >= 10 &&
-                      email.includes('@') && cpfValid && acceptedTerms
+                      cpfValid && acceptedTerms
 
   /* show form with slight delay so card selection animation completes */
   useEffect(() => {
@@ -116,7 +115,7 @@ export default function StepEscolha() {
   function advance() {
     if (!canContinue || !picked) return
     setMode(picked)
-    setCustomer(name.trim(), phone.trim(), email.trim(), rawCPF)
+    setCustomer(name.trim(), phone.trim(), '', rawCPF)
     setObservations(obs.trim())
     setConsentAt(new Date().toISOString())
 
@@ -126,7 +125,7 @@ export default function StepEscolha() {
       gtag('event', 'conversion', {
         send_to: 'AW-18204610844/RO0FCNWRkrgcEJyi0ehD',
         value: 1.0, currency: 'BRL',
-        transaction_id: email.trim().toLowerCase(),
+
       })
     }
     metaEvents.lead()
@@ -135,7 +134,7 @@ export default function StepEscolha() {
     supabase.rpc('insert_lead', {
       p_name:         name.trim(),
       p_phone:        phone.trim(),
-      p_email:        email.trim(),
+      p_email:        '',
       p_package_id:   pkg?.id ?? null,
       p_type:         type ?? null,
       p_suite_id:     suite?.id ?? null,
@@ -207,23 +206,14 @@ export default function StepEscolha() {
               />
             </Field>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="WhatsApp">
-                <input
-                  type="tel" inputMode="numeric" value={phone}
-                  onChange={e => setPhone(maskPhone(e.target.value))}
-                  placeholder="(00) 00000-0000"
-                  className="w-full bg-black/60 border border-gold-900/40 rounded-lg px-4 py-3 text-sm text-gold-200 placeholder-gold-900/50 outline-none focus:border-gold-600/60 transition-colors"
-                />
-              </Field>
-              <Field label="E-mail">
-                <input
-                  type="email" value={email} onChange={e => setEmail(e.target.value)}
-                  placeholder="seu@email.com"
-                  className="w-full bg-black/60 border border-gold-900/40 rounded-lg px-4 py-3 text-sm text-gold-200 placeholder-gold-900/50 outline-none focus:border-gold-600/60 transition-colors"
-                />
-              </Field>
-            </div>
+            <Field label="WhatsApp">
+              <input
+                type="tel" inputMode="numeric" value={phone}
+                onChange={e => setPhone(maskPhone(e.target.value))}
+                placeholder="(00) 00000-0000"
+                className="w-full bg-black/60 border border-gold-900/40 rounded-lg px-4 py-3 text-sm text-gold-200 placeholder-gold-900/50 outline-none focus:border-gold-600/60 transition-colors"
+              />
+            </Field>
 
             <Field label="CPF">
               <input
