@@ -157,13 +157,32 @@ export default function StepBebida() {
                   {opt.label.toUpperCase()}
                 </h2>
                 {isSingle && (
-                  <p className="text-white/50 text-xs tracking-wide">{opt.sub}</p>
+                  <p className="text-white/70 text-xs tracking-wide">{opt.sub}</p>
                 )}
               </div>
             </button>
           )
         })}
       </div>
+
+      {/* Nota Bronze: 2 drinques */}
+      {isSingle && (
+        <div
+          className="mt-3 flex items-start gap-2.5 px-4 py-3 rounded-xl max-w-xs"
+          style={{
+            background: 'rgba(201,168,76,0.06)',
+            border: '1px solid rgba(201,168,76,0.22)',
+          }}
+        >
+          <svg className="w-3.5 h-3.5 shrink-0 mt-[2px]" viewBox="0 0 14 14" fill="none" style={{ color: 'rgba(201,168,76,0.7)' }}>
+            <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1" />
+            <path d="M4.5 7l2 2 3-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <p className="text-xs leading-relaxed" style={{ color: 'rgba(220,185,110,0.85)' }}>
+            São <strong className="font-semibold">2 drinques</strong> incluídos — um para cada um do casal.
+          </p>
+        </div>
+      )}
 
       <div className="mt-8">
         <button
