@@ -2,19 +2,14 @@ import { useState } from 'react'
 import { useStore } from '../store/useStore'
 import type { ReservationMode } from '../types'
 
-/**
- * StepEscolha — direção editorial luxury (referência: revistas de hotelaria
- * tipo Cereal, Monocle). Cormorant italic dominante, dingbats discretos,
- * cards horizontais compactos no mobile (~155px de altura cada).
- */
-
 type Option = {
-  id:           ReservationMode
-  numeral:      string   // 'I' / 'II' — numeral romano editorial
-  label:        string   // 'pacote' (lowercase + serif italic)
-  whisper:      string   // tagline curtíssima — uppercase tracking generoso
-  hook:         string   // 1 linha de hook (aparece só ≥sm)
-  recommended?: boolean  // pacote = recommended (em vez de badge agressivo)
+  id:          ReservationMode
+  numeral:     string
+  label:       string
+  whisper:     string
+  desc:        string
+  bullets:     string[]
+  recommended?: boolean
 }
 
 const OPTIONS: Option[] = [
@@ -22,16 +17,18 @@ const OPTIONS: Option[] = [
     id:          'package',
     numeral:     'I',
     label:       'pacote',
-    whisper:     'experiências prontas',
-    hook:        'Bronze, Prata ou Ouro — combinação fechada.',
+    whisper:     'experiência completa',
+    desc:        'Tudo incluso, sem escolher peça a peça.',
+    bullets:     ['Gastronomia', 'Bebida', 'Fondue', 'Decoração'],
     recommended: true,
   },
   {
     id:      'experience',
     numeral: 'II',
     label:   'monte sua experiência',
-    whisper: 'sob medida',
-    hook:    'Selecione cada detalhe da sua noite.',
+    whisper: 'do seu jeito',
+    desc:    'Você decide o que entra. Pode ser só a suíte decorada — ou adicionar fondue, bebida e refeição conforme quiser.',
+    bullets:  [],
   },
 ]
 
@@ -51,24 +48,22 @@ export default function StepEscolha() {
 
   return (
     <div className="relative">
-      {/* ─── Ornamento de topo ─── */}
+      {/* Ornamento de topo */}
       <div className="flex items-center gap-3 mb-6 sm:mb-8">
         <span className="block h-px flex-1 bg-gradient-to-r from-transparent via-gold-700/40 to-gold-700/40" />
-        <span className="text-[9px] tracking-[0.5em] uppercase text-gold-600/60">
-          Reserva
-        </span>
+        <span className="text-[9px] tracking-[0.5em] uppercase text-gold-600/60">Reserva</span>
         <span className="block h-px flex-1 bg-gradient-to-l from-transparent via-gold-700/40 to-gold-700/40" />
       </div>
 
-      {/* ─── Título editorial ─── */}
+      {/* Título */}
       <h1 className="text-center mb-1 leading-none">
         <span className="block font-serif italic font-light text-gold-200/90"
               style={{ fontSize: 'clamp(2.4rem, 7vw, 3.6rem)', letterSpacing: '-0.02em' }}>
-          escolha
+          como você
         </span>
         <span className="block font-serif italic gold-gradient"
               style={{ fontSize: 'clamp(2.4rem, 7vw, 3.6rem)', letterSpacing: '-0.02em' }}>
-          seu caminho
+          prefere reservar?
         </span>
       </h1>
 
@@ -76,7 +71,7 @@ export default function StepEscolha() {
         — duas formas de viver a noite —
       </p>
 
-      {/* ─── Cards (mobile: horizontais lado a lado / desktop: maiores) ─── */}
+      {/* Cards */}
       <div className="grid grid-cols-2 gap-3 sm:gap-5 max-w-3xl mx-auto">
         {OPTIONS.map((opt) => (
           <OptionCard
@@ -88,7 +83,7 @@ export default function StepEscolha() {
         ))}
       </div>
 
-      {/* ─── Botão continuar ─── */}
+      {/* Botão continuar */}
       <div className="max-w-3xl mx-auto mt-6 sm:mt-8">
         <button
           onClick={advance}
@@ -116,10 +111,9 @@ function OptionCard({ opt, selected, onPick }: { opt: Option; selected: boolean;
     <button
       type="button"
       onClick={onPick}
-      aria-label={`Escolher ${opt.label}`}
       aria-pressed={selected}
       className={[
-        'group relative overflow-hidden rounded-md border outline-none',
+        'group relative overflow-hidden rounded-xl border outline-none text-left',
         'transition-all duration-500 active:scale-[0.97] focus-visible:ring-1 focus-visible:ring-gold-500',
         selected
           ? 'border-gold-400 shadow-lg shadow-gold-500/25'
@@ -129,16 +123,16 @@ function OptionCard({ opt, selected, onPick }: { opt: Option; selected: boolean;
       ].join(' ')}
       style={{
         background: recommended
-          // pacote: fundo levemente mais luminoso (intenção: chamar atenção sem badge)
           ? 'radial-gradient(ellipse at 50% 0%, rgba(201,168,76,0.16) 0%, transparent 65%), linear-gradient(180deg, #0d0a05 0%, #060403 100%)'
           : 'radial-gradient(ellipse at 50% 0%, rgba(154,125,10,0.10) 0%, transparent 65%), linear-gradient(180deg, #0a0805 0%, #050302 100%)',
-        boxShadow: recommended
-          ? 'inset 0 1px 0 rgba(252,211,77,0.10), 0 1px 30px rgba(201,168,76,0.07)'
-          : 'inset 0 1px 0 rgba(255,255,255,0.04)',
-        minHeight: '155px',
+        boxShadow: selected
+          ? `0 0 0 2px rgba(200,160,50,0.35), 0 4px 30px rgba(201,168,76,0.18), inset 0 1px 0 rgba(252,211,77,0.12)`
+          : recommended
+            ? 'inset 0 1px 0 rgba(252,211,77,0.10), 0 1px 30px rgba(201,168,76,0.07)'
+            : 'inset 0 1px 0 rgba(255,255,255,0.04)',
       }}
     >
-      {/* Borda superior cintilante — pacote tem brilho mais forte */}
+      {/* Borda superior cintilante */}
       <span
         aria-hidden
         className="absolute top-0 left-1/2 -translate-x-1/2 h-px"
@@ -150,7 +144,7 @@ function OptionCard({ opt, selected, onPick }: { opt: Option; selected: boolean;
         }}
       />
 
-      {/* "Recomendado" — substitui o badge — apenas um asterisco/dingbat discreto */}
+      {/* Dingbat recomendado */}
       {recommended && (
         <span
           aria-hidden
@@ -161,9 +155,19 @@ function OptionCard({ opt, selected, onPick }: { opt: Option; selected: boolean;
         </span>
       )}
 
+      {/* Checkmark quando selecionado */}
+      {selected && (
+        <span className="absolute top-2.5 left-2.5 w-4 h-4 rounded-full flex items-center justify-center z-10"
+              style={{ background: '#c9a84c' }}>
+          <svg className="w-2.5 h-2.5 text-black" fill="none" viewBox="0 0 12 12">
+            <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+      )}
+
       {/* Conteúdo */}
-      <div className="relative flex flex-col items-center justify-center text-center h-full px-3 py-5 sm:py-7">
-        {/* Numeral romano — element editorial */}
+      <div className="relative flex flex-col items-center text-center h-full px-3 py-5 sm:py-7">
+        {/* Numeral romano */}
         <span
           className="block font-serif font-light leading-none mb-1.5"
           style={{
@@ -175,7 +179,7 @@ function OptionCard({ opt, selected, onPick }: { opt: Option; selected: boolean;
           {opt.numeral}.
         </span>
 
-        {/* Divisor fino */}
+        {/* Divisor */}
         <span
           aria-hidden
           className="block h-px w-6 mb-3"
@@ -186,16 +190,11 @@ function OptionCard({ opt, selected, onPick }: { opt: Option; selected: boolean;
           }}
         />
 
-        {/* Label — Cormorant italic, lowercase + ponto editorial.
-            Tamanho cai bastante no mobile pra acomodar até 3 palavras
-            (ex: "monte sua experiência") em 2 linhas. */}
+        {/* Label principal */}
         <h2
-          className={[
-            'font-serif italic mb-3',
-            recommended ? 'gold-gradient' : 'text-gold-300/85',
-          ].join(' ')}
+          className={['font-serif italic mb-2', recommended ? 'gold-gradient' : 'text-gold-300/85'].join(' ')}
           style={{
-            fontSize: 'clamp(1.15rem, 4.2vw, 2.4rem)',
+            fontSize: 'clamp(1.05rem, 3.8vw, 2.2rem)',
             letterSpacing: '-0.02em',
             fontWeight: 400,
             lineHeight: '1.05',
@@ -204,41 +203,39 @@ function OptionCard({ opt, selected, onPick }: { opt: Option; selected: boolean;
           {opt.label}<span className="opacity-60">.</span>
         </h2>
 
-        {/* Whisper — uppercase, tracking generoso */}
+        {/* Whisper */}
         <span
-          className="text-[9px] sm:text-[10px] tracking-[0.4em] uppercase"
+          className="text-[9px] sm:text-[10px] tracking-[0.4em] uppercase mb-3"
           style={{ color: recommended ? 'rgba(252,211,77,0.75)' : 'rgba(184,150,12,0.55)' }}
         >
           {opt.whisper}
         </span>
 
-        {/* Hook só em sm+ (mobile economiza espaço) */}
-        <p className="hidden sm:block mt-3 text-[11px] text-gold-300/55 leading-relaxed max-w-[18ch]">
-          {opt.hook}
+        {/* Descrição — visível em todos os tamanhos */}
+        <p className="text-[10px] sm:text-[11px] leading-relaxed max-w-[20ch]"
+           style={{ color: recommended ? 'rgba(220,185,110,0.65)' : 'rgba(180,150,80,0.55)' }}>
+          {opt.desc}
         </p>
 
-        {/* Indicador "→" inferior, aparece no hover */}
-        <span
-          aria-hidden
-          className={[
-            'absolute bottom-2.5 left-1/2 -translate-x-1/2',
-            'text-[10px] tracking-[0.3em] uppercase opacity-0',
-            'transition-all duration-500 group-hover:opacity-100 group-active:opacity-100',
-            'group-hover:translate-y-0 translate-y-1',
-          ].join(' ')}
-          style={{ color: recommended ? '#fcd34d' : '#C9A84C' }}
-        >
-          escolher →
-        </span>
+        {/* Bullets do pacote (Ouro/Prata/Bronze lista de inclusos) */}
+        {opt.bullets.length > 0 && (
+          <div className="flex flex-wrap justify-center gap-x-2 gap-y-1 mt-3">
+            {opt.bullets.map(b => (
+              <span key={b}
+                    className="text-[9px] tracking-wide uppercase"
+                    style={{ color: 'rgba(201,168,76,0.5)' }}>
+                · {b}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Glow inferior sutil (pacote: mais visível) */}
+      {/* Glow inferior */}
       <span
         aria-hidden
         className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-3/4 h-12 blur-2xl"
-        style={{
-          background: recommended ? 'rgba(201,168,76,0.35)' : 'rgba(154,125,10,0.18)',
-        }}
+        style={{ background: recommended ? 'rgba(201,168,76,0.35)' : 'rgba(154,125,10,0.18)' }}
       />
     </button>
   )
