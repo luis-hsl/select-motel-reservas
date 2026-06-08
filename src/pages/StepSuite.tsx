@@ -34,14 +34,18 @@ const GALLERY: Record<string, string[]> = {
 }
 
 export default function StepSuite() {
-  const { package: pkg, suite: selected, setSuite, nextStep, prevStep, checkIn, checkOut } = useStore()
+  const { mode, package: pkg, suite: selected, setSuite, nextStep, prevStep, checkIn, checkOut } = useStore()
   const [loading, setLoading] = useState(true)
   const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set())
   const [galleryFor, setGalleryFor] = useState<Suite | null>(null)
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({})
   const [videoUrls, setVideoUrls] = useState<Record<string, string>>({})
 
-  const packageSuites = SUITES.filter(s => pkg && s.packageIds.includes(pkg.id as never))
+  // Modo pacote: só suítes daquele pacote.
+  // Modo experiência: todas as suítes ativas (cliente escolhe livre).
+  const packageSuites = mode === 'experience' || !pkg
+    ? SUITES
+    : SUITES.filter(s => s.packageIds.includes(pkg.id as never))
 
   const slotLabel = useMemo(() => {
     const cin = checkIn
@@ -133,8 +137,9 @@ export default function StepSuite() {
         <span className="gold-gradient font-semibold italic pr-1 lg:pr-3">você prefere?</span>
       </h1>
       <p className="text-gold-700/70 text-sm mb-6 sm:mb-8">
-        Suítes disponíveis para o{' '}
-        <strong className="text-gold-500 font-medium">{pkg?.label}</strong>.
+        {mode === 'experience' || !pkg
+          ? <>Escolha a suíte disponível para o seu horário.</>
+          : <>Suítes disponíveis para o <strong className="text-gold-500 font-medium">{pkg.label}</strong>.</>}
       </p>
 
       {loading ? (
@@ -145,7 +150,11 @@ export default function StepSuite() {
         </div>
       ) : allOccupied ? (
         <div className="rounded-xl border border-red-900/40 bg-red-900/10 px-5 py-4 text-center">
-          <p className="text-sm text-red-400/80 mb-1">Todas as suítes do {pkg?.label} estão ocupadas para este período.</p>
+          <p className="text-sm text-red-400/80 mb-1">
+            {mode === 'experience' || !pkg
+              ? 'Todas as suítes estão ocupadas para este período.'
+              : `Todas as suítes do ${pkg.label} estão ocupadas para este período.`}
+          </p>
           <p className="text-xs text-gold-800/50">Por favor, escolha outro horário ou data.</p>
         </div>
       ) : (

@@ -58,9 +58,10 @@ const TIPOS = [
 ] as const
 
 export default function StepTipo() {
-  const { package: pkg, type, setType, nextStep, prevStep } = useStore()
+  const { mode, package: pkg, type, setType, nextStep, prevStep } = useStore()
 
-  if (!pkg) return null
+  // Sem early-return: no modo experiência o cliente chega aqui sem ter escolhido
+  // um pacote (porque pula a step de pacote).
 
   function choose(t: 'period' | 'overnight') {
     setType(t)
@@ -81,8 +82,9 @@ export default function StepTipo() {
         <span className="gold-gradient font-semibold italic pr-1 lg:pr-3">pernoite?</span>
       </h1>
       <p className="text-gold-700/70 text-sm mb-6 sm:mb-8">
-        Escolha a duração da sua experiência no{' '}
-        <strong className="text-gold-500 font-medium">{pkg.label}</strong>.
+        {mode === 'experience' || !pkg
+          ? <>Escolha a duração da sua estadia.</>
+          : <>Escolha a duração da sua experiência no <strong className="text-gold-500 font-medium">{pkg.label}</strong>.</>}
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl xl:max-w-4xl">
