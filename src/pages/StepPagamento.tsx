@@ -380,6 +380,15 @@ export default function StepPagamento() {
             </div>
             {checkIn && <p className="text-[11px] text-gold-600/60">Check-in: {fmtDt(checkIn)}</p>}
             {checkout && <p className="text-[11px] text-gold-600/60">Check-out: {fmtDt(checkout)}</p>}
+            {type === 'period' && (
+              <span className="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded-full text-[10px]"
+                    style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.2)', color: 'rgba(201,168,76,0.6)' }}>
+                <svg className="w-2.5 h-2.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2">
+                  <circle cx="6" cy="6" r="5" /><path d="M6 3.5v2.8l1.6 1" strokeLinecap="round" />
+                </svg>
+                2 horas de permanência
+              </span>
+            )}
             <div className="border-t border-gold-900/40 mt-2.5 pt-2.5">
               <div className="flex items-baseline justify-between mb-1.5">
                 <span className="text-[9px] tracking-widest uppercase text-gold-600/60">Total</span>
@@ -409,6 +418,17 @@ export default function StepPagamento() {
               <SummaryRow label="Modalidade" value={type === 'period' ? 'Período' : 'Pernoite'} />
               <SummaryRow label="Check-in" value={checkIn ? fmtDt(checkIn) : '—'} />
               <SummaryRow label="Check-out" value={checkout ? fmtDt(checkout) : '—'} highlight />
+              {type === 'period' && (
+                <div className="flex justify-end -mt-1">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px]"
+                        style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.2)', color: 'rgba(201,168,76,0.6)' }}>
+                    <svg className="w-2.5 h-2.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2">
+                      <circle cx="6" cy="6" r="5" /><path d="M6 3.5v2.8l1.6 1" strokeLinecap="round" />
+                    </svg>
+                    2 horas de permanência
+                  </span>
+                </div>
+              )}
 
               {/* Aviso de período — 2 horas */}
               {type === 'period' && checkout && (
