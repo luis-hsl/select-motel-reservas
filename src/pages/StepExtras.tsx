@@ -118,8 +118,16 @@ export default function StepExtras() {
     [selectedItems],
   )
 
-  // Modo pacote: comida + bebida obrigatórios; experiência: sempre pode avançar
-  const canContinue = isPackage ? (!!food && !!drink) : true
+  const decoItems = useMemo(
+    () => grouped.extra.filter(i => i.id.startsWith('extra-deco-')),
+    [grouped.extra],
+  )
+
+  // Modo pacote: comida + bebida obrigatórios
+  // Modo experiência: decoração obrigatória (se existir alguma opção disponível)
+  const canContinue = isPackage
+    ? (!!food && !!drink)
+    : (decoItems.length === 0 || !!selectedDecor)
 
   if (loading) {
     return (
@@ -148,7 +156,7 @@ export default function StepExtras() {
         <p className="text-gold-700/70 text-sm">
           {isPackage
             ? 'Selecione 1 comida e 1 bebida que já vêm no seu pacote.'
-            : 'Cada item soma no valor final. Decoração é opcional.'}
+            : 'Selecione comida, bebida e decoração. Decoração é obrigatória.'}
         </p>
       </header>
 
@@ -191,22 +199,14 @@ export default function StepExtras() {
       </Section>
 
       {/* ─── Decoração — só no modo experiência (pacote já vem com decoração inclusa) ─── */}
-      {!isPackage && grouped.extra.length > 0 && (
+      {!isPackage && decoItems.length > 0 && (
         <Section
           title="Decoração"
-          hint="opcional"
+          hint="obrigatória"
           kicker="03"
         >
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-            {/* Opção "sem decoração" — radio implícito */}
-            <DecorCard
-              label="Sem decoração"
-              tier=""
-              price={0}
-              selected={!selectedDecor}
-              onClick={() => pickDecor(null)}
-            />
-            {grouped.extra.filter(i => i.id.startsWith('extra-deco-')).map((deco) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+            {decoItems.map((deco) => (
               <DecorCard
                 key={deco.id}
                 label={deco.label.replace('Decoração ', '')}

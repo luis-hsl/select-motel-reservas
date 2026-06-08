@@ -40,6 +40,7 @@ export default function StepSuite() {
   const [galleryFor, setGalleryFor] = useState<Suite | null>(null)
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({})
   const [videoUrls, setVideoUrls] = useState<Record<string, string>>({})
+  const [alacarteMap, setAlacarteMap] = useState<Record<string, { period: number | null; overnight: number | null }>>({})
 
   // Modo pacote: só suítes daquele pacote.
   // Modo experiência: todas as suítes ativas (cliente escolhe livre).
@@ -58,19 +59,26 @@ export default function StepSuite() {
     const promises: PromiseLike<unknown>[] = []
 
     promises.push(
-      supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
         .from('suites')
-        .select('id, photo_url, video_url')
-        .then(({ data }) => {
+        .select('id, photo_url, video_url, price_period_alacarte, price_overnight_alacarte')
+        .then(({ data }: { data: { id: string; photo_url: string | null; video_url: string | null; price_period_alacarte: number | null; price_overnight_alacarte: number | null }[] | null }) => {
           if (data) {
             const urls: Record<string, string> = {}
             const vids: Record<string, string> = {}
+            const alacarte: Record<string, { period: number | null; overnight: number | null }> = {}
             data.forEach(s => {
               if (s.photo_url) urls[s.id] = s.photo_url
               if (s.video_url) vids[s.id] = s.video_url
+              alacarte[s.id] = {
+                period:    s.price_period_alacarte    ?? null,
+                overnight: s.price_overnight_alacarte ?? null,
+              }
             })
             setPhotoUrls(urls)
             setVideoUrls(vids)
+            setAlacarteMap(alacarte)
           }
         })
     )
@@ -107,7 +115,11 @@ export default function StepSuite() {
   const allOccupied = packageSuites.length > 0 && packageSuites.every(s => occupiedIds.has(s.id))
 
   function choose(suite: Suite) {
-    setSuite(suite)
+    const prices = alacarteMap[suite.id]
+    const suiteWithPrices: Suite = prices
+      ? { ...suite, price_period_alacarte: prices.period, price_overnight_alacarte: prices.overnight }
+      : suite
+    setSuite(suiteWithPrices)
 
     // Google Ads — conversion "Selecionou suíte"
     const gtag = (window as unknown as { gtag?: (...a: unknown[]) => void }).gtag
