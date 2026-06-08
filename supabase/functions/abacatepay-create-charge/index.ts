@@ -41,14 +41,14 @@ Deno.serve(async (req)=>{
     const supabase = createClient(Deno.env.get('SUPABASE_URL'), Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'));
 
     // -------- Rate limit (anti-spam) --------
-    // Por IP: 10 charges/min — protege contra burst sintético
-    // Por email: 5 charges/min — protege a chave AbacatePay e o leitor de fraude
+    // Aumentado pra 5000/min — basicamente sem limite prático.
+    // Mantemos a estrutura caso seja útil revisitar depois.
     const ip = (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'unknown';
     const emailKey = (customerEmail ?? '').trim().toLowerCase();
 
     const limitChecks = [
-      { bucket: `create-charge:ip:${ip}`,         max: 10 },
-      { bucket: `create-charge:email:${emailKey}`, max: 5  },
+      { bucket: `create-charge:ip:${ip}`,         max: 5000 },
+      { bucket: `create-charge:email:${emailKey}`, max: 5000 },
     ];
     for (const { bucket, max } of limitChecks) {
       if (!bucket.endsWith(':')) {
