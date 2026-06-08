@@ -7,6 +7,19 @@ function fmtBRL(v: number): string {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
+// Lógica original dos pacotes — quais opções cada um permite.
+// Pacote = "experiência pronta", então cada um tem combinações fechadas.
+const PACKAGE_FOOD_IDS: Record<string, string[]> = {
+  ouro:   ['food-jantar', 'food-sushi'],
+  prata:  ['food-jantar', 'food-pizza'],
+  bronze: ['food-pizza'],
+}
+const PACKAGE_DRINK_IDS: Record<string, string[]> = {
+  ouro:   ['drink-vinho', 'drink-frisante'],
+  prata:  ['drink-vinho', 'drink-frisante'],
+  bronze: ['drink-drinque'],
+}
+
 /**
  * StepExtras — Step consolidada de Comida + Bebida + Decoração.
  *
@@ -23,7 +36,7 @@ function fmtBRL(v: number): string {
  *   - Decoração: radio entre Bronze/Prata/Ouro ou "sem decoração" (opcional)
  */
 export default function StepExtras() {
-  const { mode, selectedItems, toggleItem, clearItems, setFood, setDrink, food, drink, nextStep, prevStep } = useStore()
+  const { mode, package: pkg, selectedItems, toggleItem, clearItems, setFood, setDrink, food, drink, nextStep, prevStep } = useStore()
   const [items, setItems] = useState<ExperienceItem[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -50,8 +63,17 @@ export default function StepExtras() {
   const grouped = useMemo(() => {
     const acc: Record<ItemCategory, ExperienceItem[]> = { food: [], drink: [], extra: [] }
     items.forEach((it) => { acc[it.category].push(it) })
+
+    // No modo pacote: restringe food/drink às opções permitidas pelo pacote
+    // (mesma lógica do StepRefeicao/StepBebida antigos).
+    if (isPackage && pkg?.id) {
+      const allowedFood  = PACKAGE_FOOD_IDS[pkg.id]  ?? null
+      const allowedDrink = PACKAGE_DRINK_IDS[pkg.id] ?? null
+      if (allowedFood)  acc.food  = acc.food.filter(i  => allowedFood.includes(i.id))
+      if (allowedDrink) acc.drink = acc.drink.filter(i => allowedDrink.includes(i.id))
+    }
     return acc
-  }, [items])
+  }, [items, isPackage, pkg])
 
   function isSelected(item: ExperienceItem): boolean {
     if (isPackage) {

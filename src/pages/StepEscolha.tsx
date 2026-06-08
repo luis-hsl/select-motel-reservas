@@ -22,7 +22,7 @@ const OPTIONS: Option[] = [
     id:          'package',
     numeral:     'I',
     label:       'pacote',
-    whisper:     'tudo pronto',
+    whisper:     'experiências prontas',
     hook:        'Bronze, Prata ou Ouro — combinação fechada.',
     recommended: true,
   },
