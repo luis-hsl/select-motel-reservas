@@ -30,6 +30,7 @@ export type Database = {
           observations: string | null
           status: string
           created_at: string
+          whatsapp_consent: boolean
         }
         Insert: {
           id?: string
@@ -46,6 +47,7 @@ export type Database = {
           observations?: string | null
           status?: string
           created_at?: string
+          whatsapp_consent?: boolean
         }
         Update: {
           id?: string
@@ -62,6 +64,7 @@ export type Database = {
           observations?: string | null
           status?: string
           created_at?: string
+          whatsapp_consent?: boolean
         }
         Relationships: []
       }
@@ -253,6 +256,7 @@ export type Database = {
           utm_source: string | null; utm_medium: string | null
           utm_campaign: string | null; utm_content: string | null
           referrer: string | null; device: string | null
+          whatsapp_consent: boolean
         }[]
       }
       update_lead_status: {
@@ -266,6 +270,7 @@ export type Database = {
           p_check_in: string | null; p_drink: string | null; p_food: string | null
           p_total_amount: number | null; p_observations: string | null
           p_session_token?: string | null
+          p_whatsapp_consent?: boolean
         }
         Returns: undefined
       }

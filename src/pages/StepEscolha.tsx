@@ -69,13 +69,14 @@ export default function StepEscolha() {
   const [formVisible, setFormVisible] = useState(false)
 
   /* form fields */
-  const [name,          setName]          = useState('')
-  const [phone,         setPhone]         = useState('')
-  const [email,         setEmail]         = useState('')
-  const [taxId,         setTaxId]         = useState('')
-  const [obs,           setObs]           = useState('')
-  const [acceptedTerms, setAcceptedTerms] = useState(false)
-  const [legalOpen,     setLegalOpen]     = useState<LegalKind | null>(null)
+  const [name,             setName]             = useState('')
+  const [phone,            setPhone]            = useState('')
+  const [email,            setEmail]            = useState('')
+  const [taxId,            setTaxId]            = useState('')
+  const [obs,              setObs]              = useState('')
+  const [acceptedTerms,    setAcceptedTerms]    = useState(false)
+  const [whatsappConsent,  setWhatsappConsent]  = useState(false)
+  const [legalOpen,        setLegalOpen]        = useState<LegalKind | null>(null)
 
   const formRef = useRef<HTMLDivElement>(null)
   const ctaRef  = useRef<HTMLButtonElement>(null)
@@ -142,8 +143,9 @@ export default function StepEscolha() {
       p_drink:        drink ?? null,
       p_food:         food ?? null,
       p_total_amount: totalAmount() || null,
-      p_observations: obs.trim() || null,
-      p_session_token: getSessionToken(),
+      p_observations:    obs.trim() || null,
+      p_session_token:   getSessionToken(),
+      p_whatsapp_consent: whatsappConsent,
     }).then(() => {})
 
     nextStep()
@@ -245,7 +247,7 @@ export default function StepEscolha() {
               />
             </Field>
 
-            {/* LGPD */}
+            {/* LGPD — obrigatório */}
             <label className="flex items-start gap-3 cursor-pointer select-none">
               <input
                 type="checkbox" checked={acceptedTerms}
@@ -264,6 +266,19 @@ export default function StepEscolha() {
                   Política de Privacidade
                 </button>
                 . Autorizo o tratamento dos meus dados para fins da reserva, nos termos da LGPD.
+              </span>
+            </label>
+
+            {/* WhatsApp marketing — opcional */}
+            <label className="flex items-start gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox" checked={whatsappConsent}
+                onChange={e => setWhatsappConsent(e.target.checked)}
+                className="mt-0.5 w-4 h-4 accent-gold-500 cursor-pointer shrink-0"
+              />
+              <span className="text-[11px] text-gold-700/60 leading-relaxed">
+                Aceito receber mensagens no WhatsApp sobre minha reserva e ofertas exclusivas do Select Motel.
+                <span className="ml-1 text-gold-800/50">(opcional)</span>
               </span>
             </label>
           </div>
