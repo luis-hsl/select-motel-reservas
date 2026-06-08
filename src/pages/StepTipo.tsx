@@ -27,6 +27,9 @@ const TIPOS = [
     subtitleColor: 'rgba(230,185,110,0.55)',
     detailColor: 'rgba(200,150,80,0.5)',
     glowBottom: 'rgba(210,90,10,0.35)',
+    // ─ visual do botão "Escolher" igual ao do StepPacote ─
+    accentColor: '#e88840',
+    badgeBg:    'linear-gradient(135deg,#b06020,#f0a850,#a06010)',
   },
   {
     id: 'period' as const,
@@ -54,6 +57,9 @@ const TIPOS = [
     subtitleColor: 'rgba(215,175,100,0.55)',
     detailColor: 'rgba(190,145,70,0.5)',
     glowBottom: 'rgba(180,120,30,0.2)',
+    // ─ visual do botão "Escolher" igual ao do StepPacote ─
+    accentColor: '#d4a020',
+    badgeBg:    'linear-gradient(135deg,#9a7828,#f5d87a,#8a6010)',
   },
 ] as const
 
@@ -90,10 +96,13 @@ export default function StepTipo() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl xl:max-w-4xl">
         {TIPOS.map((opt) => {
           const isSel = type === opt.id
+          // No mobile mostra Período primeiro (foco em rotativo 2h), depois Pernoite.
+          // No desktop mantém a ordem do array (Pernoite, Período).
+          const mobileOrder = opt.id === 'period' ? 'order-1' : 'order-2'
           return (
             <div
               key={opt.id}
-              className="relative text-left rounded-2xl overflow-hidden transition-all duration-300 flex flex-col"
+              className={`${mobileOrder} sm:order-none relative text-left rounded-2xl overflow-hidden transition-all duration-300 flex flex-col`}
               style={{
                 background: opt.bg,
                 border: `1px solid ${isSel ? opt.ring : opt.border}`,
@@ -156,21 +165,17 @@ export default function StepTipo() {
               >
                 <button
                   onClick={() => choose(opt.id)}
-                  className="w-full py-3 rounded-xl text-sm font-bold tracking-wide transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2"
-                  style={isSel ? {
-                    background: opt.divider,
-                    color: '#000',
-                    boxShadow: `0 0 18px ${opt.divider}90`,
-                  } : {
-                    background: `linear-gradient(135deg, ${opt.divider}ee, ${opt.divider}bb)`,
-                    border: `1px solid ${opt.divider}`,
-                    color: 'rgba(255,245,215,0.95)',
-                    boxShadow: `0 0 22px ${opt.divider}55, inset 0 1px 0 rgba(255,255,255,0.08)`,
+                  className="w-full flex items-center justify-center gap-1.5 py-3 rounded-lg text-xs tracking-wide uppercase font-bold text-black transition-all duration-200 hover:opacity-90 active:scale-95"
+                  style={{
+                    background: opt.badgeBg,
+                    boxShadow: isSel
+                      ? `0 0 18px ${opt.accentColor}90`
+                      : `0 0 22px ${opt.accentColor}55, inset 0 1px 0 rgba(255,255,255,0.15)`,
                   }}
                 >
                   {isSel
                     ? <><span>✓</span> Escolhido</>
-                    : <>Escolher <span className="text-base leading-none">→</span></>
+                    : <>Escolher <span className="text-sm leading-none">→</span></>
                   }
                 </button>
               </div>

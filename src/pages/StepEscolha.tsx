@@ -29,7 +29,7 @@ const OPTIONS: Option[] = [
   {
     id:      'experience',
     numeral: 'II',
-    label:   'experiência',
+    label:   'monte sua experiência',
     whisper: 'a la carte',
     hook:    'Selecione cada detalhe da sua noite.',
   },
@@ -186,16 +186,19 @@ function OptionCard({ opt, selected, onPick }: { opt: Option; selected: boolean;
           }}
         />
 
-        {/* Label — Cormorant italic, lowercase + ponto editorial */}
+        {/* Label — Cormorant italic, lowercase + ponto editorial.
+            Tamanho cai bastante no mobile pra acomodar até 3 palavras
+            (ex: "monte sua experiência") em 2 linhas. */}
         <h2
           className={[
-            'font-serif italic leading-none mb-3',
+            'font-serif italic mb-3',
             recommended ? 'gold-gradient' : 'text-gold-300/85',
           ].join(' ')}
           style={{
-            fontSize: 'clamp(1.6rem, 5.5vw, 2.5rem)',
+            fontSize: 'clamp(1.15rem, 4.2vw, 2.4rem)',
             letterSpacing: '-0.02em',
             fontWeight: 400,
+            lineHeight: '1.05',
           }}
         >
           {opt.label}<span className="opacity-60">.</span>
