@@ -4,31 +4,27 @@ import type { ReservationMode } from '../types'
 
 type Option = {
   id:          ReservationMode
-  numeral:     string
   label:       string
-  whisper:     string
+  sublabel:    string
   desc:        string
-  bullets:     string[]
+  bullets?:    string[]
   recommended?: boolean
 }
 
 const OPTIONS: Option[] = [
   {
     id:          'package',
-    numeral:     'I',
     label:       'pacote',
-    whisper:     'experiência completa',
-    desc:        'Tudo incluso, sem escolher peça a peça.',
+    sublabel:    'experiência completa',
+    desc:        'Tudo incluso num único pacote.',
     bullets:     ['Gastronomia', 'Bebida', 'Fondue', 'Decoração'],
     recommended: true,
   },
   {
     id:      'experience',
-    numeral: 'II',
-    label:   'monte sua experiência',
-    whisper: 'do seu jeito',
-    desc:    'Você decide o que entra. Pode ser só a suíte decorada — ou adicionar fondue, bebida e refeição conforme quiser.',
-    bullets:  [],
+    label:   'monte sua\nexperiência',
+    sublabel: 'do seu jeito',
+    desc:    'Só a suíte decorada, ou adicione fondue, bebida e refeição como quiser.',
   },
 ]
 
@@ -48,28 +44,22 @@ export default function StepEscolha() {
 
   return (
     <div className="relative">
-      {/* Ornamento de topo */}
-      <div className="flex items-center gap-3 mb-6 sm:mb-8">
-        <span className="block h-px flex-1 bg-gradient-to-r from-transparent via-gold-700/40 to-gold-700/40" />
-        <span className="text-[9px] tracking-[0.5em] uppercase text-gold-600/60">Reserva</span>
-        <span className="block h-px flex-1 bg-gradient-to-l from-transparent via-gold-700/40 to-gold-700/40" />
-      </div>
-
       {/* Título */}
-      <h1 className="text-center mb-1 leading-none">
-        <span className="block font-serif italic font-light text-gold-200/90"
-              style={{ fontSize: 'clamp(2.4rem, 7vw, 3.6rem)', letterSpacing: '-0.02em' }}>
-          como você
-        </span>
-        <span className="block font-serif italic gold-gradient"
-              style={{ fontSize: 'clamp(2.4rem, 7vw, 3.6rem)', letterSpacing: '-0.02em' }}>
-          prefere reservar?
-        </span>
-      </h1>
-
-      <p className="text-center text-[10px] tracking-[0.4em] uppercase text-gold-700/50 mt-4 mb-7 sm:mb-10">
-        — duas formas de viver a noite —
-      </p>
+      <div className="text-center mb-8 sm:mb-12">
+        <h1 className="leading-none mb-3">
+          <span className="block font-serif italic font-light text-gold-200/90"
+                style={{ fontSize: 'clamp(2.2rem, 6.5vw, 3.4rem)', letterSpacing: '-0.02em' }}>
+            como você
+          </span>
+          <span className="block font-serif italic gold-gradient"
+                style={{ fontSize: 'clamp(2.2rem, 6.5vw, 3.4rem)', letterSpacing: '-0.02em' }}>
+            prefere reservar?
+          </span>
+        </h1>
+        <p className="text-[10px] tracking-[0.45em] uppercase text-gold-700/45 mt-4">
+          duas formas de viver a noite
+        </p>
+      </div>
 
       {/* Cards */}
       <div className="grid grid-cols-2 gap-3 sm:gap-5 max-w-3xl mx-auto">
@@ -83,7 +73,7 @@ export default function StepEscolha() {
         ))}
       </div>
 
-      {/* Botão continuar */}
+      {/* CTA */}
       <div className="max-w-3xl mx-auto mt-6 sm:mt-8">
         <button
           onClick={advance}
@@ -96,8 +86,8 @@ export default function StepEscolha() {
           ].join(' ')}
         >
           {picked
-            ? <>Continuar com {picked === 'package' ? 'pacote' : 'experiência'} <span>→</span></>
-            : 'Escolha uma opção acima'}
+            ? <>Continuar com {picked === 'package' ? 'pacote' : 'experiência'} →</>
+            : 'Escolha uma opção'}
         </button>
       </div>
     </div>
@@ -105,138 +95,161 @@ export default function StepEscolha() {
 }
 
 function OptionCard({ opt, selected, onPick }: { opt: Option; selected: boolean; onPick: () => void }) {
-  const recommended = !!opt.recommended
+  const rec = !!opt.recommended
+
+  /* ── Camadas de gradiente para o efeito 3D/iluminação ── */
+  const bgBase = rec
+    ? [
+        'radial-gradient(ellipse at 50% -10%, rgba(252,211,77,0.22) 0%, transparent 55%)',
+        'radial-gradient(ellipse at 80% 90%, rgba(201,168,76,0.10) 0%, transparent 50%)',
+        'radial-gradient(ellipse at 20% 80%, rgba(160,120,30,0.08) 0%, transparent 45%)',
+        'linear-gradient(180deg, #100c04 0%, #060402 100%)',
+      ].join(', ')
+    : [
+        'radial-gradient(ellipse at 50% -10%, rgba(184,150,40,0.14) 0%, transparent 55%)',
+        'radial-gradient(ellipse at 75% 85%, rgba(140,110,20,0.07) 0%, transparent 45%)',
+        'linear-gradient(180deg, #0b0805 0%, #040302 100%)',
+      ].join(', ')
+
+  const borderColor = selected
+    ? 'rgba(220,175,60,0.9)'
+    : rec
+      ? 'rgba(201,168,76,0.45)'
+      : 'rgba(140,110,20,0.35)'
+
+  const boxShadow = selected
+    ? [
+        `0 0 0 1.5px ${rec ? 'rgba(252,211,77,0.5)' : 'rgba(180,145,40,0.45)'}`,
+        `0 0 40px ${rec ? 'rgba(201,168,76,0.22)' : 'rgba(140,110,20,0.18)'}`,
+        'inset 0 0 60px rgba(0,0,0,0.55)',
+        `inset 0 1px 0 ${rec ? 'rgba(252,211,77,0.20)' : 'rgba(201,168,76,0.12)'}`,
+      ].join(', ')
+    : [
+        'inset 0 0 50px rgba(0,0,0,0.6)',
+        `inset 0 1px 0 ${rec ? 'rgba(252,211,77,0.10)' : 'rgba(180,150,40,0.06)'}`,
+        `0 2px 20px rgba(0,0,0,0.4)`,
+      ].join(', ')
 
   return (
     <button
       type="button"
       onClick={onPick}
       aria-pressed={selected}
-      className={[
-        'group relative overflow-hidden rounded-xl border outline-none text-left',
-        'transition-all duration-500 active:scale-[0.97] focus-visible:ring-1 focus-visible:ring-gold-500',
-        selected
-          ? 'border-gold-400 shadow-lg shadow-gold-500/25'
-          : recommended
-            ? 'border-gold-600/60 hover:border-gold-400'
-            : 'border-gold-900/50 hover:border-gold-700/80',
-      ].join(' ')}
+      className="relative overflow-hidden rounded-2xl outline-none text-center transition-all duration-500 active:scale-[0.97] focus-visible:ring-1 focus-visible:ring-gold-500"
       style={{
-        background: recommended
-          ? 'radial-gradient(ellipse at 50% 0%, rgba(201,168,76,0.16) 0%, transparent 65%), linear-gradient(180deg, #0d0a05 0%, #060403 100%)'
-          : 'radial-gradient(ellipse at 50% 0%, rgba(154,125,10,0.10) 0%, transparent 65%), linear-gradient(180deg, #0a0805 0%, #050302 100%)',
-        boxShadow: selected
-          ? `0 0 0 2px rgba(200,160,50,0.35), 0 4px 30px rgba(201,168,76,0.18), inset 0 1px 0 rgba(252,211,77,0.12)`
-          : recommended
-            ? 'inset 0 1px 0 rgba(252,211,77,0.10), 0 1px 30px rgba(201,168,76,0.07)'
-            : 'inset 0 1px 0 rgba(255,255,255,0.04)',
+        background:   bgBase,
+        border:       `1px solid ${borderColor}`,
+        boxShadow,
+        minHeight:    '220px',
+        transform:    selected ? 'translateY(-2px)' : 'translateY(0)',
       }}
     >
-      {/* Borda superior cintilante */}
+      {/* Feixe de luz vindo do topo */}
+      <span
+        aria-hidden
+        className="absolute top-0 left-1/2 -translate-x-1/2 pointer-events-none"
+        style={{
+          width:   rec ? '55%' : '40%',
+          height:  '140px',
+          background: rec
+            ? 'linear-gradient(to bottom, rgba(252,211,77,0.18) 0%, transparent 100%)'
+            : 'linear-gradient(to bottom, rgba(201,168,76,0.10) 0%, transparent 100%)',
+          filter:  'blur(18px)',
+        }}
+      />
+
+      {/* Linha de luz no topo */}
       <span
         aria-hidden
         className="absolute top-0 left-1/2 -translate-x-1/2 h-px"
         style={{
-          width: recommended ? '70%' : '50%',
-          background: recommended
-            ? 'linear-gradient(90deg, transparent, #fcd34d, transparent)'
-            : 'linear-gradient(90deg, transparent, rgba(201,168,76,0.5), transparent)',
+          width: rec ? '75%' : '55%',
+          background: rec
+            ? 'linear-gradient(90deg, transparent, rgba(252,211,77,0.9), transparent)'
+            : 'linear-gradient(90deg, transparent, rgba(201,168,76,0.6), transparent)',
         }}
       />
 
-      {/* Dingbat recomendado */}
-      {recommended && (
-        <span
-          aria-hidden
-          className="absolute top-2.5 right-2.5 text-gold-400 text-[11px] leading-none animate-pulse"
-          style={{ animationDuration: '3.5s' }}
-        >
-          ✦
-        </span>
-      )}
+      {/* Glow inferior */}
+      <span
+        aria-hidden
+        className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none"
+        style={{
+          background: rec
+            ? 'linear-gradient(to top, rgba(201,168,76,0.07) 0%, transparent 100%)'
+            : 'linear-gradient(to top, rgba(140,110,20,0.05) 0%, transparent 100%)',
+        }}
+      />
 
       {/* Checkmark quando selecionado */}
       {selected && (
-        <span className="absolute top-2.5 left-2.5 w-4 h-4 rounded-full flex items-center justify-center z-10"
-              style={{ background: '#c9a84c' }}>
-          <svg className="w-2.5 h-2.5 text-black" fill="none" viewBox="0 0 12 12">
+        <span
+          className="absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center z-10"
+          style={{ background: rec ? '#c9a84c' : '#9a7828', boxShadow: '0 0 10px rgba(201,168,76,0.5)' }}
+        >
+          <svg className="w-3 h-3 text-black" fill="none" viewBox="0 0 12 12">
             <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </span>
       )}
 
-      {/* Conteúdo */}
-      <div className="relative flex flex-col items-center text-center h-full px-3 py-5 sm:py-7">
-        {/* Numeral romano */}
-        <span
-          className="block font-serif font-light leading-none mb-1.5"
-          style={{
-            fontSize: 'clamp(0.85rem, 2vw, 1rem)',
-            color: recommended ? 'rgba(252,211,77,0.65)' : 'rgba(184,150,12,0.55)',
-            letterSpacing: '0.15em',
-          }}
-        >
-          {opt.numeral}.
-        </span>
+      {/* Conteúdo central */}
+      <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 py-6 sm:py-8" style={{ minHeight: '220px' }}>
 
-        {/* Divisor */}
+        {/* Divisor luminoso */}
         <span
           aria-hidden
-          className="block h-px w-6 mb-3"
+          className="block h-px mb-4"
           style={{
-            background: recommended
-              ? 'linear-gradient(90deg, transparent, rgba(252,211,77,0.6), transparent)'
-              : 'linear-gradient(90deg, transparent, rgba(154,125,10,0.5), transparent)',
+            width: '2rem',
+            background: rec
+              ? 'linear-gradient(90deg, transparent, rgba(252,211,77,0.7), transparent)'
+              : 'linear-gradient(90deg, transparent, rgba(184,150,12,0.55), transparent)',
+            boxShadow: rec ? '0 0 6px rgba(252,211,77,0.4)' : '0 0 4px rgba(184,150,12,0.3)',
           }}
         />
 
         {/* Label principal */}
         <h2
-          className={['font-serif italic mb-2', recommended ? 'gold-gradient' : 'text-gold-300/85'].join(' ')}
+          className={['font-serif italic whitespace-pre-line mb-2', rec ? 'gold-gradient' : 'text-gold-300/80'].join(' ')}
           style={{
-            fontSize: 'clamp(1.05rem, 3.8vw, 2.2rem)',
-            letterSpacing: '-0.02em',
-            fontWeight: 400,
-            lineHeight: '1.05',
+            fontSize:      'clamp(1.05rem, 3.5vw, 2rem)',
+            letterSpacing: '-0.01em',
+            fontWeight:    400,
+            lineHeight:    '1.1',
           }}
         >
-          {opt.label}<span className="opacity-60">.</span>
+          {opt.label}
         </h2>
 
-        {/* Whisper */}
+        {/* Sublabel */}
         <span
-          className="text-[9px] sm:text-[10px] tracking-[0.4em] uppercase mb-3"
-          style={{ color: recommended ? 'rgba(252,211,77,0.75)' : 'rgba(184,150,12,0.55)' }}
+          className="block text-[9px] sm:text-[10px] tracking-[0.4em] uppercase mb-3"
+          style={{ color: rec ? 'rgba(252,211,77,0.6)' : 'rgba(184,150,12,0.5)' }}
         >
-          {opt.whisper}
+          {opt.sublabel}
         </span>
 
-        {/* Descrição — visível em todos os tamanhos */}
-        <p className="text-[10px] sm:text-[11px] leading-relaxed max-w-[20ch]"
-           style={{ color: recommended ? 'rgba(220,185,110,0.65)' : 'rgba(180,150,80,0.55)' }}>
+        {/* Descrição */}
+        <p
+          className="text-[10px] sm:text-[11px] leading-relaxed"
+          style={{ color: rec ? 'rgba(220,185,110,0.6)' : 'rgba(180,150,80,0.5)', maxWidth: '18ch' }}
+        >
           {opt.desc}
         </p>
 
-        {/* Bullets do pacote (Ouro/Prata/Bronze lista de inclusos) */}
-        {opt.bullets.length > 0 && (
-          <div className="flex flex-wrap justify-center gap-x-2 gap-y-1 mt-3">
-            {opt.bullets.map(b => (
-              <span key={b}
-                    className="text-[9px] tracking-wide uppercase"
-                    style={{ color: 'rgba(201,168,76,0.5)' }}>
-                · {b}
+        {/* Bullets */}
+        {opt.bullets && opt.bullets.length > 0 && (
+          <div className="flex flex-wrap justify-center gap-x-1.5 gap-y-1 mt-3">
+            {opt.bullets.map((b, i) => (
+              <span key={b} className="text-[9px] uppercase tracking-wide"
+                    style={{ color: 'rgba(201,168,76,0.45)' }}>
+                {i > 0 && <span className="mr-1.5 opacity-40">·</span>}{b}
               </span>
             ))}
           </div>
         )}
       </div>
-
-      {/* Glow inferior */}
-      <span
-        aria-hidden
-        className="absolute -bottom-12 left-1/2 -translate-x-1/2 w-3/4 h-12 blur-2xl"
-        style={{ background: recommended ? 'rgba(201,168,76,0.35)' : 'rgba(154,125,10,0.18)' }}
-      />
     </button>
   )
 }
