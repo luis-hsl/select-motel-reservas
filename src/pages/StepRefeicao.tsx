@@ -86,7 +86,7 @@ export default function StepRefeicao() {
       </h1>
       <p className="text-gold-700/70 text-sm mb-8 sm:mb-10">{SUBTITULO[pkgId]}</p>
 
-      <div className={`grid gap-3 max-w-xl ${isSingle ? 'grid-cols-1 max-w-xs' : 'grid-cols-2'}`}>
+      <div className={`grid gap-3 ${isSingle ? 'grid-cols-1 max-w-xs' : 'grid-cols-1 sm:grid-cols-2 max-w-xl'}`}>
         {opcoes.map(opt => {
           const isSel = selected === opt.id
           const img   = imgFor(opt)
