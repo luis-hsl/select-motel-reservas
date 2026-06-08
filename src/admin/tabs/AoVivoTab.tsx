@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 
-const STEP_NAMES = ['Pacote','Tipo','Data','Suíte','Refeição','Bebida','Surpresa','Dados','Pagamento']
+// Pacote (8 steps):     Escolha→Pacote→Tipo→Data→Suíte→Cardápio→Dados→Pagamento
+// Experiência (7 steps):Escolha→Tipo→Data→Suíte→Cardápio→Dados→Pagamento
+const STEP_NAMES_PKG = ['Escolha','Pacote','Tipo','Data','Suíte','Cardápio','Dados','Pagamento']
+const STEP_NAMES_EXP = ['Escolha','Tipo','Data','Suíte','Cardápio','Dados','Pagamento']
+
+// Heurística: sessões com max_step=8 → pacote; sem conversão até step 8 → experiência
+function getStepName(step: number, maxStep?: number): string {
+  const names = (maxStep ?? 8) >= 8 ? STEP_NAMES_PKG : STEP_NAMES_EXP
+  return names[(step - 1)] ?? `Step ${step}`
+}
 const ACTIVE_WINDOW_MS = 2 * 60 * 1000           // < 2min = "ativo agora"
 const CHUNK_SIZE       = 1000                     // fetch em batches até esgotar (sem limite total)
 
@@ -112,7 +121,7 @@ export default function AoVivoTab() {
     const todayMs = today.getTime()
 
     let active = 0, todayCount = 0, converted = 0
-    const funnel = new Array(9).fill(0)
+    const funnel = new Array(8).fill(0)
     sessions.forEach(s => {
       if (nowMs - new Date(s.last_active_at).getTime() < ACTIVE_WINDOW_MS) active++
       if (new Date(s.started_at).getTime() >= todayMs) todayCount++
@@ -183,13 +192,16 @@ export default function AoVivoTab() {
 
       {/* ───── Funil ───── */}
       <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-        <p className="text-white/40 text-[11px] tracking-widest uppercase mb-3">Funil por step</p>
+        <div className="flex items-baseline justify-between mb-3">
+          <p className="text-white/40 text-[11px] tracking-widest uppercase">Funil por step</p>
+          <p className="text-white/25 text-[10px]">Pacote: 8 steps · Experiência: 7 steps</p>
+        </div>
         <div className="space-y-1.5">
           {stats.funnel.map((count, i) => {
             const pct = sessions.length ? Math.round((count / sessions.length) * 100) : 0
             return (
               <div key={i} className="flex items-center gap-3 text-xs">
-                <span className="text-white/40 w-32 shrink-0">{i + 1}. {STEP_NAMES[i]}</span>
+                <span className="text-white/40 w-32 shrink-0">{i + 1}. {STEP_NAMES_PKG[i]}</span>
                 <div className="flex-1 h-2 rounded-full bg-white/[0.05] overflow-hidden">
                   <div
                     className="h-full transition-all"
@@ -266,7 +278,7 @@ export default function AoVivoTab() {
                     </td>
                     <td className="px-3 py-2.5 text-white/70">
                       <span className="text-gold-400">{s.current_step}</span>
-                      <span className="text-white/30"> · {STEP_NAMES[s.current_step - 1]}</span>
+                      <span className="text-white/30"> · {getStepName(s.current_step, s.max_step)}</span>
                     </td>
                     <td className="px-3 py-2.5 text-white/50 hidden sm:table-cell truncate max-w-[180px]">
                       {utmLabel}
@@ -347,8 +359,8 @@ function SessionDetailModal({ session, onClose }: { session: Session; onClose: (
           <Row label="Início"        value={fmtDt(session.started_at)} />
           <Row label="Último ping"   value={`${fmtDt(session.last_active_at)} (${timeAgo(session.last_active_at)})`} />
           <Row label="Duração"       value={fmtDuration(session.started_at, session.last_active_at)} />
-          <Row label="Step atual"    value={`${session.current_step} · ${STEP_NAMES[session.current_step - 1]}`} />
-          <Row label="Máx atingido"  value={`${session.max_step} · ${STEP_NAMES[session.max_step - 1]}`} />
+          <Row label="Step atual"    value={`${session.current_step} · ${getStepName(session.current_step, session.max_step)}`} />
+          <Row label="Máx atingido"  value={`${session.max_step} · ${getStepName(session.max_step, session.max_step)}`} />
           <Row label="Dispositivo"   value={session.device ?? '—'} />
           <Row label="Origem"        value={session.utm_source ?? '(direto)'} />
           {session.utm_campaign && <Row label="Campanha" value={session.utm_campaign} />}
@@ -365,7 +377,7 @@ function SessionDetailModal({ session, onClose }: { session: Session; onClose: (
               {(session.steps_history ?? []).map((s, i) => (
                 <li key={i} className="flex items-center gap-3 text-xs">
                   <span className="font-mono text-gold-500 w-6">{s.step}</span>
-                  <span className="text-white/70 flex-1">{STEP_NAMES[s.step - 1]}</span>
+                  <span className="text-white/70 flex-1">{getStepName(s.step, session.max_step)}</span>
                   <span className="text-white/40 tabular-nums">{fmtDt(s.at)}</span>
                 </li>
               ))}
