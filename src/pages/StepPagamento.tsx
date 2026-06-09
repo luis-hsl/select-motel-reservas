@@ -31,6 +31,22 @@ function drinkLabel(d: string | null): string | null {
   return null
 }
 
+const PRATO_LABELS: Record<string, string> = {
+  risoto:     'Risoto de bacon com Brie',
+  rigatone:   'Rigatone de cogumelos',
+  mousseline: 'Mousseline com filé mignon',
+}
+function pratoLabel(id: string | null): string | null {
+  return id ? (PRATO_LABELS[id] ?? id) : null
+}
+
+function foodTimeLabel(f: string | null): string | null {
+  if (f === 'jantar') return 'Horário do jantar'
+  if (f === 'sushi')  return 'Horário da barca'
+  if (f === 'pizza')  return 'Horário da pizza'
+  return null
+}
+
 function fmtTime(d: Date) {
   return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
@@ -304,8 +320,10 @@ export default function StepPagamento() {
             <SummaryRow label="Código" value={reservationId.slice(0, 8).toUpperCase()} mono />
             <SummaryRow label="Suíte" value={suite ? `${suite.name} + Decoração` : ''} />
             {foodLabel(food) && <SummaryRow label="Refeição" value={foodLabel(food)!} />}
+            {pratoLabel(jantarPrato) && <SummaryRow label="Prato" value={pratoLabel(jantarPrato)!} />}
+            {jantarHorario && foodTimeLabel(food) && <SummaryRow label={foodTimeLabel(food)!} value={jantarHorario} />}
             {drinkLabel(drink) && <SummaryRow label="Bebida" value={drinkLabel(drink)!} />}
-            <SummaryRow label="Fondue" value="Incluído" />
+            {fondueInCart && <SummaryRow label="Fondue" value={fondueHorario ? `às ${fondueHorario}` : 'Selecionado'} />}
             <SummaryRow label="Check-in" value={checkIn ? fmtDt(checkIn) : ''} />
             <SummaryRow label="Check-out" value={checkout ? fmtDt(checkout) : ''} highlight />
             {type === 'period' && checkout && (
@@ -385,7 +403,10 @@ export default function StepPagamento() {
               {type && <span>· {type === 'period' ? 'Período' : 'Pernoite'}</span>}
               {pkg && <span>· {pkg.label}</span>}
               {foodLabel(food) && <span>· {foodLabel(food)}</span>}
+              {pratoLabel(jantarPrato) && <span>· {pratoLabel(jantarPrato)}</span>}
+              {jantarHorario && foodTimeLabel(food) && <span>· {foodTimeLabel(food)} {jantarHorario}</span>}
               {drinkLabel(drink) && <span>· {drinkLabel(drink)}</span>}
+              {fondueInCart && <span>· Fondue{fondueHorario ? ` às ${fondueHorario}` : ''}</span>}
             </div>
             {checkIn && <p className="text-[11px] text-gold-600/60">Check-in: {fmtDt(checkIn)}</p>}
             {checkout && <p className="text-[11px] text-gold-600/60">Check-out: {fmtDt(checkout)}</p>}
@@ -422,8 +443,10 @@ export default function StepPagamento() {
               <SummaryRow label="Suíte" value={suite ? `${suite.name} + Decoração` : '—'} />
               <SummaryRow label="Pacote" value={pkg?.label ?? '—'} />
               {foodLabel(food) && <SummaryRow label="Refeição" value={foodLabel(food)!} />}
+              {pratoLabel(jantarPrato) && <SummaryRow label="Prato" value={pratoLabel(jantarPrato)!} />}
+              {jantarHorario && foodTimeLabel(food) && <SummaryRow label={foodTimeLabel(food)!} value={jantarHorario} />}
               {drinkLabel(drink) && <SummaryRow label="Bebida" value={drinkLabel(drink)!} />}
-              <SummaryRow label="Fondue" value="Incluído" />
+              {fondueInCart && <SummaryRow label="Fondue" value={fondueHorario ? `às ${fondueHorario}` : 'Selecionado'} />}
               <SummaryRow label="Modalidade" value={type === 'period' ? 'Período' : 'Pernoite'} />
               <SummaryRow label="Check-in" value={checkIn ? fmtDt(checkIn) : '—'} />
               <SummaryRow label="Check-out" value={checkout ? fmtDt(checkout) : '—'} highlight />
