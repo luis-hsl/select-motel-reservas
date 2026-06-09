@@ -309,7 +309,7 @@ export default function StepExtras() {
         <div className="mb-7 sm:mb-9">
           <div className="flex items-baseline justify-between gap-3 mb-3">
             <h2 className="font-serif italic text-gold-200 text-xl sm:text-2xl">
-              {sushiSelected ? 'Horário da barca' : pizzaSelected ? 'Horário da pizza' : fondueSelected ? 'Horário do fondue' : 'Horário do jantar'}
+              {sushiSelected ? 'Horário da barca' : pizzaSelected ? 'Horário da pizza' : 'Horário do jantar'}
             </h2>
             <span className="text-[9px] tracking-[0.35em] uppercase text-gold-700/40">
               {checkIn ? `check-in às ${checkIn.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : 'obrigatório'}
