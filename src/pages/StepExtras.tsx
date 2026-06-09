@@ -97,7 +97,7 @@ export default function StepExtras() {
     if (isPackage) {
       if (item.category === 'food')  return food  === (item.id.replace('food-',  '') as typeof food)
       if (item.category === 'drink') return drink === (item.id.replace('drink-', '') as typeof drink)
-      return false
+      // extra/decoração em modo pacote também usa selectedItems
     }
     return selectedItems.some((i) => i.id === item.id)
   }
@@ -116,20 +116,15 @@ export default function StepExtras() {
     toggleItem(item)
   }
 
-  // Decoração no modo experiência funciona como radio: escolhe 1 nível (ou nenhum)
+  // Radio de decoração: troca o nível ou deseleciona (pacote = opcional, experiência = obrigatória)
   function pickDecor(item: ExperienceItem | null) {
-    if (isPackage) return
-    // remove qualquer decoração que já estava selecionada
-    selectedItems
-      .filter(i => i.category === 'extra' && i.id.startsWith('extra-deco-'))
-      .forEach((i) => toggleItem(i))
-    // adiciona a nova (se houver)
-    if (item) toggleItem(item)
+    const existing = selectedItems.filter(i => i.category === 'extra' && i.id.startsWith('extra-deco-'))
+    const wasSelected = existing.some(i => i.id === item?.id)
+    existing.forEach(i => toggleItem(i))
+    if (item && !wasSelected) toggleItem(item)
   }
 
-  const selectedDecor = isPackage
-    ? null
-    : selectedItems.find(i => i.category === 'extra' && i.id.startsWith('extra-deco-'))
+  const selectedDecor = selectedItems.find(i => i.category === 'extra' && i.id.startsWith('extra-deco-'))
 
   const itemsTotal = useMemo(
     () => selectedItems.reduce((s, i) => s + Number(i.price || 0), 0),
@@ -359,11 +354,11 @@ export default function StepExtras() {
         </CardGrid>
       </Section>
 
-      {/* ─── Decoração — só no modo experiência (pacote já vem com decoração inclusa) ─── */}
-      {!isPackage && decoItems.length > 0 && (
+      {/* ─── Decoração — pacote = opcional (inclusa), experiência = obrigatória ─── */}
+      {decoItems.length > 0 && (
         <Section
           title="Decoração"
-          hint="obrigatória"
+          hint={isPackage ? 'opcional' : 'obrigatória'}
           kicker="03"
         >
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
