@@ -50,7 +50,7 @@ export default function StepPagamento() {
   const {
     mode, package: pkg, type, suite, checkIn, checkOut,
     customerName, customerPhone, customerEmail, customerTaxId,
-    totalAmount, prevStep, drink, food, observations, consentAt, selectedItems,
+    totalAmount, prevStep, drink, food, observations, setObservations, consentAt, selectedItems,
   } = useStore()
   // Snapshot do que o cliente escolheu — vai na coluna extras (jsonb) da reserva
   // e é usado pra montar a mensagem que o motel recebe quando o pagamento confirma.
@@ -69,6 +69,8 @@ export default function StepPagamento() {
   }
   const total = totalAmount()
   const checkout = checkOut()
+
+  const [obs, setObs] = useState(observations || '')
 
   const [pixCharge, setPixCharge] = useState<PixCharge | null>(null)
   const [pixLoading, setPixLoading] = useState(false)
@@ -477,6 +479,22 @@ export default function StepPagamento() {
             <p className="mb-4 text-red-400 text-sm text-center bg-red-900/20 border border-red-800/40 rounded-lg px-4 py-3">
               {error}
             </p>
+          )}
+
+          {/* Observações */}
+          {!pixCharge && (
+            <div className="mb-5">
+              <label className="block text-[10px] tracking-widest uppercase text-gold-600/60 mb-2">
+                Observações <span className="normal-case tracking-normal text-gold-800/40">(opcional)</span>
+              </label>
+              <textarea
+                value={obs}
+                onChange={e => { const v = e.target.value.slice(0, 500); setObs(v); setObservations(v) }}
+                placeholder="Ex: ligar a hidromassagem, servir os pratos às 21h…"
+                rows={2}
+                className="w-full bg-black/60 border border-gold-900/40 rounded-lg px-4 py-3 text-sm text-gold-200 placeholder-gold-900/50 outline-none focus:border-gold-600/60 transition-colors resize-none"
+              />
+            </div>
           )}
 
           {/* PIX QR shown after generation */}

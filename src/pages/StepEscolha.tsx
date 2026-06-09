@@ -60,8 +60,8 @@ const OPTIONS: Option[] = [
 export default function StepEscolha() {
   const {
     mode: storedMode, setMode,
-    customerName, customerPhone, customerTaxId, observations: storedObs, consentAt,
-    setCustomer, setObservations, setConsentAt,
+    customerName, customerPhone, customerTaxId, consentAt,
+    setCustomer, setConsentAt,
     nextStep,
     package: pkg, type, suite, checkIn, drink, food, totalAmount,
   } = useStore()
@@ -75,7 +75,6 @@ export default function StepEscolha() {
   const [name,             setName]             = useState(customerName  || '')
   const [phone,            setPhone]            = useState(customerPhone || '')
   const [taxId,            setTaxId]            = useState(customerTaxId ? maskCPF(customerTaxId) : '')
-  const [obs,              setObs]              = useState(storedObs     || '')
   const [acceptedTerms,    setAcceptedTerms]    = useState(!!consentAt)
   const [whatsappConsent,  setWhatsappConsent]  = useState(false)
   const [legalOpen,        setLegalOpen]        = useState<LegalKind | null>(null)
@@ -123,7 +122,6 @@ export default function StepEscolha() {
     if (!canContinue || !picked) return
     setMode(picked)
     setCustomer(name.trim(), phone.trim(), '', rawCPF)
-    setObservations(obs.trim())
     setConsentAt(new Date().toISOString())
 
     /* Google Ads — lead */
@@ -149,7 +147,7 @@ export default function StepEscolha() {
       p_drink:        drink ?? null,
       p_food:         food ?? null,
       p_total_amount: totalAmount() || null,
-      p_observations:    obs.trim() || null,
+      p_observations:    null,
       p_session_token:   getSessionToken(),
       p_whatsapp_consent: whatsappConsent,
     }).then(() => {})
@@ -236,15 +234,6 @@ export default function StepEscolha() {
                 ].join(' ')}
               />
               {cpfError && <p className="text-[11px] text-red-400/80 mt-1">CPF inválido — confira os números.</p>}
-            </Field>
-
-            <Field label="Observações (opcional)">
-              <textarea
-                value={obs} onChange={e => setObs(e.target.value.slice(0,500))}
-                placeholder="Ex: ligar a hidromassagem, servir os pratos às 21h…"
-                rows={2}
-                className="w-full bg-black/60 border border-gold-900/40 rounded-lg px-4 py-3 text-sm text-gold-200 placeholder-gold-900/50 outline-none focus:border-gold-600/60 transition-colors resize-none"
-              />
             </Field>
 
             {/* WhatsApp marketing — opcional, destacado */}
