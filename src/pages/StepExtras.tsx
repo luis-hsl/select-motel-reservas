@@ -21,8 +21,8 @@ const PACKAGE_DRINK_IDS: Record<string, string[]> = {
 }
 
 const FOOD_NOTA: Record<string, { icon: 'check' | 'warn'; text: string }> = {
-  jantar: { icon: 'check', text: 'O jantar inclui entrada — tábua de frios com salame, lombo, queijo, amendoim e azeitonas.' },
-  sushi:  { icon: 'warn',  text: 'O sushi não inclui entrada — o combinado premium é servido diretamente.' },
+  jantar: { icon: 'check', text: 'O jantar inclui entrada : tábua de frios com salame, lombo, queijo, amendoim e azeitonas.' },
+  sushi:  { icon: 'check', text: 'No sushi o casal ganha uma barca : o combinado premium é servido diretamente para vocês.' },
 }
 
 /**
