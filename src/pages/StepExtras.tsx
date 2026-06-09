@@ -31,7 +31,6 @@ const PRATOS = [
   { id: 'mousseline', label: 'Mousseline de batatas com filé mignon e legumes saltados' },
 ]
 
-const TIME_SLOTS = ['20:00', '20:30', '21:00', '21:30', '22:00']
 
 /**
  * StepExtras — Step consolidada de Comida + Bebida + Decoração.
@@ -53,7 +52,7 @@ export default function StepExtras() {
     mode, package: pkg, selectedItems, toggleItem, clearItems,
     setFood, setDrink, food, drink,
     jantarPrato, jantarHorario, setJantarPrato, setJantarHorario,
-    checkIn,
+    checkIn, type,
     nextStep, prevStep,
   } = useStore()
   const [items, setItems] = useState<ExperienceItem[]>([])
@@ -143,11 +142,33 @@ export default function StepExtras() {
   )
 
   const jantarSelected = isPackage && food === 'jantar' && (pkg?.id === 'ouro' || pkg?.id === 'prata')
+  const sushiSelected  = isPackage && food === 'sushi'
+  const showTimePicker = jantarSelected || sushiSelected
 
-  // Modo pacote: comida + bebida obrigatórios; se jantar: também prato + horário
+  // Gera slots de 30 min entre check-in e check-out
+  const dynamicTimeSlots = useMemo(() => {
+    if (!checkIn || !type) return []
+    const durationHours = type === 'period' ? 2 : 12
+    const checkOut = new Date(checkIn)
+    checkOut.setHours(checkOut.getHours() + durationHours)
+    const slots: string[] = []
+    const cur = new Date(checkIn)
+    while (cur < checkOut) {
+      slots.push(
+        String(cur.getHours()).padStart(2, '0') + ':' +
+        String(cur.getMinutes()).padStart(2, '0'),
+      )
+      cur.setMinutes(cur.getMinutes() + 30)
+    }
+    return slots
+  }, [checkIn, type])
+
+  // Modo pacote: comida + bebida obrigatórios; jantar → prato + horário; sushi → só horário
   // Modo experiência: decoração obrigatória (se existir alguma opção disponível)
   const canContinue = isPackage
-    ? (!!food && !!drink && (!jantarSelected || (!!jantarPrato && !!jantarHorario)))
+    ? (!!food && !!drink &&
+       (!jantarSelected || (!!jantarPrato && !!jantarHorario)) &&
+       (!sushiSelected  || !!jantarHorario))
     : (decoItems.length === 0 || !!selectedDecor)
 
   if (loading) {
@@ -230,67 +251,72 @@ export default function StepExtras() {
         )
       })()}
 
-      {/* ─── Escolha do prato + horário (jantar ouro/prata) ─── */}
+      {/* ─── Escolha do prato (jantar ouro/prata) ─── */}
       {jantarSelected && (
-        <div className="mb-7 sm:mb-9 space-y-5">
-          {/* Prato */}
-          <div>
-            <div className="flex items-baseline justify-between gap-3 mb-3">
-              <h2 className="font-serif italic text-gold-200 text-xl sm:text-2xl">Escolha o prato</h2>
-              <span className="text-[9px] tracking-[0.35em] uppercase text-gold-700/40">obrigatório</span>
-            </div>
-            <span className="block h-px w-full bg-gradient-to-r from-gold-700/30 via-transparent to-transparent mb-4" />
-            <div className="space-y-2.5">
-              {PRATOS.map(p => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setJantarPrato(p.id)}
-                  className="w-full text-left px-4 py-3.5 rounded-xl border transition-all duration-200 active:scale-[0.99] outline-none"
-                  style={{
-                    background: jantarPrato === p.id
-                      ? 'rgba(201,168,76,0.10)'
-                      : 'rgba(255,255,255,0.02)',
-                    borderColor: jantarPrato === p.id
-                      ? 'rgba(201,168,76,0.55)'
-                      : 'rgba(201,168,76,0.15)',
-                    boxShadow: jantarPrato === p.id
-                      ? '0 0 0 1px rgba(201,168,76,0.25), 0 4px 20px rgba(160,120,30,0.15)'
-                      : 'none',
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <span
-                      className="w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center transition-all"
-                      style={{
-                        borderColor: jantarPrato === p.id ? 'rgba(201,168,76,0.9)' : 'rgba(201,168,76,0.3)',
-                        background: jantarPrato === p.id ? 'rgba(201,168,76,0.9)' : 'transparent',
-                      }}
-                    >
-                      {jantarPrato === p.id && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-black" />
-                      )}
-                    </span>
-                    <span className="text-sm leading-snug" style={{ color: jantarPrato === p.id ? 'rgba(240,200,110,0.95)' : 'rgba(200,165,80,0.65)' }}>
-                      {p.label}
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </div>
+        <div className="mb-7 sm:mb-9">
+          <div className="flex items-baseline justify-between gap-3 mb-3">
+            <h2 className="font-serif italic text-gold-200 text-xl sm:text-2xl">Escolha o prato</h2>
+            <span className="text-[9px] tracking-[0.35em] uppercase text-gold-700/40">obrigatório</span>
           </div>
+          <span className="block h-px w-full bg-gradient-to-r from-gold-700/30 via-transparent to-transparent mb-4" />
+          <div className="space-y-2.5">
+            {PRATOS.map(p => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setJantarPrato(p.id)}
+                className="w-full text-left px-4 py-3.5 rounded-xl border transition-all duration-200 active:scale-[0.99] outline-none"
+                style={{
+                  background: jantarPrato === p.id
+                    ? 'rgba(201,168,76,0.10)'
+                    : 'rgba(255,255,255,0.02)',
+                  borderColor: jantarPrato === p.id
+                    ? 'rgba(201,168,76,0.55)'
+                    : 'rgba(201,168,76,0.15)',
+                  boxShadow: jantarPrato === p.id
+                    ? '0 0 0 1px rgba(201,168,76,0.25), 0 4px 20px rgba(160,120,30,0.15)'
+                    : 'none',
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <span
+                    className="w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center transition-all"
+                    style={{
+                      borderColor: jantarPrato === p.id ? 'rgba(201,168,76,0.9)' : 'rgba(201,168,76,0.3)',
+                      background: jantarPrato === p.id ? 'rgba(201,168,76,0.9)' : 'transparent',
+                    }}
+                  >
+                    {jantarPrato === p.id && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-black" />
+                    )}
+                  </span>
+                  <span className="text-sm leading-snug" style={{ color: jantarPrato === p.id ? 'rgba(240,200,110,0.95)' : 'rgba(200,165,80,0.65)' }}>
+                    {p.label}
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
-          {/* Horário */}
-          <div>
-            <div className="flex items-baseline justify-between gap-3 mb-3">
-              <h2 className="font-serif italic text-gold-200 text-xl sm:text-2xl">Horário do jantar</h2>
-              <span className="text-[9px] tracking-[0.35em] uppercase text-gold-700/40">
-                {checkIn ? `após check-in ${checkIn.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : 'obrigatório'}
-              </span>
-            </div>
-            <span className="block h-px w-full bg-gradient-to-r from-gold-700/30 via-transparent to-transparent mb-4" />
+      {/* ─── Horário (jantar ou barca de sushi) ─── */}
+      {showTimePicker && (
+        <div className="mb-7 sm:mb-9">
+          <div className="flex items-baseline justify-between gap-3 mb-3">
+            <h2 className="font-serif italic text-gold-200 text-xl sm:text-2xl">
+              {sushiSelected ? 'Horário da barca' : 'Horário do jantar'}
+            </h2>
+            <span className="text-[9px] tracking-[0.35em] uppercase text-gold-700/40">
+              {checkIn ? `check-in às ${checkIn.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : 'obrigatório'}
+            </span>
+          </div>
+          <span className="block h-px w-full bg-gradient-to-r from-gold-700/30 via-transparent to-transparent mb-4" />
+          {dynamicTimeSlots.length === 0 ? (
+            <p className="text-xs text-gold-700/40">Selecione um horário de check-in primeiro.</p>
+          ) : (
             <div className="flex flex-wrap gap-2.5">
-              {TIME_SLOTS.map(slot => (
+              {dynamicTimeSlots.map(slot => (
                 <button
                   key={slot}
                   type="button"
@@ -307,8 +333,8 @@ export default function StepExtras() {
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-[10px] text-gold-700/40">Horário de Brasília. Confirmaremos pelo WhatsApp.</p>
-          </div>
+          )}
+          <p className="mt-2 text-[10px] text-gold-700/40">Horário de Brasília. Confirmaremos pelo WhatsApp.</p>
         </div>
       )}
 
