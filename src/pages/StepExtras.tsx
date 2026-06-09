@@ -10,9 +10,9 @@ function fmtBRL(v: number): string {
 // Lógica original dos pacotes — quais opções cada um permite.
 // Pacote = "experiência pronta", então cada um tem combinações fechadas.
 const PACKAGE_FOOD_IDS: Record<string, string[]> = {
-  ouro:   ['food-jantar', 'food-sushi', 'food-fondue'],
-  prata:  ['food-jantar', 'food-pizza', 'food-fondue'],
-  bronze: ['food-pizza', 'food-fondue'],
+  ouro:   ['food-jantar', 'food-sushi'],
+  prata:  ['food-jantar', 'food-pizza'],
+  bronze: ['food-pizza'],
 }
 const PACKAGE_DRINK_IDS: Record<string, string[]> = {
   ouro:   ['drink-vinho', 'drink-frisante'],
@@ -52,6 +52,7 @@ export default function StepExtras() {
     mode, package: pkg, selectedItems, toggleItem, clearItems,
     setFood, setDrink, food, drink,
     jantarPrato, jantarHorario, setJantarPrato, setJantarHorario,
+    fondueHorario, setFondueHorario,
     checkIn, type,
     nextStep, prevStep,
   } = useStore()
@@ -105,8 +106,8 @@ export default function StepExtras() {
   function pick(item: ExperienceItem) {
     if (isPackage) {
       if (item.category === 'food') {
-        const v = item.id.replace('food-', '') as 'jantar' | 'sushi' | 'pizza' | 'fondue'
-        if (v === 'jantar' || v === 'sushi' || v === 'pizza' || v === 'fondue') setFood(v)
+        const v = item.id.replace('food-', '') as 'jantar' | 'sushi' | 'pizza'
+        if (v === 'jantar' || v === 'sushi' || v === 'pizza') setFood(v)
       } else if (item.category === 'drink') {
         const v = item.id.replace('drink-', '') as 'vinho' | 'frisante' | 'drinque' | 'champagne'
         if (v === 'vinho' || v === 'frisante' || v === 'drinque') setDrink(v)
@@ -136,11 +137,14 @@ export default function StepExtras() {
     [grouped.extra],
   )
 
-  const jantarSelected  = isPackage && food === 'jantar' && (pkg?.id === 'ouro' || pkg?.id === 'prata')
-  const sushiSelected   = isPackage && food === 'sushi'
-  const pizzaSelected   = isPackage && food === 'pizza'
-  const fondueSelected  = isPackage && food === 'fondue'
-  const showTimePicker  = jantarSelected || sushiSelected || pizzaSelected || fondueSelected
+  const jantarSelected = isPackage && food === 'jantar' && (pkg?.id === 'ouro' || pkg?.id === 'prata')
+  const sushiSelected  = isPackage && food === 'sushi'
+  const pizzaSelected  = isPackage && food === 'pizza'
+  const showTimePicker = jantarSelected || sushiSelected || pizzaSelected
+
+  // Fondue: seção independente, toggle via selectedItems
+  const fondueItem   = items.find(i => i.id === 'food-fondue') ?? null
+  const fondueInCart = selectedItems.some(i => i.id === 'food-fondue')
 
   // Gera slots de 30 min entre check-in e check-out
   const dynamicTimeSlots = useMemo(() => {
@@ -160,14 +164,15 @@ export default function StepExtras() {
     return slots
   }, [checkIn, type])
 
-  // Modo pacote: comida + bebida obrigatórios; jantar → prato + horário; sushi → só horário
+  // Modo pacote: comida + bebida obrigatórios; jantar → prato + horário; sushi/pizza → horário
+  //   fondue opcional, mas se selecionado exige horário
   // Modo experiência: decoração obrigatória (se existir alguma opção disponível)
   const canContinue = isPackage
     ? (!!food && !!drink &&
        (!jantarSelected || (!!jantarPrato && !!jantarHorario)) &&
        (!sushiSelected  || !!jantarHorario) &&
        (!pizzaSelected  || !!jantarHorario) &&
-       (!fondueSelected || !!jantarHorario))
+       (!fondueInCart   || !!fondueHorario))
     : (decoItems.length === 0 || !!selectedDecor)
 
   if (loading) {
@@ -355,6 +360,59 @@ export default function StepExtras() {
           ))}
         </CardGrid>
       </Section>
+
+      {/* ─── Fondue — seção própria em todos os pacotes ─── */}
+      {isPackage && fondueItem && (
+        <Section title="Fondue" hint="opcional" kicker="03">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3">
+            <ItemCard
+              item={fondueItem}
+              selected={fondueInCart}
+              showPrice={false}
+              onClick={() => {
+                if (fondueInCart) setFondueHorario(null)
+                toggleItem(fondueItem)
+              }}
+            />
+          </div>
+
+          {/* Picker de horário — aparece quando fondue é adicionado */}
+          {fondueInCart && (
+            <div className="mt-5">
+              <div className="flex items-baseline justify-between gap-3 mb-3">
+                <h3 className="font-serif italic text-gold-200 text-lg sm:text-xl">Horário do fondue</h3>
+                <span className="text-[9px] tracking-[0.35em] uppercase text-gold-700/40">
+                  {checkIn ? `check-in às ${checkIn.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : 'obrigatório'}
+                </span>
+              </div>
+              <span className="block h-px w-full bg-gradient-to-r from-gold-700/30 via-transparent to-transparent mb-4" />
+              {dynamicTimeSlots.length === 0 ? (
+                <p className="text-xs text-gold-700/40">Selecione um horário de check-in primeiro.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2.5">
+                  {dynamicTimeSlots.map(slot => (
+                    <button
+                      key={slot}
+                      type="button"
+                      onClick={() => setFondueHorario(slot)}
+                      className="px-5 py-2.5 rounded-xl text-sm font-medium border transition-all duration-200 active:scale-[0.97]"
+                      style={{
+                        background: fondueHorario === slot ? 'rgba(201,168,76,0.15)' : 'rgba(255,255,255,0.02)',
+                        borderColor: fondueHorario === slot ? 'rgba(201,168,76,0.6)' : 'rgba(201,168,76,0.18)',
+                        color: fondueHorario === slot ? 'rgba(240,200,110,0.95)' : 'rgba(200,165,80,0.55)',
+                        boxShadow: fondueHorario === slot ? '0 0 0 1px rgba(201,168,76,0.25)' : 'none',
+                      }}
+                    >
+                      {slot}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <p className="mt-2 text-[10px] text-gold-700/40">Horário de Brasília. Confirmaremos pelo WhatsApp.</p>
+            </div>
+          )}
+        </Section>
+      )}
 
       {/* ─── Decoração — só no modo experiência (pacote já vem com decoração inclusa) ─── */}
       {!isPackage && decoItems.length > 0 && (

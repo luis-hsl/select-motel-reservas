@@ -51,10 +51,12 @@ export default function StepPagamento() {
     mode, package: pkg, type, suite, checkIn, checkOut,
     customerName, customerPhone, customerEmail, customerTaxId,
     totalAmount, prevStep, drink, food, jantarPrato, jantarHorario,
+    fondueHorario,
     observations, setObservations, consentAt, selectedItems,
   } = useStore()
   // Snapshot do que o cliente escolheu — vai na coluna extras (jsonb) da reserva
   // e é usado pra montar a mensagem que o motel recebe quando o pagamento confirma.
+  const fondueInCart = selectedItems.some(i => i.id === 'food-fondue')
   const extras = {
     mode:         mode ?? 'package',
     packageId:    pkg?.id    ?? null,
@@ -64,6 +66,8 @@ export default function StepPagamento() {
     food,
     jantarPrato,
     jantarHorario,
+    fondue:        fondueInCart || null,
+    fondueHorario: fondueInCart ? fondueHorario : null,
     type,
     selectedItems,                            // a la carte (modo experiência)
     observations: observations?.trim() || null,
