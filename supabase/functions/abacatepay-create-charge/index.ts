@@ -130,7 +130,7 @@ Deno.serve(async (req)=>{
         if (taxId) {
           data.customer = {
             name: customerName,
-            email: customerEmail,
+            ...(customerEmail ? { email: customerEmail } : {}),
             cellphone: phone,
             taxId
           };
@@ -143,7 +143,7 @@ Deno.serve(async (req)=>{
       } else {
         const customerResp = await abacatePOST('/customers/create', {
           name: customerName,
-          email: customerEmail,
+          ...(customerEmail ? { email: customerEmail } : {}),
           cellphone: phone,
           taxId
         });
