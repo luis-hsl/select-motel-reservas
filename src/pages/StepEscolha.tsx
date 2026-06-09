@@ -151,6 +151,8 @@ export default function StepEscolha() {
       p_observations:    null,
       p_session_token:   getSessionToken(),
       p_whatsapp_consent: whatsappConsent,
+      p_tax_id:          rawCPF || null,
+      p_mode:            picked,
     }).then(() => {})
 
     nextStep()
