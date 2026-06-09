@@ -20,6 +20,11 @@ const PACKAGE_DRINK_IDS: Record<string, string[]> = {
   bronze: ['drink-drinque'],
 }
 
+const FOOD_NOTA: Record<string, { icon: 'check' | 'warn'; text: string }> = {
+  jantar: { icon: 'check', text: 'O jantar inclui entrada — tábua de frios com salame, lombo, queijo, amendoim e azeitonas.' },
+  sushi:  { icon: 'warn',  text: 'O sushi não inclui entrada — o combinado premium é servido diretamente.' },
+}
+
 /**
  * StepExtras — Step consolidada de Comida + Bebida + Decoração.
  *
@@ -178,6 +183,36 @@ export default function StepExtras() {
           ))}
         </CardGrid>
       </Section>
+
+      {/* Nota jantar/sushi — só pacote ouro */}
+      {isPackage && pkg?.id === 'ouro' && food && FOOD_NOTA[food] && (() => {
+        const nota = FOOD_NOTA[food]
+        return (
+          <div
+            className="mb-7 sm:mb-9 -mt-4 flex items-start gap-2.5 px-4 py-3 rounded-xl"
+            style={{
+              background: nota.icon === 'check' ? 'rgba(201,168,76,0.06)' : 'rgba(180,100,30,0.08)',
+              border: nota.icon === 'check' ? '1px solid rgba(201,168,76,0.22)' : '1px solid rgba(200,120,40,0.28)',
+            }}
+          >
+            {nota.icon === 'check' ? (
+              <svg className="w-3.5 h-3.5 shrink-0 mt-[2px]" viewBox="0 0 14 14" fill="none" style={{ color: 'rgba(201,168,76,0.7)' }}>
+                <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1" />
+                <path d="M4.5 7l2 2 3-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            ) : (
+              <svg className="w-3.5 h-3.5 shrink-0 mt-[2px]" viewBox="0 0 14 14" fill="none" style={{ color: 'rgba(210,140,60,0.8)' }}>
+                <path d="M7 1.5L12.5 12H1.5L7 1.5z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" />
+                <path d="M7 5.5v3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                <circle cx="7" cy="10" r="0.6" fill="currentColor" />
+              </svg>
+            )}
+            <p className="text-xs leading-relaxed" style={{ color: nota.icon === 'check' ? 'rgba(220,185,110,0.85)' : 'rgba(220,160,80,0.85)' }}>
+              {nota.text}
+            </p>
+          </div>
+        )
+      })()}
 
       {/* ─── Bebida ─── */}
       <Section
