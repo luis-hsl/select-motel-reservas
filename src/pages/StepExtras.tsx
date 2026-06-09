@@ -10,9 +10,9 @@ function fmtBRL(v: number): string {
 // Lógica original dos pacotes — quais opções cada um permite.
 // Pacote = "experiência pronta", então cada um tem combinações fechadas.
 const PACKAGE_FOOD_IDS: Record<string, string[]> = {
-  ouro:   ['food-jantar', 'food-sushi'],
-  prata:  ['food-jantar', 'food-pizza'],
-  bronze: ['food-pizza'],
+  ouro:   ['food-jantar', 'food-sushi', 'food-fondue'],
+  prata:  ['food-jantar', 'food-pizza', 'food-fondue'],
+  bronze: ['food-pizza', 'food-fondue'],
 }
 const PACKAGE_DRINK_IDS: Record<string, string[]> = {
   ouro:   ['drink-vinho', 'drink-frisante'],
@@ -106,7 +106,7 @@ export default function StepExtras() {
     if (isPackage) {
       if (item.category === 'food') {
         const v = item.id.replace('food-', '') as 'jantar' | 'sushi' | 'pizza' | 'fondue'
-        if (v === 'jantar' || v === 'sushi' || v === 'pizza') setFood(v)
+        if (v === 'jantar' || v === 'sushi' || v === 'pizza' || v === 'fondue') setFood(v)
       } else if (item.category === 'drink') {
         const v = item.id.replace('drink-', '') as 'vinho' | 'frisante' | 'drinque' | 'champagne'
         if (v === 'vinho' || v === 'frisante' || v === 'drinque') setDrink(v)
@@ -136,10 +136,11 @@ export default function StepExtras() {
     [grouped.extra],
   )
 
-  const jantarSelected = isPackage && food === 'jantar' && (pkg?.id === 'ouro' || pkg?.id === 'prata')
-  const sushiSelected  = isPackage && food === 'sushi'
-  const pizzaSelected  = isPackage && food === 'pizza'
-  const showTimePicker = jantarSelected || sushiSelected || pizzaSelected
+  const jantarSelected  = isPackage && food === 'jantar' && (pkg?.id === 'ouro' || pkg?.id === 'prata')
+  const sushiSelected   = isPackage && food === 'sushi'
+  const pizzaSelected   = isPackage && food === 'pizza'
+  const fondueSelected  = isPackage && food === 'fondue'
+  const showTimePicker  = jantarSelected || sushiSelected || pizzaSelected || fondueSelected
 
   // Gera slots de 30 min entre check-in e check-out
   const dynamicTimeSlots = useMemo(() => {
@@ -165,7 +166,8 @@ export default function StepExtras() {
     ? (!!food && !!drink &&
        (!jantarSelected || (!!jantarPrato && !!jantarHorario)) &&
        (!sushiSelected  || !!jantarHorario) &&
-       (!pizzaSelected  || !!jantarHorario))
+       (!pizzaSelected  || !!jantarHorario) &&
+       (!fondueSelected || !!jantarHorario))
     : (decoItems.length === 0 || !!selectedDecor)
 
   if (loading) {
@@ -302,7 +304,7 @@ export default function StepExtras() {
         <div className="mb-7 sm:mb-9">
           <div className="flex items-baseline justify-between gap-3 mb-3">
             <h2 className="font-serif italic text-gold-200 text-xl sm:text-2xl">
-              {sushiSelected ? 'Horário da barca' : pizzaSelected ? 'Horário da pizza' : 'Horário do jantar'}
+              {sushiSelected ? 'Horário da barca' : pizzaSelected ? 'Horário da pizza' : fondueSelected ? 'Horário do fondue' : 'Horário do jantar'}
             </h2>
             <span className="text-[9px] tracking-[0.35em] uppercase text-gold-700/40">
               {checkIn ? `check-in às ${checkIn.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : 'obrigatório'}
@@ -354,11 +356,11 @@ export default function StepExtras() {
         </CardGrid>
       </Section>
 
-      {/* ─── Decoração — pacote = opcional (inclusa), experiência = obrigatória ─── */}
-      {decoItems.length > 0 && (
+      {/* ─── Decoração — só no modo experiência (pacote já vem com decoração inclusa) ─── */}
+      {!isPackage && decoItems.length > 0 && (
         <Section
           title="Decoração"
-          hint={isPackage ? 'opcional' : 'obrigatória'}
+          hint="obrigatória"
           kicker="03"
         >
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">

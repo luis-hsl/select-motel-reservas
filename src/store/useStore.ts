@@ -8,7 +8,7 @@ interface StoreState {
   // ────── PACKAGE MODE ──────
   package: Package | null
   drink: 'vinho' | 'frisante' | 'drinque' | null
-  food: 'jantar' | 'sushi' | 'pizza' | null
+  food: 'jantar' | 'sushi' | 'pizza' | 'fondue' | null
   jantarPrato: string | null
   jantarHorario: string | null
 
@@ -32,7 +32,7 @@ interface StoreState {
   setMode: (mode: ReservationMode) => void
   setPackage: (pkg: Package) => void
   setDrink: (drink: 'vinho' | 'frisante' | 'drinque') => void
-  setFood: (food: 'jantar' | 'sushi' | 'pizza') => void
+  setFood: (food: 'jantar' | 'sushi' | 'pizza' | 'fondue') => void
   setJantarPrato: (prato: string | null) => void
   setJantarHorario: (horario: string | null) => void
   setType: (type: ReservationType) => void
