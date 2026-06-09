@@ -50,7 +50,8 @@ export default function StepPagamento() {
   const {
     mode, package: pkg, type, suite, checkIn, checkOut,
     customerName, customerPhone, customerEmail, customerTaxId,
-    totalAmount, prevStep, drink, food, observations, setObservations, consentAt, selectedItems,
+    totalAmount, prevStep, drink, food, jantarPrato, jantarHorario,
+    observations, setObservations, consentAt, selectedItems,
   } = useStore()
   // Snapshot do que o cliente escolheu — vai na coluna extras (jsonb) da reserva
   // e é usado pra montar a mensagem que o motel recebe quando o pagamento confirma.
@@ -61,6 +62,8 @@ export default function StepPagamento() {
     includes:     pkg?.includes ?? [],
     drink,
     food,
+    jantarPrato,
+    jantarHorario,
     type,
     selectedItems,                            // a la carte (modo experiência)
     observations: observations?.trim() || null,

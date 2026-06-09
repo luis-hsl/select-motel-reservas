@@ -9,6 +9,8 @@ interface StoreState {
   package: Package | null
   drink: 'vinho' | 'frisante' | 'drinque' | null
   food: 'jantar' | 'sushi' | 'pizza' | null
+  jantarPrato: string | null
+  jantarHorario: string | null
 
   // ────── EXPERIENCE MODE ──────
   // Items selecionados (cada um com seu preço, somam no total)
@@ -31,6 +33,8 @@ interface StoreState {
   setPackage: (pkg: Package) => void
   setDrink: (drink: 'vinho' | 'frisante' | 'drinque') => void
   setFood: (food: 'jantar' | 'sushi' | 'pizza') => void
+  setJantarPrato: (prato: string | null) => void
+  setJantarHorario: (horario: string | null) => void
   setType: (type: ReservationType) => void
   setSuite: (suite: Suite) => void
   setCheckIn: (date: Date) => void
@@ -54,6 +58,8 @@ const INITIAL = {
   package: null,
   drink: null,
   food: null,
+  jantarPrato: null,
+  jantarHorario: null,
   selectedItems: [] as ExperienceItem[],
   type: null,
   suite: null,
@@ -73,7 +79,9 @@ export const useStore = create<StoreState>((set, get) => ({
   setMode: (mode) => set({ mode }),
   setPackage: (pkg) => set({ package: pkg }),
   setDrink: (drink) => set({ drink }),
-  setFood: (food) => set({ food }),
+  setFood: (food) => set({ food, jantarPrato: null, jantarHorario: null }),
+  setJantarPrato: (jantarPrato) => set({ jantarPrato }),
+  setJantarHorario: (jantarHorario) => set({ jantarHorario }),
   setType: (type) => set({ type }),
   setSuite: (suite) => set({ suite }),
   setCheckIn: (date) => set({ checkIn: date, suite: null }),

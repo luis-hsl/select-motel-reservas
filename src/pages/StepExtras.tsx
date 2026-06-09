@@ -25,6 +25,14 @@ const FOOD_NOTA: Record<string, { icon: 'check' | 'warn'; text: string }> = {
   sushi:  { icon: 'check', text: 'No sushi o casal ganha uma barca : o combinado premium é servido diretamente para vocês.' },
 }
 
+const PRATOS = [
+  { id: 'risoto', label: 'Risoto de bacon com queijo Brie' },
+  { id: 'rigatone', label: 'Rigatone de cogumelos com bechamel de dois queijos' },
+  { id: 'mousseline', label: 'Mousseline de batatas com filé mignon e legumes saltados' },
+]
+
+const TIME_SLOTS = ['20:00', '20:30', '21:00', '21:30', '22:00']
+
 /**
  * StepExtras — Step consolidada de Comida + Bebida + Decoração.
  *
@@ -41,7 +49,13 @@ const FOOD_NOTA: Record<string, { icon: 'check' | 'warn'; text: string }> = {
  *   - Decoração: radio entre Bronze/Prata/Ouro ou "sem decoração" (opcional)
  */
 export default function StepExtras() {
-  const { mode, package: pkg, selectedItems, toggleItem, clearItems, setFood, setDrink, food, drink, nextStep, prevStep } = useStore()
+  const {
+    mode, package: pkg, selectedItems, toggleItem, clearItems,
+    setFood, setDrink, food, drink,
+    jantarPrato, jantarHorario, setJantarPrato, setJantarHorario,
+    checkIn,
+    nextStep, prevStep,
+  } = useStore()
   const [items, setItems] = useState<ExperienceItem[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -128,10 +142,12 @@ export default function StepExtras() {
     [grouped.extra],
   )
 
-  // Modo pacote: comida + bebida obrigatórios
+  const jantarSelected = isPackage && food === 'jantar' && (pkg?.id === 'ouro' || pkg?.id === 'prata')
+
+  // Modo pacote: comida + bebida obrigatórios; se jantar: também prato + horário
   // Modo experiência: decoração obrigatória (se existir alguma opção disponível)
   const canContinue = isPackage
-    ? (!!food && !!drink)
+    ? (!!food && !!drink && (!jantarSelected || (!!jantarPrato && !!jantarHorario)))
     : (decoItems.length === 0 || !!selectedDecor)
 
   if (loading) {
@@ -213,6 +229,88 @@ export default function StepExtras() {
           </div>
         )
       })()}
+
+      {/* ─── Escolha do prato + horário (jantar ouro/prata) ─── */}
+      {jantarSelected && (
+        <div className="mb-7 sm:mb-9 space-y-5">
+          {/* Prato */}
+          <div>
+            <div className="flex items-baseline justify-between gap-3 mb-3">
+              <h2 className="font-serif italic text-gold-200 text-xl sm:text-2xl">Escolha o prato</h2>
+              <span className="text-[9px] tracking-[0.35em] uppercase text-gold-700/40">obrigatório</span>
+            </div>
+            <span className="block h-px w-full bg-gradient-to-r from-gold-700/30 via-transparent to-transparent mb-4" />
+            <div className="space-y-2.5">
+              {PRATOS.map(p => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setJantarPrato(p.id)}
+                  className="w-full text-left px-4 py-3.5 rounded-xl border transition-all duration-200 active:scale-[0.99] outline-none"
+                  style={{
+                    background: jantarPrato === p.id
+                      ? 'rgba(201,168,76,0.10)'
+                      : 'rgba(255,255,255,0.02)',
+                    borderColor: jantarPrato === p.id
+                      ? 'rgba(201,168,76,0.55)'
+                      : 'rgba(201,168,76,0.15)',
+                    boxShadow: jantarPrato === p.id
+                      ? '0 0 0 1px rgba(201,168,76,0.25), 0 4px 20px rgba(160,120,30,0.15)'
+                      : 'none',
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center transition-all"
+                      style={{
+                        borderColor: jantarPrato === p.id ? 'rgba(201,168,76,0.9)' : 'rgba(201,168,76,0.3)',
+                        background: jantarPrato === p.id ? 'rgba(201,168,76,0.9)' : 'transparent',
+                      }}
+                    >
+                      {jantarPrato === p.id && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-black" />
+                      )}
+                    </span>
+                    <span className="text-sm leading-snug" style={{ color: jantarPrato === p.id ? 'rgba(240,200,110,0.95)' : 'rgba(200,165,80,0.65)' }}>
+                      {p.label}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Horário */}
+          <div>
+            <div className="flex items-baseline justify-between gap-3 mb-3">
+              <h2 className="font-serif italic text-gold-200 text-xl sm:text-2xl">Horário do jantar</h2>
+              <span className="text-[9px] tracking-[0.35em] uppercase text-gold-700/40">
+                {checkIn ? `após check-in ${checkIn.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : 'obrigatório'}
+              </span>
+            </div>
+            <span className="block h-px w-full bg-gradient-to-r from-gold-700/30 via-transparent to-transparent mb-4" />
+            <div className="flex flex-wrap gap-2.5">
+              {TIME_SLOTS.map(slot => (
+                <button
+                  key={slot}
+                  type="button"
+                  onClick={() => setJantarHorario(slot)}
+                  className="px-5 py-2.5 rounded-xl text-sm font-medium border transition-all duration-200 active:scale-[0.97]"
+                  style={{
+                    background: jantarHorario === slot ? 'rgba(201,168,76,0.15)' : 'rgba(255,255,255,0.02)',
+                    borderColor: jantarHorario === slot ? 'rgba(201,168,76,0.6)' : 'rgba(201,168,76,0.18)',
+                    color: jantarHorario === slot ? 'rgba(240,200,110,0.95)' : 'rgba(200,165,80,0.55)',
+                    boxShadow: jantarHorario === slot ? '0 0 0 1px rgba(201,168,76,0.25)' : 'none',
+                  }}
+                >
+                  {slot}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-[10px] text-gold-700/40">Horário de Brasília. Confirmaremos pelo WhatsApp.</p>
+          </div>
+        </div>
+      )}
 
       {/* ─── Bebida ─── */}
       <Section
