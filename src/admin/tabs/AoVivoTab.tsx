@@ -1,14 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 
-// Pacote (8 steps):     Escolha→Pacote→Tipo→Data→Suíte→Cardápio→Dados→Pagamento
-// Experiência (7 steps):Escolha→Tipo→Data→Suíte→Cardápio→Dados→Pagamento
-const STEP_NAMES_PKG = ['Escolha','Pacote','Tipo','Data','Suíte','Cardápio','Dados','Pagamento']
-const STEP_NAMES_EXP = ['Escolha','Tipo','Data','Suíte','Cardápio','Dados','Pagamento']
+// Pacote (7 steps):     Escolha→Pacote→Tipo→Data→Suíte→Extras→Pagamento
+// Experiência (6 steps):Escolha→Tipo→Data→Suíte→Extras→Pagamento
+// (StepDados foi fundido inline no StepEscolha)
+const STEP_NAMES_PKG = ['Escolha','Pacote','Tipo','Data','Suíte','Extras','Pagamento']
+const STEP_NAMES_EXP = ['Escolha','Tipo','Data','Suíte','Extras','Pagamento']
+const MAX_STEPS_PKG  = STEP_NAMES_PKG.length      // 7
 
-// Heurística: sessões com max_step=8 → pacote; sem conversão até step 8 → experiência
+// Heurística: experiência tem 1 step a menos (sem StepPacote).
+// max_step ≥ 7 → garantidamente pacote. Abaixo disso, presume experiência
+// (mapeamento errado só afeta usuários pacote que abandonaram cedo).
 function getStepName(step: number, maxStep?: number): string {
-  const names = (maxStep ?? 8) >= 8 ? STEP_NAMES_PKG : STEP_NAMES_EXP
+  const names = (maxStep ?? MAX_STEPS_PKG) >= MAX_STEPS_PKG ? STEP_NAMES_PKG : STEP_NAMES_EXP
   return names[(step - 1)] ?? `Step ${step}`
 }
 const ACTIVE_WINDOW_MS = 2 * 60 * 1000           // < 2min = "ativo agora"
@@ -21,6 +25,7 @@ interface Session {
   last_active_at:  string
   current_step:    number
   max_step:        number
+  mode:            'package' | 'experience' | null
   steps_history:   Array<{ step: number; at: string }> | null
   user_agent:      string | null
   device:          string | null
@@ -34,6 +39,14 @@ interface Session {
   ip_hash:         string | null
   converted:       boolean
   reservation_id:  string | null
+}
+
+function sessionMode(s: Session): 'package' | 'experience' | 'unknown' {
+  if (s.mode === 'package' || s.mode === 'experience') return s.mode
+  // Sessões antigas sem mode: heurística por max_step.
+  // ≥ 7 só é alcançável no pacote (experiência tem 6 steps).
+  if ((s.max_step ?? 0) >= MAX_STEPS_PKG) return 'package'
+  return 'unknown'
 }
 
 function timeAgo(iso: string): string {
@@ -114,21 +127,49 @@ export default function AoVivoTab() {
     }
   }, [])
 
-  // Métricas
+  // Métricas — funis separados por modo (pacote / experiência) +
+  // bucket "indefinido" pra sessões antigas sem mode persistido.
   const stats = useMemo(() => {
     const nowMs = Date.now()
     const today = new Date(); today.setHours(0, 0, 0, 0)
     const todayMs = today.getTime()
 
     let active = 0, todayCount = 0, converted = 0
-    const funnel = new Array(8).fill(0)
+    const funnelPkg     = new Array(STEP_NAMES_PKG.length).fill(0)
+    const funnelExp     = new Array(STEP_NAMES_EXP.length).fill(0)
+    let totalPkg     = 0
+    let totalExp     = 0
+    let totalUnknown = 0
+    let convPkg = 0, convExp = 0
+
     sessions.forEach(s => {
       if (nowMs - new Date(s.last_active_at).getTime() < ACTIVE_WINDOW_MS) active++
       if (new Date(s.started_at).getTime() >= todayMs) todayCount++
       if (s.converted) converted++
-      for (let i = 0; i < (s.max_step ?? 1); i++) funnel[i]++
+
+      const m = sessionMode(s)
+      const max = Math.max(1, s.max_step ?? 1)
+
+      if (m === 'package') {
+        totalPkg++
+        if (s.converted) convPkg++
+        const cap = Math.min(max, funnelPkg.length)
+        for (let i = 0; i < cap; i++) funnelPkg[i]++
+      } else if (m === 'experience') {
+        totalExp++
+        if (s.converted) convExp++
+        const cap = Math.min(max, funnelExp.length)
+        for (let i = 0; i < cap; i++) funnelExp[i]++
+      } else {
+        totalUnknown++
+      }
     })
-    return { active, todayCount, converted, funnel }
+    return {
+      active, todayCount, converted,
+      funnelPkg, funnelExp,
+      totalPkg, totalExp, totalUnknown,
+      convPkg, convExp,
+    }
   }, [sessions])
 
   const filtered = useMemo(() => {
@@ -190,34 +231,30 @@ export default function AoVivoTab() {
         <StatCard label="Total visto"  value={sessions.length}   hint="todas as sessões" />
       </div>
 
-      {/* ───── Funil ───── */}
-      <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-        <div className="flex items-baseline justify-between mb-3">
-          <p className="text-white/40 text-[11px] tracking-widest uppercase">Funil por step</p>
-          <p className="text-white/25 text-[10px]">Pacote: 8 steps · Experiência: 7 steps</p>
-        </div>
-        <div className="space-y-1.5">
-          {stats.funnel.map((count, i) => {
-            const pct = sessions.length ? Math.round((count / sessions.length) * 100) : 0
-            return (
-              <div key={i} className="flex items-center gap-3 text-xs">
-                <span className="text-white/40 w-32 shrink-0">{i + 1}. {STEP_NAMES_PKG[i]}</span>
-                <div className="flex-1 h-2 rounded-full bg-white/[0.05] overflow-hidden">
-                  <div
-                    className="h-full transition-all"
-                    style={{
-                      width: `${pct}%`,
-                      background: 'linear-gradient(to right, #c8a035, #e8c060)',
-                    }}
-                  />
-                </div>
-                <span className="text-white/60 w-12 text-right tabular-nums">{count}</span>
-                <span className="text-white/30 w-10 text-right tabular-nums text-[10px]">{pct}%</span>
-              </div>
-            )
-          })}
-        </div>
-      </section>
+      {/* ───── Funis (Pacote + Experiência separados) ───── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <FunnelCard
+          title="Pacote"
+          subtitle={`${stats.totalPkg} sessão${stats.totalPkg === 1 ? '' : 'ões'} · ${stats.convPkg} convertida${stats.convPkg === 1 ? '' : 's'}`}
+          accent="gold"
+          steps={STEP_NAMES_PKG}
+          funnel={stats.funnelPkg}
+          total={stats.totalPkg}
+        />
+        <FunnelCard
+          title="Experiência"
+          subtitle={`${stats.totalExp} sessão${stats.totalExp === 1 ? '' : 'ões'} · ${stats.convExp} convertida${stats.convExp === 1 ? '' : 's'}`}
+          accent="purple"
+          steps={STEP_NAMES_EXP}
+          funnel={stats.funnelExp}
+          total={stats.totalExp}
+        />
+      </div>
+      {stats.totalUnknown > 0 && (
+        <p className="text-white/25 text-[10px] -mt-2">
+          {stats.totalUnknown} sessão{stats.totalUnknown === 1 ? '' : 'ões'} sem modo definido (sessões antigas, pré-tracking de modo)
+        </p>
+      )}
 
       {/* ───── Filtros ───── */}
       <div className="flex gap-2 flex-wrap">
@@ -308,6 +345,49 @@ export default function AoVivoTab() {
       {/* ───── Drill-down modal ───── */}
       {selected && <SessionDetailModal session={selected} onClose={() => setSelected(null)} />}
     </div>
+  )
+}
+
+function FunnelCard({ title, subtitle, accent, steps, funnel, total }: {
+  title: string
+  subtitle: string
+  accent: 'gold' | 'purple'
+  steps: string[]
+  funnel: number[]
+  total: number
+}) {
+  const grad = accent === 'gold'
+    ? 'linear-gradient(to right, #c8a035, #e8c060)'
+    : 'linear-gradient(to right, #8b5cf6, #c4b5fd)'
+  const titleColor = accent === 'gold' ? 'text-gold-300' : 'text-purple-300'
+  return (
+    <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+      <div className="flex items-baseline justify-between mb-3 gap-3">
+        <div className="min-w-0">
+          <p className={`${titleColor} text-[12px] tracking-widest uppercase font-medium`}>{title}</p>
+          <p className="text-white/35 text-[10px] mt-0.5">{subtitle}</p>
+        </div>
+        <p className="text-white/25 text-[10px] shrink-0">{steps.length} steps</p>
+      </div>
+      <div className="space-y-1.5">
+        {funnel.map((count, i) => {
+          const pct = total ? Math.round((count / total) * 100) : 0
+          return (
+            <div key={i} className="flex items-center gap-3 text-xs">
+              <span className="text-white/40 w-28 sm:w-32 shrink-0 truncate">{i + 1}. {steps[i]}</span>
+              <div className="flex-1 h-2 rounded-full bg-white/[0.05] overflow-hidden">
+                <div
+                  className="h-full transition-all"
+                  style={{ width: `${pct}%`, background: grad }}
+                />
+              </div>
+              <span className="text-white/60 w-10 text-right tabular-nums">{count}</span>
+              <span className="text-white/30 w-10 text-right tabular-nums text-[10px]">{pct}%</span>
+            </div>
+          )
+        })}
+      </div>
+    </section>
   )
 }
 

@@ -46,17 +46,17 @@ export default function App() {
     return p.get('payment') === 'ok' && ref ? ref : null
   }, [])
 
-  // Tracking anônimo do onboarding
+  // Tracking anônimo do onboarding (envia o mode quando já escolhido)
   useEffect(() => {
     if (paymentReturn) return
-    trackStep(currentStep)
-  }, [currentStep, paymentReturn])
+    trackStep(currentStep, mode)
+  }, [currentStep, mode, paymentReturn])
 
   useEffect(() => {
     if (paymentReturn) return
-    const id = setInterval(() => trackStep(currentStep), 30_000)
+    const id = setInterval(() => trackStep(currentStep, mode), 30_000)
     return () => clearInterval(id)
-  }, [currentStep, paymentReturn])
+  }, [currentStep, mode, paymentReturn])
 
   if (paymentReturn) {
     return <CardPaymentReturn reservationId={paymentReturn} />

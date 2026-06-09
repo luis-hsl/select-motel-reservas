@@ -2,8 +2,8 @@ import { getTotalSteps } from '../store/useStore'
 import { useStore } from '../store/useStore'
 import { InstagramInline } from './InstagramLink'
 
-const STEP_LABELS_PACKAGE    = ['Início', 'Pacote', 'Tipo', 'Data', 'Suíte', 'Extras', 'Dados', 'Pagamento']
-const STEP_LABELS_EXPERIENCE = ['Início', 'Tipo', 'Data', 'Suíte', 'Cardápio', 'Dados', 'Pagamento']
+const STEP_LABELS_PACKAGE    = ['Início', 'Pacote', 'Tipo', 'Data', 'Suíte', 'Extras', 'Pagamento']
+const STEP_LABELS_EXPERIENCE = ['Início', 'Tipo', 'Data', 'Suíte', 'Extras', 'Pagamento']
 
 interface Props { currentStep: number }
 

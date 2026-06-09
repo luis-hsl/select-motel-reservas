@@ -47,6 +47,7 @@ Deno.serve(async (req: Request) => {
   let body: {
     session_token?: string
     step?: number
+    mode?: 'package' | 'experience' | null
     user_agent?: string
     referrer?: string
     landing_path?: string
@@ -59,6 +60,7 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'invalid session_token' }, 422)
   }
   const step = Math.max(1, Math.min(9, Number(body.step ?? 1) | 0))
+  const mode = body.mode === 'package' || body.mode === 'experience' ? body.mode : null
 
   // Hash do IP
   const xff = (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'unknown'
@@ -90,14 +92,19 @@ Deno.serve(async (req: Request) => {
       : existing.steps_history
     const max_step = Math.max(existing.max_step ?? 1, step)
 
+    // Só atualiza mode se cliente mandou um valor explícito — evita sobrescrever
+    // pra null em pings posteriores que não conhecem o modo.
+    const update: Record<string, unknown> = {
+      current_step: step,
+      max_step,
+      last_active_at: now,
+      steps_history: history.slice(-60),  // cap histórico pra não estourar
+    }
+    if (mode) update.mode = mode
+
     await supabase
       .from('onboarding_sessions')
-      .update({
-        current_step: step,
-        max_step,
-        last_active_at: now,
-        steps_history: history.slice(-60),  // cap histórico pra não estourar
-      })
+      .update(update)
       .eq('id', existing.id)
     return json({ ok: true, mode: 'update' })
   }
@@ -113,6 +120,7 @@ Deno.serve(async (req: Request) => {
       session_token,
       current_step:  step,
       max_step:      step,
+      mode,
       steps_history: [{ step, at: now }],
       user_agent,
       device,

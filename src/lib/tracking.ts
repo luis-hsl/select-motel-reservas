@@ -76,8 +76,12 @@ let lastTrack: { step: number; at: number } | null = null
 /**
  * Reporta a step atual da sessão de onboarding pro backend.
  * Idempotente: chamadas rápidas pra mesma step são ignoradas.
+ * `mode` é opcional — backend só persiste se vier preenchido (não sobrescreve com null).
  */
-export async function trackStep(step: number): Promise<void> {
+export async function trackStep(
+  step: number,
+  mode?: 'package' | 'experience' | null,
+): Promise<void> {
   if (trackingDisabled()) return
   if (lastTrack && lastTrack.step === step && Date.now() - lastTrack.at < 5000) return
   lastTrack = { step, at: Date.now() }
@@ -95,6 +99,7 @@ export async function trackStep(step: number): Promise<void> {
       body: JSON.stringify({
         session_token,
         step,
+        mode:         mode ?? null,
         user_agent:   ua,
         referrer:     document.referrer || null,
         landing_path: window.location.pathname + window.location.search,
