@@ -60,7 +60,7 @@ const OPTIONS: Option[] = [
 export default function StepEscolha() {
   const {
     mode: storedMode, setMode,
-    customerName, customerPhone, customerTaxId, consentAt,
+    customerName, customerPhone, customerEmail, customerTaxId, consentAt,
     setCustomer, setConsentAt,
     nextStep,
     package: pkg, type, suite, checkIn, drink, food, totalAmount,
@@ -74,6 +74,7 @@ export default function StepEscolha() {
   /* form fields — pré-populados com dados do store se o usuário voltou */
   const [name,             setName]             = useState(customerName  || '')
   const [phone,            setPhone]            = useState(customerPhone || '')
+  const [email,            setEmail]            = useState(customerEmail || '')
   const [taxId,            setTaxId]            = useState(customerTaxId ? maskCPF(customerTaxId) : '')
   const [acceptedTerms,    setAcceptedTerms]    = useState(!!consentAt)
   const [whatsappConsent,  setWhatsappConsent]  = useState(false)
@@ -87,7 +88,7 @@ export default function StepEscolha() {
   const cpfValid = isValidCPF(rawCPF)
   const cpfError = rawCPF.length === 11 && !cpfValid
   const canContinue = !!picked && name.trim() && rawPhone.length >= 10 &&
-                      cpfValid && acceptedTerms
+                      email.includes('@') && cpfValid && acceptedTerms
 
   /* show form with slight delay so card selection animation completes,
      then scroll smoothly into view once the expansion starts */
@@ -121,7 +122,7 @@ export default function StepEscolha() {
   function advance() {
     if (!canContinue || !picked) return
     setMode(picked)
-    setCustomer(name.trim(), phone.trim(), '', rawCPF)
+    setCustomer(name.trim(), phone.trim(), email.trim(), rawCPF)
     setConsentAt(new Date().toISOString())
 
     /* Google Ads — lead */
@@ -139,7 +140,7 @@ export default function StepEscolha() {
     supabase.rpc('insert_lead', {
       p_name:         name.trim(),
       p_phone:        phone.trim(),
-      p_email:        '',
+      p_email:        email.trim(),
       p_package_id:   pkg?.id ?? null,
       p_type:         type ?? null,
       p_suite_id:     suite?.id ?? null,
@@ -214,14 +215,23 @@ export default function StepEscolha() {
               />
             </Field>
 
-            <Field label="WhatsApp">
-              <input
-                type="tel" inputMode="numeric" value={phone}
-                onChange={e => setPhone(maskPhone(e.target.value))}
-                placeholder="(00) 00000-0000"
-                className="w-full bg-black/60 border border-gold-900/40 rounded-lg px-4 py-3 text-sm text-gold-200 placeholder-gold-900/50 outline-none focus:border-gold-600/60 transition-colors"
-              />
-            </Field>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="WhatsApp">
+                <input
+                  type="tel" inputMode="numeric" value={phone}
+                  onChange={e => setPhone(maskPhone(e.target.value))}
+                  placeholder="(00) 00000-0000"
+                  className="w-full bg-black/60 border border-gold-900/40 rounded-lg px-4 py-3 text-sm text-gold-200 placeholder-gold-900/50 outline-none focus:border-gold-600/60 transition-colors"
+                />
+              </Field>
+              <Field label="E-mail">
+                <input
+                  type="email" value={email} onChange={e => setEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                  className="w-full bg-black/60 border border-gold-900/40 rounded-lg px-4 py-3 text-sm text-gold-200 placeholder-gold-900/50 outline-none focus:border-gold-600/60 transition-colors"
+                />
+              </Field>
+            </div>
 
             <Field label="CPF">
               <input
