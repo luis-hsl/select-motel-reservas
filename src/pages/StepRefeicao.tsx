@@ -76,7 +76,7 @@ export default function StepRefeicao() {
   const isSingle   = opcoes.length === 1
   const fondueUrl  = remoteUrls['fondue_photo_url'] ?? '/fondue.webp'
   const gridClass  = isSingle ? 'grid-cols-1 max-w-xs' : 'grid-cols-1 sm:grid-cols-2 max-w-xl'
-  const nota       = selected ? NOTA[selected] : null
+  const nota       = selected && pkgId === 'ouro' ? NOTA[selected] : null
 
   return (
     <div>
