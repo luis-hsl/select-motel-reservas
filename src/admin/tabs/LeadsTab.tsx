@@ -84,7 +84,7 @@ function waLinkRecovery(lead: Lead) {
     parts.push(`Valor: ${fmtBRL(lead.total_amount)}.`)
   }
 
-  parts.push(`Posso te ajudar a finalizar? 🌹`)
+  parts.push(`Ficou com alguma dúvida ou surgiu alguma objeção que te impediu de prosseguir? Me conta, estou aqui pra te ajudar! 🌹`)
 
   return `https://wa.me/${num}?text=${encodeURIComponent(parts.join(' '))}`
 }

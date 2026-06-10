@@ -48,7 +48,6 @@ const OPTIONS: Option[] = [
   {
     id: 'package', label: 'pacote', sublabel: 'tudo incluso',
     desc: 'Decoração, jantar, fondue e bebida. Só chegar e se apaixonar.',
-    bullets: ['Gastronomia', 'Bebida', 'Fondue', 'Decoração'],
     recommended: true,
   },
   {
@@ -97,13 +96,11 @@ export default function StepEscolha() {
     if (picked && !formVisible) {
       const t = setTimeout(() => {
         setFormVisible(true)
-        // double-rAF: garante que o DOM refluiu e a expansão já começou
-        requestAnimationFrame(() =>
-          requestAnimationFrame(() =>
-            formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-          )
-        )
-      }, 320)
+        // Aguarda a transição de maxHeight começar antes de scrollar
+        setTimeout(() => {
+          formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }, 80)
+      }, 300)
       return () => clearTimeout(t)
     }
   }, [picked])
@@ -203,6 +200,7 @@ export default function StepEscolha() {
         ref={formRef}
         className="max-w-3xl mx-auto overflow-hidden"
         style={{
+          scrollMarginTop: '140px',
           opacity:    formVisible ? 1 : 0,
           transform:  formVisible ? 'translateY(0)' : 'translateY(28px)',
           maxHeight:  formVisible ? '1100px' : '0px',
@@ -407,24 +405,14 @@ function OptionCard({ opt, selected, onPick }: { opt: Option; selected: boolean;
         </h2>
 
         <span className="block text-[9px] sm:text-[10px] tracking-[0.4em] uppercase mb-3"
-              style={{ color: rec ? 'rgba(252,211,77,0.6)' : 'rgba(184,150,12,0.5)' }}>
+              style={{ color: rec ? 'rgba(252,211,77,0.75)' : 'rgba(201,168,76,0.65)' }}>
           {opt.sublabel}
         </span>
 
-        <p className="text-[10px] sm:text-[11px] leading-relaxed"
-           style={{ color: rec ? 'rgba(220,185,110,0.6)' : 'rgba(180,150,80,0.5)', maxWidth: '18ch' }}>
+        <p className="text-[11px] sm:text-xs leading-relaxed"
+           style={{ color: rec ? 'rgba(235,200,130,0.80)' : 'rgba(210,175,100,0.70)', maxWidth: '18ch' }}>
           {opt.desc}
         </p>
-
-        {opt.bullets && opt.bullets.length > 0 && (
-          <div className="flex flex-wrap justify-center gap-x-1.5 gap-y-1 mt-3">
-            {opt.bullets.map((b, i) => (
-              <span key={b} className="text-[9px] uppercase tracking-wide" style={{ color: 'rgba(201,168,76,0.45)' }}>
-                {i > 0 && <span className="mr-1.5 opacity-40">·</span>}{b}
-              </span>
-            ))}
-          </div>
-        )}
       </div>
     </button>
   )

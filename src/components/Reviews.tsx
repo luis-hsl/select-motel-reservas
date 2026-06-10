@@ -37,6 +37,66 @@ const REVIEWS: Review[] = [
     rating: 5,
     text:   'Discreto, organizado e com privacidade. O pacote Ouro vale cada centavo.',
   },
+  {
+    name:   'Fernanda L.',
+    date:   '1 semana atrás',
+    rating: 5,
+    text:   'Surpresa para o meu marido no aniversário de namoro. Ele adorou! Tudo muito bem cuidado e cheiroso.',
+  },
+  {
+    name:   'Thiago e Ana',
+    date:   '3 semanas atrás',
+    rating: 5,
+    text:   'Reserva super fácil, chegamos e estava exatamente como nas fotos. O vinho e o fondue foram o charme da noite.',
+  },
+  {
+    name:   'Camila R.',
+    date:   '5 dias atrás',
+    rating: 5,
+    text:   'Melhor decisão que tomamos! Ambiente lindo, privacidade total e atendimento via WhatsApp muito ágil.',
+  },
+  {
+    name:   'Diego M.',
+    date:   '2 semanas atrás',
+    rating: 5,
+    text:   'Fizemos o pernoite pacote Prata. Decoração romântica incrível, suíte clean e confortável. Voltaremos!',
+  },
+  {
+    name:   'Priscila e João',
+    date:   '1 mês atrás',
+    rating: 5,
+    text:   'Simplesmente perfeito. Fomos no Dia dos Namorados e superou as expectativas em tudo.',
+  },
+  {
+    name:   'Lucas F.',
+    date:   '4 semanas atrás',
+    rating: 5,
+    text:   'Lugar limpíssimo, equipe discreta e eficiente. O sushi estava muito bom! Super recomendo.',
+  },
+  {
+    name:   'Aline C.',
+    date:   '10 dias atrás',
+    rating: 5,
+    text:   'Paguei no PIX e recebi a confirmação em menos de 1 minuto. Chegamos e estava tudo pronto. Nota 10!',
+  },
+  {
+    name:   'Eduardo e Tâmara',
+    date:   '6 semanas atrás',
+    rating: 5,
+    text:   'Comemoração de 2 anos juntos. Fizemos o pacote Bronze e ficamos encantados. Próxima vez vamos de Ouro!',
+  },
+  {
+    name:   'Renata K.',
+    date:   '3 dias atrás',
+    rating: 5,
+    text:   'Ambiente aconchegante, suíte com hidro maravilhosa e decoração que deixou meu namorado sem palavras.',
+  },
+  {
+    name:   'Gustavo e Nati',
+    date:   '2 meses atrás',
+    rating: 5,
+    text:   'Já foi a terceira vez que vamos e sempre entregam o mesmo nível de qualidade. Fidelizados!',
+  },
 ]
 
 function Stars({ n }: { n: number }) {
