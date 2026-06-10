@@ -346,20 +346,13 @@ export default function StepEscolha() {
 /* ── OptionCard ── */
 function OptionCard({ opt, selected, onPick }: { opt: Option; selected: boolean; onPick: () => void }) {
   const rec = !!opt.recommended
-  const bgBase = rec
-    ? ['radial-gradient(ellipse at 50% -10%, rgba(252,211,77,0.30) 0%, transparent 55%)',
-       'radial-gradient(ellipse at 80% 90%, rgba(201,168,76,0.14) 0%, transparent 50%)',
-       'linear-gradient(180deg, #18100a 0%, #0a0604 100%)'].join(', ')
-    : ['radial-gradient(ellipse at 50% -10%, rgba(201,168,76,0.22) 0%, transparent 55%)',
-       'radial-gradient(ellipse at 80% 90%, rgba(180,145,40,0.10) 0%, transparent 50%)',
-       'linear-gradient(180deg, #120e06 0%, #080604 100%)'].join(', ')
+  const imgSrc = opt.id === 'package' ? '/card-pacote.jpg' : '/card-experiencia.jpg'
 
   return (
     <button
       type="button" onClick={onPick} aria-pressed={selected}
       className="relative overflow-hidden rounded-2xl outline-none text-center transition-all duration-300 hover:brightness-110 active:scale-[0.97] focus-visible:ring-1 focus-visible:ring-gold-500"
       style={{
-        background: bgBase,
         border: `1px solid ${selected ? 'rgba(220,175,60,0.95)' : rec ? 'rgba(201,168,76,0.65)' : 'rgba(180,148,40,0.55)'}`,
         boxShadow: selected
           ? [`0 0 0 2px ${rec ? 'rgba(252,211,77,0.55)' : 'rgba(180,145,40,0.50)'}`,
@@ -374,6 +367,21 @@ function OptionCard({ opt, selected, onPick }: { opt: Option; selected: boolean;
         transform: selected ? 'translateY(-3px)' : 'translateY(0)',
       }}
     >
+      {/* Background image */}
+      <img
+        src={imgSrc}
+        alt=""
+        aria-hidden
+        draggable={false}
+        className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+        style={{ opacity: 0.45 }}
+      />
+      {/* Dark scrim overlay */}
+      <span aria-hidden className="absolute inset-0 pointer-events-none"
+            style={{ background: rec
+              ? 'linear-gradient(180deg, rgba(24,16,10,0.62) 0%, rgba(10,6,4,0.78) 100%)'
+              : 'linear-gradient(180deg, rgba(18,14,6,0.62) 0%, rgba(8,6,4,0.78) 100%)' }} />
+
       {/* Feixe de luz */}
       <span aria-hidden className="absolute top-0 left-1/2 -translate-x-1/2 pointer-events-none"
             style={{ width: rec ? '60%' : '50%', height: '140px',

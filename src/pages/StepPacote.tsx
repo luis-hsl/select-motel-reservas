@@ -276,36 +276,6 @@ export default function StepPacote() {
                   ))}
                 </ul>
 
-                {/* Melhoria CRO #1: Bloco de preço */}
-                <div className="mb-4 pt-3 border-t" style={{ borderColor: `${th.dividerColor}25` }}>
-                  {/* Badge "Melhor custo-benefício" apenas para Prata */}
-                  {id === 'prata' && (
-                    <div className="flex justify-center mb-3">
-                      <span
-                        className="text-[8px] tracking-[0.25em] uppercase font-bold px-3 py-1 rounded-full"
-                        style={{
-                          background: 'linear-gradient(135deg, rgba(34,197,94,0.2), rgba(201,168,76,0.2))',
-                          border: '1px solid rgba(34,197,94,0.4)',
-                          color: '#4ade80',
-                        }}
-                      >
-                        Melhor custo-benefício
-                      </span>
-                    </div>
-                  )}
-                  <div className="text-center">
-                    <p
-                      className="font-serif font-semibold leading-none"
-                      style={{ fontSize: '1.8rem', color: th.priceColor }}
-                    >
-                      R$ {pkg.price_period.toLocaleString('pt-BR')}
-                    </p>
-                    <p className="text-[11px] mt-1.5 italic" style={{ color: th.labelColor }}>
-                      ou R$ {pkg.price_overnight.toLocaleString('pt-BR')} no pernoite
-                    </p>
-                  </div>
-                </div>
-
                 {/* Ações */}
                 <div className="border-t pb-4 pt-3 grid grid-cols-2 gap-2" style={{ borderColor: `${th.dividerColor}25` }}>
                   <button
