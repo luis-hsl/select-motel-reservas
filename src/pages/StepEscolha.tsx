@@ -96,11 +96,12 @@ export default function StepEscolha() {
     if (picked && !formVisible) {
       const t = setTimeout(() => {
         setFormVisible(true)
-        // Aguarda a transição de maxHeight começar antes de scrollar
+        // Aguarda a animação de maxHeight completar (0.65s) antes de scrollar
+        // para que o browser calcule a posição final correta
         setTimeout(() => {
           formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        }, 80)
-      }, 300)
+        }, 680)
+      }, 200)
       return () => clearTimeout(t)
     }
   }, [picked])
@@ -349,39 +350,41 @@ export default function StepEscolha() {
 function OptionCard({ opt, selected, onPick }: { opt: Option; selected: boolean; onPick: () => void }) {
   const rec = !!opt.recommended
   const bgBase = rec
-    ? ['radial-gradient(ellipse at 50% -10%, rgba(252,211,77,0.22) 0%, transparent 55%)',
-       'radial-gradient(ellipse at 80% 90%, rgba(201,168,76,0.10) 0%, transparent 50%)',
-       'linear-gradient(180deg, #100c04 0%, #060402 100%)'].join(', ')
-    : ['radial-gradient(ellipse at 50% -10%, rgba(184,150,40,0.14) 0%, transparent 55%)',
-       'linear-gradient(180deg, #0b0805 0%, #040302 100%)'].join(', ')
+    ? ['radial-gradient(ellipse at 50% -10%, rgba(252,211,77,0.30) 0%, transparent 55%)',
+       'radial-gradient(ellipse at 80% 90%, rgba(201,168,76,0.14) 0%, transparent 50%)',
+       'linear-gradient(180deg, #18100a 0%, #0a0604 100%)'].join(', ')
+    : ['radial-gradient(ellipse at 50% -10%, rgba(201,168,76,0.22) 0%, transparent 55%)',
+       'radial-gradient(ellipse at 80% 90%, rgba(180,145,40,0.10) 0%, transparent 50%)',
+       'linear-gradient(180deg, #120e06 0%, #080604 100%)'].join(', ')
 
   return (
     <button
       type="button" onClick={onPick} aria-pressed={selected}
-      className="relative overflow-hidden rounded-2xl outline-none text-center transition-all duration-500 active:scale-[0.97] focus-visible:ring-1 focus-visible:ring-gold-500"
+      className="relative overflow-hidden rounded-2xl outline-none text-center transition-all duration-300 hover:brightness-110 active:scale-[0.97] focus-visible:ring-1 focus-visible:ring-gold-500"
       style={{
         background: bgBase,
-        border: `1px solid ${selected ? 'rgba(220,175,60,0.9)' : rec ? 'rgba(201,168,76,0.45)' : 'rgba(140,110,20,0.35)'}`,
+        border: `1px solid ${selected ? 'rgba(220,175,60,0.95)' : rec ? 'rgba(201,168,76,0.65)' : 'rgba(180,148,40,0.55)'}`,
         boxShadow: selected
-          ? [`0 0 0 1.5px ${rec ? 'rgba(252,211,77,0.5)' : 'rgba(180,145,40,0.45)'}`,
-             `0 0 40px ${rec ? 'rgba(201,168,76,0.22)' : 'rgba(140,110,20,0.18)'}`,
-             'inset 0 0 60px rgba(0,0,0,0.55)',
-             `inset 0 1px 0 ${rec ? 'rgba(252,211,77,0.20)' : 'rgba(201,168,76,0.12)'}`].join(', ')
-          : ['inset 0 0 50px rgba(0,0,0,0.6)',
-             `inset 0 1px 0 ${rec ? 'rgba(252,211,77,0.10)' : 'rgba(180,150,40,0.06)'}`,
-             '0 2px 20px rgba(0,0,0,0.4)'].join(', '),
+          ? [`0 0 0 2px ${rec ? 'rgba(252,211,77,0.55)' : 'rgba(180,145,40,0.50)'}`,
+             `0 0 48px ${rec ? 'rgba(201,168,76,0.28)' : 'rgba(160,128,30,0.22)'}`,
+             'inset 0 0 40px rgba(0,0,0,0.40)',
+             `inset 0 1px 0 ${rec ? 'rgba(252,211,77,0.25)' : 'rgba(201,168,76,0.18)'}`].join(', ')
+          : [`0 0 28px ${rec ? 'rgba(201,168,76,0.12)' : 'rgba(160,128,30,0.08)'}`,
+             'inset 0 0 35px rgba(0,0,0,0.45)',
+             `inset 0 1px 0 ${rec ? 'rgba(252,211,77,0.15)' : 'rgba(180,150,40,0.12)'}`,
+             '0 2px 16px rgba(0,0,0,0.35)'].join(', '),
         minHeight: '220px',
-        transform: selected ? 'translateY(-2px)' : 'translateY(0)',
+        transform: selected ? 'translateY(-3px)' : 'translateY(0)',
       }}
     >
       {/* Feixe de luz */}
       <span aria-hidden className="absolute top-0 left-1/2 -translate-x-1/2 pointer-events-none"
-            style={{ width: rec ? '55%' : '40%', height: '140px',
-                     background: rec ? 'linear-gradient(to bottom, rgba(252,211,77,0.18) 0%, transparent 100%)' : 'linear-gradient(to bottom, rgba(201,168,76,0.10) 0%, transparent 100%)',
+            style={{ width: rec ? '60%' : '50%', height: '140px',
+                     background: rec ? 'linear-gradient(to bottom, rgba(252,211,77,0.24) 0%, transparent 100%)' : 'linear-gradient(to bottom, rgba(201,168,76,0.18) 0%, transparent 100%)',
                      filter: 'blur(18px)' }} />
       <span aria-hidden className="absolute top-0 left-1/2 -translate-x-1/2 h-px"
-            style={{ width: rec ? '75%' : '55%',
-                     background: rec ? 'linear-gradient(90deg, transparent, rgba(252,211,77,0.9), transparent)' : 'linear-gradient(90deg, transparent, rgba(201,168,76,0.6), transparent)' }} />
+            style={{ width: rec ? '80%' : '65%',
+                     background: rec ? 'linear-gradient(90deg, transparent, rgba(252,211,77,0.95), transparent)' : 'linear-gradient(90deg, transparent, rgba(201,168,76,0.80), transparent)' }} />
 
       {/* Checkmark */}
       {selected && (
@@ -396,10 +399,10 @@ function OptionCard({ opt, selected, onPick }: { opt: Option; selected: boolean;
       <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 py-6 sm:py-8" style={{ minHeight: '220px' }}>
         <span aria-hidden className="block h-px mb-4"
               style={{ width: '2rem',
-                       background: rec ? 'linear-gradient(90deg, transparent, rgba(252,211,77,0.7), transparent)' : 'linear-gradient(90deg, transparent, rgba(154,125,10,0.5), transparent)',
-                       boxShadow: rec ? '0 0 6px rgba(252,211,77,0.4)' : '0 0 4px rgba(184,150,12,0.3)' }} />
+                       background: rec ? 'linear-gradient(90deg, transparent, rgba(252,211,77,0.85), transparent)' : 'linear-gradient(90deg, transparent, rgba(201,168,76,0.70), transparent)',
+                       boxShadow: rec ? '0 0 8px rgba(252,211,77,0.5)' : '0 0 6px rgba(201,168,76,0.40)' }} />
 
-        <h2 className={['font-serif italic whitespace-pre-line mb-2', rec ? 'gold-gradient' : 'text-gold-300/80'].join(' ')}
+        <h2 className={['font-serif italic whitespace-pre-line mb-2', rec ? 'gold-gradient' : 'text-gold-200'].join(' ')}
             style={{ fontSize: 'clamp(1.05rem,3.5vw,2rem)', letterSpacing: '-0.01em', fontWeight: 400, lineHeight: '1.1' }}>
           {opt.label}
         </h2>
