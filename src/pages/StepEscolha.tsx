@@ -351,77 +351,34 @@ function OptionCard({ opt, selected, onPick }: { opt: Option; selected: boolean;
   return (
     <button
       type="button" onClick={onPick} aria-pressed={selected}
-      className="relative overflow-hidden rounded-2xl outline-none text-center transition-all duration-300 hover:brightness-110 active:scale-[0.97] focus-visible:ring-1 focus-visible:ring-gold-500"
+      aria-label={opt.label}
+      className="relative overflow-hidden rounded-2xl outline-none transition-all duration-300 hover:brightness-110 active:scale-[0.97] focus-visible:ring-1 focus-visible:ring-gold-500"
       style={{
-        border: `1px solid ${selected ? 'rgba(220,175,60,0.95)' : rec ? 'rgba(201,168,76,0.65)' : 'rgba(180,148,40,0.55)'}`,
-        boxShadow: selected
-          ? [`0 0 0 2px ${rec ? 'rgba(252,211,77,0.55)' : 'rgba(180,145,40,0.50)'}`,
-             `0 0 48px ${rec ? 'rgba(201,168,76,0.28)' : 'rgba(160,128,30,0.22)'}`,
-             'inset 0 0 40px rgba(0,0,0,0.40)',
-             `inset 0 1px 0 ${rec ? 'rgba(252,211,77,0.25)' : 'rgba(201,168,76,0.18)'}`].join(', ')
-          : [`0 0 28px ${rec ? 'rgba(201,168,76,0.12)' : 'rgba(160,128,30,0.08)'}`,
-             'inset 0 0 35px rgba(0,0,0,0.45)',
-             `inset 0 1px 0 ${rec ? 'rgba(252,211,77,0.15)' : 'rgba(180,150,40,0.12)'}`,
-             '0 2px 16px rgba(0,0,0,0.35)'].join(', '),
         minHeight: '220px',
+        border: `1px solid ${selected ? 'rgba(220,175,60,0.95)' : 'rgba(255,255,255,0.12)'}`,
+        boxShadow: selected
+          ? `0 0 0 2px rgba(252,211,77,0.45), 0 0 32px rgba(201,168,76,0.22)`
+          : '0 2px 16px rgba(0,0,0,0.35)',
         transform: selected ? 'translateY(-3px)' : 'translateY(0)',
       }}
     >
-      {/* Background image */}
       <img
         src={imgSrc}
         alt=""
         aria-hidden
         draggable={false}
         className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
-        style={{ opacity: 0.45 }}
       />
-      {/* Dark scrim overlay */}
-      <span aria-hidden className="absolute inset-0 pointer-events-none"
-            style={{ background: rec
-              ? 'linear-gradient(180deg, rgba(24,16,10,0.62) 0%, rgba(10,6,4,0.78) 100%)'
-              : 'linear-gradient(180deg, rgba(18,14,6,0.62) 0%, rgba(8,6,4,0.78) 100%)' }} />
 
-      {/* Feixe de luz */}
-      <span aria-hidden className="absolute top-0 left-1/2 -translate-x-1/2 pointer-events-none"
-            style={{ width: rec ? '60%' : '50%', height: '140px',
-                     background: rec ? 'linear-gradient(to bottom, rgba(252,211,77,0.24) 0%, transparent 100%)' : 'linear-gradient(to bottom, rgba(201,168,76,0.18) 0%, transparent 100%)',
-                     filter: 'blur(18px)' }} />
-      <span aria-hidden className="absolute top-0 left-1/2 -translate-x-1/2 h-px"
-            style={{ width: rec ? '80%' : '65%',
-                     background: rec ? 'linear-gradient(90deg, transparent, rgba(252,211,77,0.95), transparent)' : 'linear-gradient(90deg, transparent, rgba(201,168,76,0.80), transparent)' }} />
-
-      {/* Checkmark */}
+      {/* Checkmark ao selecionar */}
       {selected && (
-        <span className="absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center z-10"
+        <span className="absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center z-10"
               style={{ background: rec ? '#c9a84c' : '#9a7828', boxShadow: '0 0 10px rgba(201,168,76,0.5)' }}>
-          <svg className="w-3 h-3 text-black" fill="none" viewBox="0 0 12 12">
+          <svg className="w-3.5 h-3.5 text-black" fill="none" viewBox="0 0 12 12">
             <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </span>
       )}
-
-      <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 py-6 sm:py-8" style={{ minHeight: '220px' }}>
-        <span aria-hidden className="block h-px mb-4"
-              style={{ width: '2rem',
-                       background: rec ? 'linear-gradient(90deg, transparent, rgba(252,211,77,0.85), transparent)' : 'linear-gradient(90deg, transparent, rgba(201,168,76,0.70), transparent)',
-                       boxShadow: rec ? '0 0 8px rgba(252,211,77,0.5)' : '0 0 6px rgba(201,168,76,0.40)' }} />
-
-        <h2 className={['font-serif italic whitespace-pre-line mb-2', rec ? 'gold-gradient' : 'text-gold-200'].join(' ')}
-            style={{ fontSize: 'clamp(1.05rem,3.5vw,2rem)', letterSpacing: '-0.01em', fontWeight: 400, lineHeight: '1.1' }}>
-          {opt.label}
-        </h2>
-
-        <span className="block text-[9px] sm:text-[10px] tracking-[0.4em] uppercase mb-3"
-              style={{ color: rec ? 'rgba(252,211,77,0.75)' : 'rgba(201,168,76,0.65)' }}>
-          {opt.sublabel}
-        </span>
-
-        <p className="text-[11px] sm:text-xs leading-relaxed"
-           style={{ color: rec ? 'rgba(235,200,130,0.80)' : 'rgba(210,175,100,0.70)', maxWidth: '18ch' }}>
-          {opt.desc}
-        </p>
-      </div>
     </button>
   )
 }
