@@ -346,7 +346,7 @@ export default function StepEscolha() {
 /* ── OptionCard ── */
 function OptionCard({ opt, selected, onPick }: { opt: Option; selected: boolean; onPick: () => void }) {
   const rec = !!opt.recommended
-  const imgSrc = opt.id === 'package' ? '/card-pacote.jpg' : '/card-experiencia.jpg'
+  const imgSrc = opt.id === 'package' ? '/card-pacote.webp' : '/card-experiencia.webp'
 
   return (
     <button
@@ -367,7 +367,7 @@ function OptionCard({ opt, selected, onPick }: { opt: Option; selected: boolean;
         alt=""
         aria-hidden
         draggable={false}
-        className={`absolute inset-0 w-full h-full object-cover pointer-events-none select-none ${opt.id === 'experience' ? 'object-top sm:object-center' : 'object-center'}`}
+        className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none select-none"
       />
 
       {/* Checkmark ao selecionar */}
