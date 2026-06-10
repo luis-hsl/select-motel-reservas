@@ -258,7 +258,7 @@ function SuiteCard({ suite, photoUrl, occupied, slotLabel, selected, onChoose, o
       className={[
         'relative rounded-2xl overflow-hidden border transition-all duration-300',
         occupied
-          ? 'border-red-900/40'
+          ? 'border-red-900/40 cursor-not-allowed select-none'
           : selected
           ? 'border-gold-500 ring-2 ring-gold-500/30'
           : 'border-gold-800/40',

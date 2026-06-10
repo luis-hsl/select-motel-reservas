@@ -46,7 +46,7 @@
   to   { transform: translateX(-50%); }
 }
 .reviews-track {
-  animation: reviews-marquee 45s linear infinite;
+  animation: reviews-marquee 98s linear infinite;
 }
 
 @keyframes step-in {
