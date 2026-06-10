@@ -70,8 +70,11 @@ export function getSessionToken(): string {
   return token
 }
 
-// Evita disparar duas vezes seguidas pro mesmo step (StrictMode/hot reload)
-let lastTrack: { step: number; at: number } | null = null
+// Evita disparar duas vezes seguidas pro mesmo step+mode (StrictMode/hot reload).
+// O mode entra na chave: trackStep(2, null) seguido de trackStep(2, 'package')
+// são eventos distintos — sem isso, o segundo era bloqueado e o mode nunca
+// chegava ao banco (sessão ficava com mode=null e sumia do funil de Pacote).
+let lastTrack: { step: number; mode: string | null; at: number } | null = null
 
 /**
  * Reporta a step atual da sessão de onboarding pro backend.
@@ -83,8 +86,14 @@ export async function trackStep(
   mode?: 'package' | 'experience' | null,
 ): Promise<void> {
   if (trackingDisabled()) return
-  if (lastTrack && lastTrack.step === step && Date.now() - lastTrack.at < 5000) return
-  lastTrack = { step, at: Date.now() }
+  const m = mode ?? null
+  if (
+    lastTrack &&
+    lastTrack.step === step &&
+    lastTrack.mode === m &&
+    Date.now() - lastTrack.at < 5000
+  ) return
+  lastTrack = { step, mode: m, at: Date.now() }
 
   const session_token = getSessionToken()
   const ua            = navigator.userAgent
