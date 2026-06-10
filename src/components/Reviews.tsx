@@ -7,7 +7,6 @@
 
 interface Review {
   name:   string
-  date:   string
   rating: number
   text:   string
 }
@@ -15,85 +14,71 @@ interface Review {
 const REVIEWS: Review[] = [
   {
     name:   'Mariana S.',
-    date:   '2 semanas atrás',
     rating: 5,
     text:   'Suíte impecável, decoração linda e o atendimento foi acima do esperado. Voltaremos com certeza!',
   },
   {
     name:   'Rafael e Carla',
-    date:   '1 mês atrás',
     rating: 5,
     text:   'Reservei pra um jantar romântico, chegamos e estava tudo preparado. O fondue surpreendeu. Recomendo demais.',
   },
   {
     name:   'Juliana M.',
-    date:   '3 semanas atrás',
     rating: 5,
     text:   'Pagamento por PIX rapidíssimo, confirmação no WhatsApp na hora. Suíte com hidro super limpa.',
   },
   {
     name:   'Bruno A.',
-    date:   '2 meses atrás',
     rating: 4,
     text:   'Discreto, organizado e com privacidade. O pacote Ouro vale cada centavo.',
   },
   {
     name:   'Fernanda L.',
-    date:   '1 semana atrás',
     rating: 5,
     text:   'Surpresa para o meu marido no aniversário de namoro. Ele adorou! Tudo muito bem cuidado e cheiroso.',
   },
   {
     name:   'Thiago e Ana',
-    date:   '3 semanas atrás',
     rating: 5,
     text:   'Reserva super fácil, chegamos e estava exatamente como nas fotos. O vinho e o fondue foram o charme da noite.',
   },
   {
     name:   'Camila R.',
-    date:   '5 dias atrás',
     rating: 5,
     text:   'Melhor decisão que tomamos! Ambiente lindo, privacidade total e atendimento via WhatsApp muito ágil.',
   },
   {
     name:   'Diego M.',
-    date:   '2 semanas atrás',
     rating: 4,
     text:   'Fizemos o pernoite pacote Prata. Decoração romântica incrível, suíte clean e confortável. Voltaremos!',
   },
   {
     name:   'Priscila e João',
-    date:   '1 mês atrás',
     rating: 5,
-    text:   'Simplesmente perfeito. Fomos no Dia dos Namorados e superou as expectativas em tudo.',
+    text:   'Simplesmente perfeito. Foi nossa primeira vez e superou as expectativas em tudo. Voltamos com certeza!',
   },
   {
     name:   'Lucas F.',
-    date:   '4 semanas atrás',
     rating: 5,
     text:   'Lugar limpíssimo, equipe discreta e eficiente. O sushi estava muito bom! Super recomendo.',
   },
   {
     name:   'Aline C.',
-    date:   '10 dias atrás',
     rating: 5,
     text:   'Paguei no PIX e recebi a confirmação em menos de 1 minuto. Chegamos e estava tudo pronto. Nota 10!',
   },
   {
     name:   'Eduardo e Tâmara',
-    date:   '6 semanas atrás',
     rating: 5,
     text:   'Comemoração de 2 anos juntos. Fizemos o pacote Bronze e ficamos encantados. Próxima vez vamos de Ouro!',
   },
   {
     name:   'Renata K.',
-    date:   '3 dias atrás',
     rating: 5,
     text:   'Ambiente aconchegante, suíte com hidro maravilhosa e decoração que deixou meu namorado sem palavras.',
   },
   {
     name:   'Gustavo e Nati',
-    date:   '2 meses atrás',
     rating: 5,
     text:   'Já foi a terceira vez que vamos e sempre entregam o mesmo nível de qualidade. Fidelizados!',
   },
@@ -159,10 +144,7 @@ export default function Reviews() {
                   {initials(r.name)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2 mb-0.5">
-                    <p className="text-white/85 text-sm font-medium truncate">{r.name}</p>
-                    <span className="text-white/30 text-[10px] shrink-0">{r.date}</span>
-                  </div>
+                  <p className="text-white/85 text-sm font-medium truncate mb-0.5">{r.name}</p>
                   <Stars n={r.rating} />
                   <p className="text-white/60 text-xs leading-relaxed mt-1.5 line-clamp-3">{r.text}</p>
                 </div>
