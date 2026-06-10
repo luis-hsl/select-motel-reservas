@@ -161,9 +161,6 @@ export default function StepEscolha() {
     <div className="relative">
       {/* Título */}
       <div className="text-center mb-10 sm:mb-14">
-        <p className="text-[10px] tracking-[0.45em] uppercase text-gold-700/45 mb-4">
-          Dia dos Namorados · Select Motel
-        </p>
         <h1 className="leading-none mb-3">
           <span className="block font-serif italic font-light text-gold-200/90"
                 style={{ fontSize: 'clamp(2.2rem,6.5vw,3.4rem)', letterSpacing: '-0.02em' }}>
