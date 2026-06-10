@@ -2,6 +2,7 @@ import './index.css'
 import { useMemo, useEffect } from 'react'
 import { trackStep } from './lib/tracking'
 import ProgressBar from './components/ProgressBar'
+import CountdownBanner from './components/CountdownBanner'
 import { InstagramFab } from './components/InstagramLink'
 import ReservaSidebar from './components/ReservaSidebar'
 import CardPaymentReturn from './components/CardPaymentReturn'
@@ -68,8 +69,9 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       <ProgressBar currentStep={currentStep} />
+      <CountdownBanner />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 xl:px-10 pt-24 sm:pt-28 pb-20 sm:pb-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 xl:px-10 pt-36 sm:pt-40 pb-20 sm:pb-16">
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 xl:gap-16 items-start">
           <main className="flex-1 min-w-0 w-full">
             <StepComponent />

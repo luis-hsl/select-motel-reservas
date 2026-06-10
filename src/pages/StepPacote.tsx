@@ -136,6 +136,15 @@ export default function StepPacote() {
   const { package: selected, setPackage, nextStep, prevStep } = useStore()
   const [detailId, setDetailId] = useState<PkgId | null>(null)
   const [visible, setVisible] = useState(false)
+
+  // Melhoria CRO #2: Pré-selecionar Prata ao montar
+  useEffect(() => {
+    if (!selected) {
+      const prata = PACKAGES.find(p => p.id === 'prata')
+      if (prata) setPackage(prata)
+    }
+  }, [])
+
   function choose(pkg: Package) {
     setPackage(pkg)
 
@@ -267,6 +276,35 @@ export default function StepPacote() {
                   ))}
                 </ul>
 
+                {/* Melhoria CRO #1: Bloco de preço */}
+                <div className="mb-4 pt-3 border-t" style={{ borderColor: `${th.dividerColor}25` }}>
+                  {/* Badge "Melhor custo-benefício" apenas para Prata */}
+                  {id === 'prata' && (
+                    <div className="flex justify-center mb-3">
+                      <span
+                        className="text-[8px] tracking-[0.25em] uppercase font-bold px-3 py-1 rounded-full"
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(34,197,94,0.2), rgba(201,168,76,0.2))',
+                          border: '1px solid rgba(34,197,94,0.4)',
+                          color: '#4ade80',
+                        }}
+                      >
+                        Melhor custo-benefício
+                      </span>
+                    </div>
+                  )}
+                  <div className="text-center">
+                    <p
+                      className="font-serif font-semibold leading-none"
+                      style={{ fontSize: '1.8rem', color: th.priceColor }}
+                    >
+                      R$ {pkg.price_period.toLocaleString('pt-BR')}
+                    </p>
+                    <p className="text-[11px] mt-1.5 italic" style={{ color: th.labelColor }}>
+                      ou R$ {pkg.price_overnight.toLocaleString('pt-BR')} no pernoite
+                    </p>
+                  </div>
+                </div>
 
                 {/* Ações */}
                 <div className="border-t pb-4 pt-3 grid grid-cols-2 gap-2" style={{ borderColor: `${th.dividerColor}25` }}>
@@ -292,9 +330,12 @@ export default function StepPacote() {
                         : `0 0 22px ${th.accentColor}55, inset 0 1px 0 rgba(255,255,255,0.15)`,
                     }}
                   >
+                    {/* Melhoria CRO #3: CTA diferenciado para o Prata */}
                     {isSel
                       ? <><span>✓</span> Escolhido</>
-                      : <>Escolher <span className="text-sm leading-none">→</span></>
+                      : id === 'prata'
+                        ? <>Quero o Prata <span className="text-sm leading-none">→</span></>
+                        : <>Escolher <span className="text-sm leading-none">→</span></>
                     }
                   </button>
                 </div>
@@ -341,11 +382,14 @@ interface ModalProps {
   onSelect: () => void
 }
 
-function PackageModal({ id, pkg: _pkg, detail, visible, onClose, onSelect }: ModalProps) {
+function PackageModal({ id, pkg, detail, visible, onClose, onSelect }: ModalProps) {
   const t = THEME[id]
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Detalhes do Pacote ${id.charAt(0).toUpperCase() + id.slice(1)}`}
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
       style={{ pointerEvents: visible ? 'auto' : 'none' }}
     >
@@ -394,6 +438,7 @@ function PackageModal({ id, pkg: _pkg, detail, visible, onClose, onSelect }: Mod
           </div>
           <button
             onClick={onClose}
+            aria-label="Fechar"
             className="mt-1 w-8 h-8 rounded-full flex items-center justify-center transition-opacity hover:opacity-80 shrink-0 ml-4"
             style={{ background: `${t.dividerColor}25`, color: t.labelColor }}
           >
@@ -503,6 +548,58 @@ function PackageModal({ id, pkg: _pkg, detail, visible, onClose, onSelect }: Mod
           </ul>
         </Section>
 
+        {/* Melhoria CRO #4: Ancoragem de preço no modal — apenas para Prata */}
+        {id === 'prata' && (
+          <Section title="Valor do pacote" color={t.accentColor} dividerColor={t.dividerColor}>
+            <div
+              className="rounded-xl overflow-hidden"
+              style={{ background: `${t.dividerColor}10`, border: `1px solid ${t.dividerColor}30` }}
+            >
+              {/* Linhas de itemização */}
+              {[
+                { label: 'Decoração romântica', value: 'R$ 280' },
+                { label: 'Fondue de chocolate', value: 'R$ 120' },
+                { label: 'Pizza ou pratos', value: 'R$ 95' },
+                { label: 'Vinho ou Frisante', value: 'R$ 80' },
+              ].map((row, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between px-5 py-2.5"
+                  style={{ borderBottom: `1px solid ${t.dividerColor}20` }}
+                >
+                  <span className="text-[11px]" style={{ color: 'rgba(245,224,180,0.55)' }}>{row.label}</span>
+                  <span className="text-[11px] font-medium tabular-nums" style={{ color: 'rgba(245,224,180,0.55)' }}>{row.value}</span>
+                </div>
+              ))}
+
+              {/* Separador total individual */}
+              <div
+                className="flex items-center justify-between px-5 py-2.5"
+                style={{ borderBottom: `1px solid ${t.dividerColor}40`, background: `${t.dividerColor}15` }}
+              >
+                <span className="text-[11px] font-medium" style={{ color: 'rgba(245,224,180,0.70)' }}>Valor individual</span>
+                <span className="text-[11px] font-semibold tabular-nums" style={{ color: 'rgba(245,224,180,0.70)' }}>R$ 575</span>
+              </div>
+
+              {/* Preço do pacote */}
+              <div className="px-5 py-4">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-semibold" style={{ color: t.priceColor }}>Pacote Prata (período)</span>
+                  <span
+                    className="font-serif font-bold tabular-nums"
+                    style={{ fontSize: '1.4rem', color: t.priceColor }}
+                  >
+                    R$ {pkg.price_period.toLocaleString('pt-BR')}
+                  </span>
+                </div>
+                <p className="text-[10px] italic" style={{ color: t.labelColor }}>
+                  Inclui suíte + todos os itens
+                </p>
+              </div>
+            </div>
+          </Section>
+        )}
+
         {/* CTA */}
         <div className="px-6 pb-8 pt-2">
           <button
@@ -543,4 +640,3 @@ function GlowDivider({ color }: { color: string }) {
     </div>
   )
 }
-
