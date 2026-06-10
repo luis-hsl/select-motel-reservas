@@ -45,14 +45,14 @@ type Option = {
 }
 const OPTIONS: Option[] = [
   {
-    id: 'package', label: 'pacote', sublabel: 'experiência completa',
-    desc: 'Tudo incluso num único pacote.',
+    id: 'package', label: 'pacote', sublabel: 'tudo incluso',
+    desc: 'Decoração, jantar, fondue e bebida. Só chegar e se apaixonar.',
     bullets: ['Gastronomia', 'Bebida', 'Fondue', 'Decoração'],
     recommended: true,
   },
   {
     id: 'experience', label: 'monte sua\nexperiência', sublabel: 'do seu jeito',
-    desc: 'Só a suíte decorada, ou adicione fondue, bebida e refeição como quiser.',
+    desc: 'Suíte decorada + escolha o que quiser adicionar.',
   },
 ]
 
@@ -162,18 +162,21 @@ export default function StepEscolha() {
     <div className="relative">
       {/* Título */}
       <div className="text-center mb-8 sm:mb-12">
+        <p className="text-[10px] tracking-[0.45em] uppercase text-gold-700/45 mb-4">
+          Dia dos Namorados · Select Motel
+        </p>
         <h1 className="leading-none mb-3">
           <span className="block font-serif italic font-light text-gold-200/90"
                 style={{ fontSize: 'clamp(2.2rem,6.5vw,3.4rem)', letterSpacing: '-0.02em' }}>
-            como você
+            Uma noite que
           </span>
           <span className="block font-serif italic gold-gradient"
                 style={{ fontSize: 'clamp(2.2rem,6.5vw,3.4rem)', letterSpacing: '-0.02em' }}>
-            prefere reservar?
+            vocês nunca vão esquecer.
           </span>
         </h1>
-        <p className="text-[10px] tracking-[0.45em] uppercase text-gold-700/45 mt-4">
-          duas formas de viver a noite
+        <p className="text-sm text-gold-600/60 mt-4 max-w-xs mx-auto leading-relaxed">
+          Escolha como quer viver essa noite — pacote completo ou monte do seu jeito.
         </p>
       </div>
 
@@ -326,7 +329,9 @@ export default function StepEscolha() {
             : !formVisible
               ? 'Preencha seus dados para continuar'
               : canContinue
-                ? <>Continuar com {picked === 'package' ? 'pacote' : 'experiência'} →</>
+                ? picked === 'package'
+                  ? <>Garantir minha reserva →</>
+                  : <>Criar minha experiência →</>
                 : 'Preencha seus dados para continuar'}
         </button>
       </div>
