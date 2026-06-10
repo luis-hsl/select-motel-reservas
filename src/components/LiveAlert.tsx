@@ -14,7 +14,7 @@ interface Alert {
 }
 
 const SUITES = ['Suíte 11', 'Suíte 13', 'Suíte 14', 'Suíte 15', 'Suíte 16', 'Suíte 17', 'Suíte 18', 'Suíte 22', 'Suíte 25']
-const VIEWER_COUNTS = [4, 5, 5, 6, 7, 6, 8, 5, 4, 7]
+// Visualizadores: aleatório entre 3 e 30 a cada exibição
 
 /** Gera um texto de tempo aleatório entre 1 min e 3 h */
 function randomAgo(): string {
@@ -69,9 +69,9 @@ export default function LiveAlert() {
         lastSuite.current = suite
         alert = { kind: 'booking', suite, ago: randomAgo() }
       } else {
-        // Viewers: varia levemente o número
-        const base = VIEWER_COUNTS[Math.floor(Math.random() * VIEWER_COUNTS.length)]
-        alert = { kind: 'viewers', viewers: base }
+        // Viewers: aleatório entre 3 e 30
+        const viewers = Math.floor(Math.random() * 28) + 3
+        alert = { kind: 'viewers', viewers }
       }
 
       setCurrent(alert)
