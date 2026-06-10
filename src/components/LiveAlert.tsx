@@ -36,12 +36,10 @@ function buildQueue(): Alert[] {
   // Embaralha suítes e intercala notif de viewers a cada 2 reservas
   const shuffledSuites = [...SUITES].sort(() => Math.random() - 0.5)
   const result: Alert[] = []
-  let vi = 0
   for (let i = 0; i < shuffledSuites.length; i++) {
     result.push({ kind: 'booking', suite: shuffledSuites[i] })
     if ((i + 1) % 2 === 0) {
-      result.push({ kind: 'viewers', viewers: VIEWER_COUNTS[vi % VIEWER_COUNTS.length] })
-      vi++
+      result.push({ kind: 'viewers' })
     }
   }
   return result
