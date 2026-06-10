@@ -167,6 +167,7 @@ export default function StepData() {
   }, [selectedSlot])
 
   return (
+    <>
     <div>
       <button
         onClick={prevStep}
@@ -176,17 +177,17 @@ export default function StepData() {
       </button>
 
       <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-light mb-2 leading-tight">
-        Escolha a data<br />
-        <span className="gold-gradient font-semibold italic">e o horário</span>
+        Quando vocês<br />
+        <span className="gold-gradient font-semibold italic">vão chegar?</span>
       </h1>
       <p className="text-gold-700/70 text-sm mb-6 sm:mb-10">
-        Selecione quando você quer chegar.
+        Escolha a data e o horário — sua reserva é confirmada na hora.
       </p>
 
       <div className="lg:grid lg:grid-cols-2 lg:gap-10 xl:gap-14 lg:items-start">
         {/* Coluna esquerda: Calendário */}
         <div className="mb-8 lg:mb-0">
-          <p className="text-[10px] tracking-widest uppercase text-gold-600/60 mb-3">Data</p>
+          <p className="text-[10px] tracking-widest uppercase text-gold-600/60 mb-4">Data</p>
           <Calendar
             selected={selectedDate}
             onSelect={(d) => {
@@ -243,7 +244,7 @@ export default function StepData() {
 
               {selectedCheckOut && selectedSlot && (
                 <div className="mt-4 px-4 py-3 rounded-xl border border-gold-800/30 bg-gold-900/10">
-                  <p className="text-[10px] tracking-widests uppercase text-gold-600/50 mb-1">
+                  <p className="text-[10px] tracking-widest uppercase text-gold-600/50 mb-1">
                     Resumo do período
                   </p>
                   <div className="flex items-center gap-3 text-sm flex-wrap">
@@ -268,7 +269,7 @@ export default function StepData() {
             disabled={!canContinue}
             style={{ scrollMarginTop: '5rem' }}
             className={[
-              'flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-200',
+              'flex items-center gap-2 px-8 py-3.5 rounded-lg text-sm font-semibold transition-all duration-200',
               canContinue
                 ? 'bg-gradient-to-r from-gold-700 to-gold-500 text-black hover:from-gold-600 hover:to-gold-400'
                 : 'bg-gold-900/20 text-gold-800/40 cursor-not-allowed',
@@ -279,5 +280,22 @@ export default function StepData() {
         </div>
       </div>
     </div>
+
+      {/* Mobile sticky CTA — appears when date+slot selected.
+          bottom-[52px] to stack above the ReservaSidebar mobile bar (fixed bottom-0 ~48px tall). */}
+      {canContinue && (
+        <div className="lg:hidden fixed bottom-[52px] left-0 right-0 z-50 px-4 pb-2 pt-3"
+          style={{ background: 'linear-gradient(to top, rgba(10,10,10,0.98) 60%, transparent)' }}
+        >
+          <button
+            onClick={confirm}
+            className="w-full py-4 rounded-xl text-sm font-semibold text-black transition-all duration-200 active:scale-[0.98]"
+            style={{ background: 'linear-gradient(135deg,#c9a84c,#f5d87a,#a07820)', boxShadow: '0 4px 24px rgba(200,160,50,0.3)' }}
+          >
+            Ver suítes disponíveis →
+          </button>
+        </div>
+      )}
+    </>
   )
 }

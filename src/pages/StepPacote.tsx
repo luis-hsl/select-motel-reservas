@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import { createPortal } from 'react-dom'
 import { PACKAGES } from '../data'
 import { useStore } from '../store/useStore'
@@ -199,12 +199,12 @@ export default function StepPacote() {
         <span>←</span> Voltar pra escolha
       </button>
 
-      <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light mb-2 leading-tight">
+      <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light mb-3 leading-tight">
         Qual pacote<br />
         <span className="gold-gradient font-semibold italic pr-1 lg:pr-3">você prefere?</span>
       </h1>
-      <p className="text-gold-700/70 text-sm mb-6 sm:mb-8">
-        Cada pacote inclui decoração e experiências exclusivas.
+      <p className="text-gold-700/70 text-sm mb-8 sm:mb-10">
+        Tudo preparado — só chegar e se apaixonar.
       </p>
 
       {/*
@@ -262,7 +262,7 @@ export default function StepPacote() {
                   {id.toUpperCase()}
                 </h2>
                 <GlowDivider color={th.dividerColor} />
-                <p className="text-[11px] mt-3 italic" style={{ color: th.labelColor }}>{pkg.tagline}</p>
+                <p className="text-xs mt-3 italic" style={{ color: th.labelColor }}>{pkg.tagline}</p>
               </div>
 
               {/* Info */}
@@ -475,10 +475,9 @@ function PackageModal({ id, pkg, detail, visible, onClose, onSelect }: ModalProp
               </p>
               <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${t.dividerColor}40` }}>
                 {detail.foodChoice.options.map((opt, i) => (
-                  <>
+                  <Fragment key={i}>
                     {i > 0 && (
                       <div
-                        key={`sep-${i}`}
                         className="flex items-center gap-3 px-5 py-2"
                         style={{ background: `${t.dividerColor}08`, borderTop: `1px solid ${t.dividerColor}20`, borderBottom: `1px solid ${t.dividerColor}20` }}
                       >
@@ -488,14 +487,13 @@ function PackageModal({ id, pkg, detail, visible, onClose, onSelect }: ModalProp
                       </div>
                     )}
                     <div
-                      key={i}
                       className="px-5 py-4"
                       style={{ background: `${t.dividerColor}${i === 0 ? '12' : '08'}` }}
                     >
                       <p className="text-sm font-medium" style={{ color: 'rgba(245,224,180,0.90)' }}>{opt.item}</p>
                       <p className="text-[11px] mt-0.5 italic" style={{ color: t.labelColor }}>{opt.note}</p>
                     </div>
-                  </>
+                  </Fragment>
                 ))}
               </div>
             </div>

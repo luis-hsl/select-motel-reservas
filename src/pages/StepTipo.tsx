@@ -1,4 +1,49 @@
+import { useState } from 'react'
 import { useStore } from '../store/useStore'
+
+const FAQ_ITEMS = [
+  {
+    q: 'Quanto tempo dura o período?',
+    a: 'O período tem duração de 2 horas, com check-in nos horários disponíveis. Ao reservar, você escolhe o horário de entrada e o check-out é automático.',
+  },
+  {
+    q: 'Posso cancelar ou reagendar?',
+    a: 'Sim. Cancelamentos com mais de 24h de antecedência têm reembolso integral. Entre em contato pelo WhatsApp e resolvemos sem burocracia.',
+  },
+  {
+    q: 'Quando recebo a confirmação?',
+    a: 'Imediatamente após o pagamento — você recebe uma mensagem no WhatsApp com todos os detalhes da sua reserva.',
+  },
+] as const
+
+function FaqItem({ question, answer }: { question: string; answer: string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div
+      className="rounded-xl border border-gold-900/30 overflow-hidden"
+      style={{ background: 'rgba(255,255,255,0.015)' }}
+    >
+      <button
+        className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left"
+        onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+      >
+        <span className="text-sm text-gold-300/80 font-medium">{question}</span>
+        <span
+          className="shrink-0 text-gold-600/60 transition-transform duration-200 text-lg leading-none"
+          style={{ transform: open ? 'rotate(45deg)' : 'rotate(0deg)' }}
+        >
+          +
+        </span>
+      </button>
+      {open && (
+        <div className="px-4 pb-4">
+          <p className="text-xs text-gold-700/60 leading-relaxed">{answer}</p>
+        </div>
+      )}
+    </div>
+  )
+}
 
 const TIPOS = [
   {
@@ -89,8 +134,8 @@ export default function StepTipo() {
       </h1>
       <p className="text-gold-700/70 text-sm mb-6 sm:mb-8">
         {mode === 'experience' || !pkg
-          ? <>Escolha a duração da sua estadia.</>
-          : <>Escolha a duração da sua experiência no <strong className="text-gold-500 font-medium">{pkg.label}</strong>.</>}
+          ? <>Cada minuto importa — quanto tempo vocês querem ter?</>
+          : <>Escolha a duração da experiência no <strong className="text-gold-500 font-medium">{pkg.label}</strong>.</>}
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl xl:max-w-4xl">
@@ -203,6 +248,16 @@ export default function StepTipo() {
             </div>
           )
         })}
+      </div>
+
+      {/* FAQ inline */}
+      <div className="mt-10 max-w-3xl xl:max-w-4xl">
+        <p className="text-[10px] tracking-[0.4em] uppercase text-gold-700/55 mb-3">Dúvidas frequentes</p>
+        <div className="space-y-2">
+          {FAQ_ITEMS.map((item, i) => (
+            <FaqItem key={i} question={item.q} answer={item.a} />
+          ))}
+        </div>
       </div>
 
     </div>

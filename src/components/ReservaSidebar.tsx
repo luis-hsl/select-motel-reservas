@@ -12,15 +12,15 @@ function fmtDt(d: Date) {
 }
 
 export default function ReservaSidebar() {
-  const { package: pkg, drink, food, type, suite, checkIn, checkOut, totalAmount, currentStep } = useStore()
+  const { package: pkg, drink, food, type, suite, checkIn, checkOut, totalAmount } = useStore()
   const total = totalAmount()
   const checkout = checkOut()
-  const showPrice = currentStep >= 9
+  const showPrice = total > 0
 
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden lg:block w-80 xl:w-96 shrink-0">
+      <aside className="hidden lg:block w-80 xl:w-96 shrink-0" aria-label="Sua reserva">
         <div className="sticky top-24 border border-gold-800/40 rounded-xl overflow-hidden">
           <div className="bg-gold-900/20 px-5 py-3 border-b border-gold-800/30">
             <p className="text-[10px] xl:text-[11px] tracking-widest uppercase text-gold-500/60">Sua Reserva</p>
@@ -81,7 +81,7 @@ export default function ReservaSidebar() {
                 </>
               )}
             </div>
-            {showPrice && total > 0 && (
+            {showPrice && (
               <span className="font-serif text-lg font-semibold gold-gradient shrink-0 ml-3">
                 {fmt(total)}
               </span>

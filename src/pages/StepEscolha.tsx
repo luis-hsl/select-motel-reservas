@@ -5,6 +5,7 @@ import { metaEvents } from '../lib/metaPixel'
 import { supabase } from '../lib/supabase'
 import { getSessionToken } from '../lib/tracking'
 import type { ReservationMode } from '../types'
+import Reviews from '../components/Reviews'
 
 /* ── helpers ── */
 function maskCPF(v: string) {
@@ -161,7 +162,7 @@ export default function StepEscolha() {
   return (
     <div className="relative">
       {/* Título */}
-      <div className="text-center mb-8 sm:mb-12">
+      <div className="text-center mb-10 sm:mb-14">
         <p className="text-[10px] tracking-[0.45em] uppercase text-gold-700/45 mb-4">
           Dia dos Namorados · Select Motel
         </p>
@@ -176,7 +177,7 @@ export default function StepEscolha() {
           </span>
         </h1>
         <p className="text-sm text-gold-600/60 mt-4 max-w-xs mx-auto leading-relaxed">
-          Escolha como quer viver essa noite — pacote completo ou monte do seu jeito.
+          Pacote completo ou monte do seu jeito.
         </p>
       </div>
 
@@ -190,6 +191,11 @@ export default function StepEscolha() {
             onPick={() => pick(opt.id)}
           />
         ))}
+      </div>
+
+      {/* Social proof */}
+      <div className="mt-8">
+        <Reviews />
       </div>
 
       {/* Formulário de dados — aparece ao selecionar */}
@@ -207,8 +213,8 @@ export default function StepEscolha() {
         }}
       >
         <div className="mt-8 pt-7 border-t border-gold-800/25">
-          <p className="text-[10px] tracking-[0.45em] uppercase text-gold-600/50 mb-6 text-center">
-            seus dados
+          <p className="text-[10px] tracking-[0.45em] uppercase text-gold-600/50 mb-5 text-center">
+            Seus dados
           </p>
 
           <div className="space-y-4 max-w-md mx-auto lg:max-w-none">
@@ -311,7 +317,7 @@ export default function StepEscolha() {
       {/* CTA */}
       <div
         className="max-w-3xl mx-auto transition-all duration-500"
-        style={{ marginTop: formVisible ? '1.5rem' : '1.5rem' }}
+        style={{ marginTop: '1.5rem' }}
       >
         <button
           ref={ctaRef}

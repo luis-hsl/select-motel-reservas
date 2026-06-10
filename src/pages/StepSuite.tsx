@@ -48,6 +48,8 @@ export default function StepSuite() {
     ? SUITES
     : SUITES.filter(s => s.packageIds.includes(pkg.id as never))
 
+  const availableCount = packageSuites.filter(s => !occupiedIds.has(s.id)).length
+
   const slotLabel = useMemo(() => {
     const cin = checkIn
     const cout = checkOut()
@@ -145,14 +147,33 @@ export default function StepSuite() {
       </button>
 
       <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light mb-2 leading-tight">
-        Qual suíte<br />
-        <span className="gold-gradient font-semibold italic pr-1 lg:pr-3">você prefere?</span>
+        Escolha a suíte<br />
+        <span className="gold-gradient font-semibold italic pr-1 lg:pr-3">de vocês.</span>
       </h1>
-      <p className="text-gold-700/70 text-sm mb-6 sm:mb-8">
+      <p className="text-gold-700/70 text-sm mb-3 sm:mb-4">
         {mode === 'experience' || !pkg
-          ? <>Escolha a suíte disponível para o seu horário.</>
+          ? <>Disponíveis para o horário de vocês.</>
           : <>Suítes disponíveis para o <strong className="text-gold-500 font-medium">{pkg.label}</strong>.</>}
       </p>
+      {!loading && availableCount > 0 && availableCount <= 3 && (
+        <div
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-6 sm:mb-8"
+          style={{
+            background: 'rgba(180,60,20,0.12)',
+            border: '1px solid rgba(220,100,40,0.35)',
+          }}
+        >
+          <span
+            className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0"
+            style={{ background: '#e06030' }}
+          />
+          <span className="text-[11px] font-medium tracking-wide" style={{ color: 'rgba(240,150,80,0.9)' }}>
+            {availableCount === 1
+              ? 'Última suíte disponível para este horário'
+              : `Apenas ${availableCount} suítes disponíveis`}
+          </span>
+        </div>
+      )}
 
       {loading ? (
         <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
@@ -460,10 +481,11 @@ function SuiteGallery({ suite, photoUrl, videoUrl, occupied, slotLabel, selected
             />
             <button
               onClick={close}
+              aria-label="Fechar"
               className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center text-sm transition-opacity hover:opacity-80"
               style={{ background: 'rgba(0,0,0,0.6)', color: 'rgba(220,185,100,0.8)', border: '1px solid rgba(201,168,76,0.3)' }}
             >
-              ✕
+              <span aria-hidden="true">✕</span>
             </button>
           </div>
         )}
@@ -497,10 +519,11 @@ function SuiteGallery({ suite, photoUrl, videoUrl, occupied, slotLabel, selected
           {!videoUrl && (
             <button
               onClick={close}
+              aria-label="Fechar"
               className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center text-sm transition-opacity hover:opacity-80"
               style={{ background: 'rgba(0,0,0,0.6)', color: 'rgba(220,185,100,0.8)', border: '1px solid rgba(201,168,76,0.3)' }}
             >
-              ✕
+              <span aria-hidden="true">✕</span>
             </button>
           )}
 
