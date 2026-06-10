@@ -47,6 +47,12 @@ export default function App() {
     return p.get('payment') === 'ok' && ref ? ref : null
   }, [])
 
+  // Volta ao topo ao trocar de step
+  useEffect(() => {
+    if (paymentReturn) return
+    window.scrollTo({ top: 0, behavior: 'instant' })
+  }, [currentStep, paymentReturn])
+
   // Tracking anônimo do onboarding (envia o mode quando já escolhido)
   useEffect(() => {
     if (paymentReturn) return

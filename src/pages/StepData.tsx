@@ -263,13 +263,14 @@ export default function StepData() {
             </div>
           )}
 
+          {/* No mobile o sticky CTA substitui este botão — só mostrar no desktop */}
           <button
             ref={ctaRef}
             onClick={confirm}
             disabled={!canContinue}
             style={{ scrollMarginTop: '5rem' }}
             className={[
-              'flex items-center gap-2 px-8 py-3.5 rounded-lg text-sm font-semibold transition-all duration-200',
+              'hidden lg:flex items-center gap-2 px-8 py-3.5 rounded-lg text-sm font-semibold transition-all duration-200',
               canContinue
                 ? 'bg-gradient-to-r from-gold-700 to-gold-500 text-black hover:from-gold-600 hover:to-gold-400'
                 : 'bg-gold-900/20 text-gold-800/40 cursor-not-allowed',
