@@ -368,6 +368,7 @@ function OptionCard({ opt, selected, onPick }: { opt: Option; selected: boolean;
         aria-hidden
         draggable={false}
         className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none select-none"
+        style={{ transform: 'scale(1.18)' }}
       />
 
       {/* Checkmark ao selecionar */}
