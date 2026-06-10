@@ -9,33 +9,36 @@ type AlertKind = 'booking' | 'viewers'
 interface Alert {
   kind: AlertKind
   suite?: string
-  ago?: string
   viewers?: number
+  ago?: string // gerado dinamicamente no momento do show
 }
 
-// Quantidade de visitantes "visualizando agora" — varia levemente ao longo do tempo
-const VIEWER_COUNTS = [4, 5, 6, 7, 5, 8, 6, 4, 7, 5]
+const SUITES = ['Suíte 11', 'Suíte 13', 'Suíte 14', 'Suíte 15', 'Suíte 16', 'Suíte 17', 'Suíte 18', 'Suíte 22', 'Suíte 25']
+const VIEWER_COUNTS = [4, 5, 5, 6, 7, 6, 8, 5, 4, 7]
 
-const BOOKING_ALERTS: Alert[] = [
-  { kind: 'booking', suite: 'Suíte 14', ago: 'há 2 min' },
-  { kind: 'booking', suite: 'Suíte 16', ago: 'há 5 min' },
-  { kind: 'booking', suite: 'Suíte 15', ago: 'há 8 min' },
-  { kind: 'booking', suite: 'Suíte 22', ago: 'há 11 min' },
-  { kind: 'booking', suite: 'Suíte 18', ago: 'há 14 min' },
-  { kind: 'booking', suite: 'Suíte 13', ago: 'há 18 min' },
-  { kind: 'booking', suite: 'Suíte 11', ago: 'há 22 min' },
-  { kind: 'booking', suite: 'Suíte 17', ago: 'há 27 min' },
-  { kind: 'booking', suite: 'Suíte 25', ago: 'há 31 min' },
-  { kind: 'booking', suite: 'Suíte 14', ago: 'há 38 min' },
-]
+/** Gera um texto de tempo aleatório entre 1 min e 3 h */
+function randomAgo(): string {
+  const mins = Math.floor(Math.random() * 180) + 1
+  if (mins < 60) return `há ${mins} min`
+  const h = Math.floor(mins / 60)
+  const m = mins % 60
+  if (m === 0) return `há ${h}h`
+  return `há ${h}h ${m}min`
+}
+
+/** Escolhe uma suíte aleatória diferente da anterior */
+function randomSuite(last: string | undefined): string {
+  const pool = last ? SUITES.filter(s => s !== last) : SUITES
+  return pool[Math.floor(Math.random() * pool.length)]
+}
 
 function buildQueue(): Alert[] {
-  // Intercala: 2 reservas → 1 viewers → 2 reservas → 1 viewers …
-  const shuffled = [...BOOKING_ALERTS].sort(() => Math.random() - 0.5)
+  // Embaralha suítes e intercala notif de viewers a cada 2 reservas
+  const shuffledSuites = [...SUITES].sort(() => Math.random() - 0.5)
   const result: Alert[] = []
   let vi = 0
-  for (let i = 0; i < shuffled.length; i++) {
-    result.push(shuffled[i])
+  for (let i = 0; i < shuffledSuites.length; i++) {
+    result.push({ kind: 'booking', suite: shuffledSuites[i] })
     if ((i + 1) % 2 === 0) {
       result.push({ kind: 'viewers', viewers: VIEWER_COUNTS[vi % VIEWER_COUNTS.length] })
       vi++
@@ -46,27 +49,37 @@ function buildQueue(): Alert[] {
 
 export default function LiveAlert() {
   const [visible, setVisible] = useState(false)
-  const [current, setCurrent] = useState<Alert>(BOOKING_ALERTS[0])
+  const [current, setCurrent] = useState<Alert>({ kind: 'booking', suite: SUITES[0] })
   const queue = useRef<Alert[]>(buildQueue())
   const idx = useRef(0)
+  const lastSuite = useRef<string | undefined>(undefined)
 
   useEffect(() => {
     const show = () => {
-      const alert = queue.current[idx.current % queue.current.length]
+      let alert = queue.current[idx.current % queue.current.length]
       idx.current++
       if (idx.current >= queue.current.length) {
         queue.current = buildQueue()
         idx.current = 0
       }
+
+      // Gera tempo aleatório no momento do show e evita repetir a mesma suíte seguida
+      if (alert.kind === 'booking') {
+        const suite = randomSuite(lastSuite.current)
+        lastSuite.current = suite
+        alert = { kind: 'booking', suite, ago: randomAgo() }
+      } else {
+        // Viewers: varia levemente o número
+        const base = VIEWER_COUNTS[Math.floor(Math.random() * VIEWER_COUNTS.length)]
+        alert = { kind: 'viewers', viewers: base }
+      }
+
       setCurrent(alert)
       setVisible(true)
-      // Esconde após 4.5s
       setTimeout(() => setVisible(false), 4500)
     }
 
-    // Primeira notificação após 10s
     const first = setTimeout(show, 10_000)
-    // Repete a cada 16s
     const interval = setInterval(show, 16_000)
     return () => { clearTimeout(first); clearInterval(interval) }
   }, [])
@@ -97,7 +110,6 @@ export default function LiveAlert() {
       >
         {isViewers ? (
           <>
-            {/* Eye icon */}
             <svg viewBox="0 0 16 16" fill="none" className="w-3.5 h-3.5 shrink-0" style={{ color: 'rgba(120,180,255,0.7)' }}>
               <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" strokeWidth="1.2" />
               <circle cx="8" cy="8" r="1.8" stroke="currentColor" strokeWidth="1.2" />
@@ -108,7 +120,6 @@ export default function LiveAlert() {
           </>
         ) : (
           <>
-            {/* Pulsing dot */}
             <span className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ background: '#c9a84c' }} />
             <div>
               <p className="text-[11px] font-medium leading-snug" style={{ color: 'rgba(240,215,160,0.9)' }}>
