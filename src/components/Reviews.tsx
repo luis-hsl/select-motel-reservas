@@ -81,7 +81,7 @@ export default function Reviews() {
         <Stars n={5} />
         <div className="text-xs">
           <span className="text-gold-300 font-semibold">{avg.toFixed(1)}</span>
-          <span className="text-white/40"> · {REVIEWS.length}+ avaliações</span>
+          <span className="text-white/40"> · +300 avaliações</span>
         </div>
       </div>
 

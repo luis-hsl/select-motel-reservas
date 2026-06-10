@@ -53,8 +53,10 @@ export default function CountdownBanner() {
     <div
       className="fixed top-[86px] sm:top-[111px] left-0 right-0 z-40 flex items-center justify-center gap-4 py-2.5 px-4"
       style={{
-        background: 'rgba(201,168,76,0.08)',
-        borderBottom: '1px solid rgba(201,168,76,0.15)',
+        background: 'rgba(10,8,2,0.92)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        borderBottom: '1px solid rgba(201,168,76,0.20)',
       }}
     >
       {/* Left text */}
