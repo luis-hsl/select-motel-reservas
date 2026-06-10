@@ -51,7 +51,7 @@ export function InstagramFab() {
       rel="noopener noreferrer"
       aria-label="Instagram @selectmotelivaipora"
       className={[
-        'sm:hidden fixed z-40 right-4 bottom-5 group',
+        'sm:hidden fixed z-40 right-4 bottom-[64px] group',
         'transition-all duration-300',
         scrolled ? 'opacity-90 scale-95' : 'opacity-100 scale-100',
       ].join(' ')}
