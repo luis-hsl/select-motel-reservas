@@ -34,7 +34,7 @@ const REVIEWS: Review[] = [
   {
     name:   'Bruno A.',
     date:   '2 meses atrás',
-    rating: 5,
+    rating: 4,
     text:   'Discreto, organizado e com privacidade. O pacote Ouro vale cada centavo.',
   },
   {
@@ -58,7 +58,7 @@ const REVIEWS: Review[] = [
   {
     name:   'Diego M.',
     date:   '2 semanas atrás',
-    rating: 5,
+    rating: 4,
     text:   'Fizemos o pernoite pacote Prata. Decoração romântica incrível, suíte clean e confortável. Voltaremos!',
   },
   {
@@ -125,17 +125,7 @@ export default function Reviews() {
   const avg = REVIEWS.reduce((s, r) => s + r.rating, 0) / REVIEWS.length
 
   return (
-    <section className="rounded-2xl border border-gold-900/30 bg-white/[0.02] p-4 sm:p-5">
-      <style>{`
-        @keyframes reviews-marquee {
-          from { transform: translateX(0); }
-          to   { transform: translateX(-50%); }
-        }
-        .reviews-track {
-          animation: reviews-marquee 28s linear infinite;
-        }
-      `}</style>
-
+    <section className="rounded-2xl border border-gold-800/30 bg-gold-950/20 p-4 sm:p-5">
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
         <Stars n={5} />
@@ -157,7 +147,7 @@ export default function Reviews() {
           {TRACK.map((r, i) => (
             <article
               key={i}
-              className="border border-white/5 rounded-xl p-3 bg-white/[0.015] flex-shrink-0"
+              className="border border-gold-900/25 rounded-xl p-3 bg-gold-950/30 flex-shrink-0"
               style={{ width: '270px' }}
             >
               <div className="flex items-start gap-3">

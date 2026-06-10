@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
@@ -501,32 +501,6 @@ export default function StepPagamento() {
 
         {/* Right: Payment */}
         <div>
-          <p className="text-[10px] tracking-widest uppercase text-gold-600/60 mb-3">
-            Forma de pagamento
-          </p>
-
-          {error && (
-            <p className="mb-4 text-red-400 text-sm text-center bg-red-900/20 border border-red-800/40 rounded-lg px-4 py-3">
-              {error}
-            </p>
-          )}
-
-          {/* Observações */}
-          {!pixCharge && (
-            <div className="mb-5">
-              <label className="block text-[10px] tracking-widest uppercase text-gold-600/60 mb-2">
-                Observações <span className="normal-case tracking-normal text-gold-800/40">(opcional)</span>
-              </label>
-              <textarea
-                value={obs}
-                onChange={e => { const v = e.target.value.slice(0, 500); setObs(v); setObservations(v) }}
-                placeholder="Ex: ligar a hidromassagem, servir os pratos às 21h…"
-                rows={2}
-                className="w-full bg-black/60 border border-gold-900/40 rounded-lg px-4 py-3 text-sm text-gold-200 placeholder-gold-900/50 outline-none focus:border-gold-600/60 transition-colors resize-none"
-              />
-            </div>
-          )}
-
           {/* PIX QR shown after generation */}
           {pixCharge ? (
             <div className="space-y-4">
@@ -565,8 +539,29 @@ export default function StepPagamento() {
           ) : (
             /* Payment buttons — each is a direct action */
             <div className="space-y-4">
-              {/* Reviews — social proof acima dos botões de pagamento */}
-              <Reviews />
+              {/* Observações */}
+              <div>
+                <label className="block text-[10px] tracking-widest uppercase text-gold-600/60 mb-2">
+                  Observações <span className="normal-case tracking-normal text-gold-800/40">(opcional)</span>
+                </label>
+                <textarea
+                  value={obs}
+                  onChange={e => { const v = e.target.value.slice(0, 500); setObs(v); setObservations(v) }}
+                  placeholder="Ex: ligar a hidromassagem, servir os pratos às 21h…"
+                  rows={2}
+                  className="w-full bg-black/60 border border-gold-900/40 rounded-lg px-4 py-3 text-sm text-gold-200 placeholder-gold-900/50 outline-none focus:border-gold-600/60 transition-colors resize-none"
+                />
+              </div>
+
+              <p className="text-[10px] tracking-widest uppercase text-gold-600/60">
+                Forma de pagamento
+              </p>
+
+              {error && (
+                <p className="text-red-400 text-sm text-center bg-red-900/20 border border-red-800/40 rounded-lg px-4 py-3">
+                  {error}
+                </p>
+              )}
 
               {/* PIX button */}
               <button
@@ -635,6 +630,9 @@ export default function StepPagamento() {
                 Ambiente seguro SSL
               </div>
 
+              {/* Social proof — abaixo dos botões de pagamento */}
+              <Reviews />
+
               {/* Trust block — WhatsApp notice + garantias + formas de pagamento */}
               <div className="space-y-3">
                 {/* WhatsApp notice */}
@@ -652,15 +650,45 @@ export default function StepPagamento() {
 
                 {/* Trust grid */}
                 <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { icon: '🔒', title: 'Pagamento seguro', desc: 'SSL 256-bit' },
-                    { icon: '↩', title: 'Cancelamento grátis', desc: 'Até 48h antes' },
-                    { icon: '📞', title: 'Suporte humano', desc: 'Atendemos agora' },
-                    { icon: '⭐', title: '+400 casais', desc: 'já escolheram' },
-                  ].map(g => (
+                  {([
+                    {
+                      icon: (
+                        <svg viewBox="0 0 16 16" fill="none" className="w-4 h-4 mt-0.5 shrink-0" stroke="currentColor" strokeWidth="1.3" style={{ color: 'rgba(245,224,180,0.4)' }}>
+                          <rect x="3" y="7" width="10" height="8" rx="1.5" />
+                          <path d="M5 7V5a3 3 0 016 0v2" strokeLinecap="round" />
+                        </svg>
+                      ),
+                      title: 'Pagamento seguro', desc: 'SSL 256-bit',
+                    },
+                    {
+                      icon: (
+                        <svg viewBox="0 0 16 16" fill="none" className="w-4 h-4 mt-0.5 shrink-0" stroke="currentColor" strokeWidth="1.3" style={{ color: 'rgba(245,224,180,0.4)' }}>
+                          <path d="M13 7H7a4 4 0 000 8h5" strokeLinecap="round" />
+                          <path d="M10 4l-3 3 3 3" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      ),
+                      title: 'Cancelamento grátis', desc: 'Até 48h antes',
+                    },
+                    {
+                      icon: (
+                        <svg viewBox="0 0 16 16" fill="none" className="w-4 h-4 mt-0.5 shrink-0" stroke="currentColor" strokeWidth="1.3" style={{ color: 'rgba(245,224,180,0.4)' }}>
+                          <path d="M3 3.5C3 2.7 3.7 2 4.5 2H5a1 1 0 011 1 4 4 0 00.5 2 1 1 0 01-.25 1.1l-.5.5a6 6 0 002.65 2.65l.5-.5A1 1 0 0110 8.5a4 4 0 002 .5 1 1 0 011 1v.5c0 .8-.7 1.5-1.5 1.5A8.5 8.5 0 013 3.5z" strokeLinecap="round" />
+                        </svg>
+                      ),
+                      title: 'Suporte humano', desc: 'Atendemos agora',
+                    },
+                    {
+                      icon: (
+                        <svg viewBox="0 0 16 16" fill="none" className="w-4 h-4 mt-0.5 shrink-0" stroke="currentColor" strokeWidth="1.3" style={{ color: 'rgba(245,224,180,0.4)' }}>
+                          <path d="M8 2l1.5 3.3L13 6l-2.5 2.4.6 3.6L8 10.4l-3.1 1.6.6-3.6L3 6l3.5-.7L8 2z" strokeLinejoin="round" />
+                        </svg>
+                      ),
+                      title: '+400 casais', desc: 'já escolheram',
+                    },
+                  ] as { icon: ReactNode; title: string; desc: string }[]).map(g => (
                     <div key={g.title} className="flex items-start gap-2 px-3 py-2.5 rounded-xl"
                          style={{ background: 'rgba(201,168,76,0.03)', border: '1px solid rgba(201,168,76,0.08)' }}>
-                      <span className="text-sm leading-none mt-0.5">{g.icon}</span>
+                      {g.icon}
                       <div>
                         <p className="text-[11px] font-medium" style={{ color: 'rgba(245,224,180,0.5)' }}>{g.title}</p>
                         <p className="text-[10px]" style={{ color: 'rgba(245,224,180,0.25)' }}>{g.desc}</p>

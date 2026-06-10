@@ -41,6 +41,14 @@
   }
 }
 
+@keyframes reviews-marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.reviews-track {
+  animation: reviews-marquee 45s linear infinite;
+}
+
 @keyframes step-in {
   from { opacity: 0; transform: translateY(18px); }
   to   { opacity: 1; }

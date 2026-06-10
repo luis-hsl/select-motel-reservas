@@ -30,8 +30,16 @@ const CATEGORY_LABEL: Record<SuiteCategory, string> = {
 const GALLERY: Record<string, string[]> = {
   'suite-11': [], 'suite-12': [], 'suite-13': [], 'suite-14': [],
   'suite-15': [], 'suite-16': [], 'suite-17': [], 'suite-18': [],
+  'suite-19': [], 'suite-20': [], 'suite-21': [],
   'suite-22': [], 'suite-23': [], 'suite-24': [], 'suite-25': [], 'suite-26': [],
 }
+
+// Suítes decorativas — aparecem sempre como reservadas para criar escassez percebida
+const RESERVED_SUITES: Suite[] = [
+  { id: 'suite-19', name: 'Suíte 19', category: 'Hidro', description: 'Suíte com banheira de hidromassagem', room_number: 19, size: 'large', cleaning_buffer_h: 2, packageIds: [] },
+  { id: 'suite-20', name: 'Suíte 20', category: 'Standard', description: 'Suíte confortável e aconchegante', room_number: 20, size: 'small', cleaning_buffer_h: 1, packageIds: [] },
+  { id: 'suite-21', name: 'Suíte 21', category: 'Standard', description: 'Suíte confortável e aconchegante', room_number: 21, size: 'small', cleaning_buffer_h: 1, packageIds: [] },
+]
 
 export default function StepSuite() {
   const { mode, package: pkg, suite: selected, setSuite, nextStep, prevStep, checkIn, checkOut } = useStore()
@@ -202,6 +210,18 @@ export default function StepSuite() {
               selected={selected?.id === suite.id}
               onChoose={() => choose(suite)}
               onViewMore={() => setGalleryFor(suite)}
+            />
+          ))}
+          {RESERVED_SUITES.map(suite => (
+            <SuiteCard
+              key={suite.id}
+              suite={suite}
+              photoUrl={undefined}
+              occupied={true}
+              slotLabel={slotLabel}
+              selected={false}
+              onChoose={() => {}}
+              onViewMore={() => {}}
             />
           ))}
         </div>

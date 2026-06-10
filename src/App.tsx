@@ -4,6 +4,7 @@ import { trackStep } from './lib/tracking'
 import ProgressBar from './components/ProgressBar'
 import CountdownBanner from './components/CountdownBanner'
 import { InstagramFab } from './components/InstagramLink'
+import LiveAlert from './components/LiveAlert'
 import ReservaSidebar from './components/ReservaSidebar'
 import CardPaymentReturn from './components/CardPaymentReturn'
 import StepEscolha from './pages/StepEscolha'
@@ -87,6 +88,8 @@ export default function App() {
       </div>
 
       <InstagramFab />
+      {/* LiveAlert: notificações de reservas — ativa a partir do step 2 */}
+      {currentStep >= 2 && <LiveAlert key={currentStep} />}
     </div>
   )
 }
