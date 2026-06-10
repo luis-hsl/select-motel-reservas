@@ -367,8 +367,7 @@ function OptionCard({ opt, selected, onPick }: { opt: Option; selected: boolean;
         alt=""
         aria-hidden
         draggable={false}
-        className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
-        style={{ objectPosition: opt.id === 'experience' ? 'top' : 'center' }}
+        className={`absolute inset-0 w-full h-full object-cover pointer-events-none select-none ${opt.id === 'experience' ? 'object-top sm:object-center' : 'object-center'}`}
       />
 
       {/* Checkmark ao selecionar */}
