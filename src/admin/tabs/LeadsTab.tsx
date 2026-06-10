@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../lib/supabase'
+import { downloadCsv } from '../utils/exportCsv'
 
 type Lead = {
   id: string
@@ -166,6 +167,12 @@ function SourceBadge({ lead }: { lead: Lead }) {
   )
 }
 
+const TEST_NAMES = ['luis lima', 'igor beccari', 'luis henrique santos lima', 'luis henrique']
+function isTestLead(name: string) {
+  const n = name.toLowerCase()
+  return TEST_NAMES.some(t => n.includes(t))
+}
+
 export default function LeadsTab() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
@@ -173,6 +180,7 @@ export default function LeadsTab() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [expandedPhones, setExpandedPhones] = useState<Set<string>>(new Set())
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => { load() }, [])
 
@@ -192,6 +200,53 @@ export default function LeadsTab() {
   async function updateStatus(id: string, status: string) {
     await supabase.rpc('update_lead_status', { lead_id: id, new_status: status })
     setLeads(prev => prev.map(l => l.id === id ? { ...l, status: status as Lead['status'] } : l))
+  }
+
+  function exportCsv() {
+    const rows = leads.map(l => ({
+      ID: l.id,
+      Nome: l.name,
+      Telefone: l.phone,
+      Email: l.email,
+      CPF: l.tax_id ?? '',
+      Modo: l.mode ?? '',
+      Pacote: l.package_id ?? '',
+      Tipo: l.type === 'period' ? 'Período' : l.type === 'overnight' ? 'Pernoite' : '',
+      Suite: (l.suite_id ?? '').replace('suite-', ''),
+      'Check-in': l.check_in ? fmtDate(l.check_in) : '',
+      Bebida: l.drink ?? '',
+      Comida: l.food ?? '',
+      Valor: l.total_amount ? fmtBRL(l.total_amount) : '',
+      Observações: l.observations ?? '',
+      Status: STATUS_LABEL[l.status] ?? l.status,
+      'Aceite WhatsApp': l.whatsapp_consent ? 'Sim' : 'Não',
+      Origem: l.utm_source ?? '',
+      Mídia: l.utm_medium ?? '',
+      Campanha: l.utm_campaign ?? '',
+      Referrer: l.referrer ?? '',
+      Dispositivo: l.device ?? '',
+      'Criado em': fmtDate(l.created_at),
+    }))
+    const now = new Date().toISOString().slice(0, 10)
+    downloadCsv(rows, `leads-${now}.csv`)
+  }
+
+  async function deleteTestLeads() {
+    const toDelete = leads.filter(l => isTestLead(l.name))
+    if (toDelete.length === 0) {
+      alert('Nenhum lead de teste encontrado.')
+      return
+    }
+    if (!confirm(`Apagar ${toDelete.length} lead(s) de teste?\n\n${[...new Set(toDelete.map(l => l.name))].join('\n')}`)) return
+    setDeleting(true)
+    const ids = toDelete.map(l => l.id)
+    const { error } = await supabase.from('leads').delete().in('id', ids)
+    if (error) {
+      alert('Erro ao deletar: ' + error.message)
+    } else {
+      setLeads(prev => prev.filter(l => !ids.includes(l.id)))
+    }
+    setDeleting(false)
   }
 
   const filtered = useMemo(() => {
@@ -278,6 +333,19 @@ export default function LeadsTab() {
           className="text-xs text-white/30 hover:text-white/60 transition-colors px-4 py-2.5 border border-white/8 rounded-xl whitespace-nowrap"
         >
           ↺ Atualizar
+        </button>
+        <button
+          onClick={exportCsv}
+          className="text-xs text-gold-400/70 hover:text-gold-300 transition-colors px-4 py-2.5 border border-gold-800/30 hover:border-gold-600/40 rounded-xl whitespace-nowrap"
+        >
+          ↓ Exportar CSV
+        </button>
+        <button
+          onClick={deleteTestLeads}
+          disabled={deleting}
+          className="text-xs text-red-400/60 hover:text-red-400 transition-colors px-4 py-2.5 border border-red-900/30 hover:border-red-700/40 rounded-xl whitespace-nowrap disabled:opacity-40"
+        >
+          {deleting ? 'Apagando...' : '✕ Apagar testes'}
         </button>
       </div>
 

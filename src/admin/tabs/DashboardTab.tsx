@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../lib/supabase'
+import { downloadCsv } from '../utils/exportCsv'
 
 type Res = {
   id: string
@@ -25,6 +26,7 @@ export default function DashboardTab() {
   const [reservations, setReservations] = useState<Res[]>([])
   const [suites, setSuites] = useState<Suite[]>([])
   const [loading, setLoading] = useState(true)
+  const [exporting, setExporting] = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -36,6 +38,65 @@ export default function DashboardTab() {
       setLoading(false)
     })
   }, [])
+
+  async function exportAll() {
+    setExporting(true)
+    try {
+      const now = new Date().toISOString().slice(0, 10)
+
+      // Reservas completas
+      const { data: resData } = await supabase
+        .from('reservations')
+        .select('*')
+        .order('created_at', { ascending: false })
+      if (resData?.length) {
+        downloadCsv(resData.map(r => ({
+          ID: r.id,
+          Cliente: r.customer_name,
+          Telefone: r.customer_phone,
+          Email: r.customer_email,
+          Pacote: r.package_id,
+          Tipo: r.type === 'period' ? 'Período' : 'Pernoite',
+          Suite: r.suite_id?.replace('suite-', '') ?? '',
+          'Check-in': r.check_in ? new Date(r.check_in).toLocaleString('pt-BR') : '',
+          Valor: r.total_amount?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) ?? '',
+          Status: r.status,
+          'Criado em': new Date(r.created_at).toLocaleString('pt-BR'),
+        })), `reservas-${now}.csv`)
+      }
+
+      // Leads
+      const { data: leadsData } = await supabase.rpc('get_leads')
+      if (leadsData?.length) {
+        downloadCsv((leadsData as Record<string, unknown>[]).map(l => ({
+          ID: l.id,
+          Nome: l.name,
+          Telefone: l.phone,
+          Email: l.email,
+          CPF: l.tax_id ?? '',
+          Modo: l.mode ?? '',
+          Pacote: l.package_id ?? '',
+          Tipo: l.type === 'period' ? 'Período' : l.type === 'overnight' ? 'Pernoite' : '',
+          Suite: String(l.suite_id ?? '').replace('suite-', ''),
+          'Check-in': l.check_in ? new Date(l.check_in as string).toLocaleString('pt-BR') : '',
+          Bebida: l.drink ?? '',
+          Comida: l.food ?? '',
+          Valor: l.total_amount ? Number(l.total_amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '',
+          Status: l.status,
+          'Aceite WhatsApp': l.whatsapp_consent ? 'Sim' : 'Não',
+          Origem: l.utm_source ?? '',
+          Mídia: l.utm_medium ?? '',
+          Campanha: l.utm_campaign ?? '',
+          Referrer: l.referrer ?? '',
+          Dispositivo: l.device ?? '',
+          'Criado em': new Date(l.created_at as string).toLocaleString('pt-BR'),
+        })), `leads-${now}.csv`)
+      }
+
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const suiteMap = useMemo(
     () => Object.fromEntries(suites.map(s => [s.id, s.name])),
@@ -86,6 +147,21 @@ export default function DashboardTab() {
 
   return (
     <div className="space-y-5">
+      {/* Export all */}
+      <div className="flex justify-end">
+        <button
+          onClick={exportAll}
+          disabled={exporting}
+          className="flex items-center gap-2 text-xs text-gold-400/80 hover:text-gold-300 transition-colors px-4 py-2.5 border border-gold-800/30 hover:border-gold-600/40 rounded-xl disabled:opacity-40"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 16 16" stroke="currentColor" strokeWidth="1.6">
+            <path d="M8 2v8M4 7l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M2 12v1a1 1 0 001 1h10a1 1 0 001-1v-1" strokeLinecap="round" />
+          </svg>
+          {exporting ? 'Exportando...' : 'Exportar tudo em CSV'}
+        </button>
+      </div>
+
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../lib/supabase'
+import { downloadCsv } from '../utils/exportCsv'
 
 type Reservation = {
   id: string
@@ -35,11 +36,19 @@ function fmtBRL(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
+const TEST_NAMES = ['luis lima', 'igor beccari', 'luis henrique santos lima', 'luis henrique']
+
+function isTestRecord(name: string) {
+  const n = name.toLowerCase()
+  return TEST_NAMES.some(t => n.includes(t))
+}
+
 export default function ReservasTab() {
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => { load() }, [])
 
@@ -56,6 +65,44 @@ export default function ReservasTab() {
   async function updateStatus(id: string, status: string) {
     await supabase.from('reservations').update({ status }).eq('id', id)
     setReservations(prev => prev.map(r => r.id === id ? { ...r, status } : r))
+  }
+
+  function exportCsv() {
+    const rows = reservations.map(r => ({
+      ID: r.id,
+      Cliente: r.customer_name,
+      Telefone: r.customer_phone,
+      Email: r.customer_email,
+      Pacote: r.package_id,
+      Tipo: r.type === 'period' ? 'Período' : 'Pernoite',
+      Suite: r.suite_id.replace('suite-', ''),
+      'Check-in': fmtDate(r.check_in),
+      Valor: fmtBRL(r.total_amount),
+      Status: STATUS_LABEL[r.status] ?? r.status,
+      'Criado em': fmtDate(r.created_at),
+    }))
+    const now = new Date().toISOString().slice(0, 10)
+    downloadCsv(rows, `reservas-${now}.csv`)
+  }
+
+  async function deleteTestRecords() {
+    const toDelete = reservations.filter(
+      r => isTestRecord(r.customer_name) && ['pending', 'confirmed'].includes(r.status)
+    )
+    if (toDelete.length === 0) {
+      alert('Nenhuma reserva de teste encontrada.')
+      return
+    }
+    if (!confirm(`Apagar ${toDelete.length} reserva(s) de teste?\n\n${toDelete.map(r => r.customer_name).join('\n')}`)) return
+    setDeleting(true)
+    const ids = toDelete.map(r => r.id)
+    const { error } = await supabase.from('reservations').delete().in('id', ids)
+    if (error) {
+      alert('Erro ao deletar: ' + error.message)
+    } else {
+      setReservations(prev => prev.filter(r => !ids.includes(r.id)))
+    }
+    setDeleting(false)
   }
 
   const filtered = useMemo(() => {
@@ -110,6 +157,19 @@ export default function ReservasTab() {
           className="text-xs text-white/30 hover:text-white/60 transition-colors px-4 py-2.5 border border-white/8 rounded-xl whitespace-nowrap"
         >
           ↺ Atualizar
+        </button>
+        <button
+          onClick={exportCsv}
+          className="text-xs text-gold-400/70 hover:text-gold-300 transition-colors px-4 py-2.5 border border-gold-800/30 hover:border-gold-600/40 rounded-xl whitespace-nowrap"
+        >
+          ↓ Exportar CSV
+        </button>
+        <button
+          onClick={deleteTestRecords}
+          disabled={deleting}
+          className="text-xs text-red-400/60 hover:text-red-400 transition-colors px-4 py-2.5 border border-red-900/30 hover:border-red-700/40 rounded-xl whitespace-nowrap disabled:opacity-40"
+        >
+          {deleting ? 'Apagando...' : '✕ Apagar testes'}
         </button>
       </div>
 
