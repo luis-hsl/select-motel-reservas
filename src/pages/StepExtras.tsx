@@ -20,6 +20,17 @@ const PACKAGE_DRINK_IDS: Record<string, string[]> = {
   bronze: ['drink-drinque'],
 }
 
+// Decoração permitida por tier da suíte (modo experiência).
+// A suíte carrega seu pacote em `packageIds` — o tamanho dela define até onde
+// a decoração pode "subir": decoração Ouro num quarto Bronze pequeno fica
+// exagerada, então cada tier libera a própria decoração + um nível acima.
+//   bronze → bronze, prata    prata → prata, ouro    ouro → só ouro
+const DECOR_BY_SUITE_TIER: Record<string, string[]> = {
+  bronze: ['extra-deco-bronze', 'extra-deco-prata'],
+  prata:  ['extra-deco-prata', 'extra-deco-ouro'],
+  ouro:   ['extra-deco-ouro'],
+}
+
 const FOOD_NOTA: Record<string, { icon: 'check' | 'warn'; text: string }> = {
   jantar: { icon: 'check', text: 'O jantar inclui entrada : tábua de frios com salame, lombo, queijo, amendoim e azeitonas.' },
   sushi:  { icon: 'check', text: 'No sushi o casal ganha uma barca : o combinado premium é servido diretamente para vocês.' },
@@ -49,7 +60,7 @@ const PRATOS = [
  */
 export default function StepExtras() {
   const {
-    mode, package: pkg, selectedItems, toggleItem, clearItems,
+    mode, package: pkg, suite, selectedItems, toggleItem, clearItems,
     setFood, setDrink, food, drink,
     jantarPrato, jantarHorario, setJantarPrato, setJantarHorario,
     fondueHorario, setFondueHorario,
@@ -132,10 +143,31 @@ export default function StepExtras() {
     [selectedItems],
   )
 
+  // Decorações liberadas pelo tier da suíte escolhida (modo experiência).
+  // null = sem restrição (modo pacote ou suíte ainda não escolhida).
+  const allowedDecorIds = useMemo(() => {
+    if (isPackage || !suite) return null
+    const allowed = new Set<string>()
+    ;(suite.packageIds ?? []).forEach(tier => {
+      (DECOR_BY_SUITE_TIER[tier] ?? []).forEach(id => allowed.add(id))
+    })
+    return allowed
+  }, [isPackage, suite])
+
   const decoItems = useMemo(
-    () => grouped.extra.filter(i => i.id.startsWith('extra-deco-')),
-    [grouped.extra],
+    () => grouped.extra
+      .filter(i => i.id.startsWith('extra-deco-'))
+      .filter(i => !allowedDecorIds || allowedDecorIds.has(i.id)),
+    [grouped.extra, allowedDecorIds],
   )
+
+  // Se o cliente voltou e trocou pra uma suíte que não permite a decoração já
+  // marcada, deseleciona pra não enviar uma combinação inválida.
+  useEffect(() => {
+    if (!allowedDecorIds) return
+    const sel = selectedItems.find(i => i.category === 'extra' && i.id.startsWith('extra-deco-'))
+    if (sel && !allowedDecorIds.has(sel.id)) toggleItem(sel)
+  }, [allowedDecorIds, selectedItems, toggleItem])
 
   const jantarSelected = isPackage && food === 'jantar' && (pkg?.id === 'ouro' || pkg?.id === 'prata')
   const sushiSelected  = isPackage && food === 'sushi'
