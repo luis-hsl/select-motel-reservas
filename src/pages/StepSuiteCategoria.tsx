@@ -6,46 +6,52 @@ function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 })
 }
 
-const CARD_STYLES: { bg: string; border: string; ring: string; titleColor: string; divider: string; glowBottom: string }[] = [
+const THEMES = [
   {
-    // Tradicional — warm gold
-    bg: [
-      'radial-gradient(ellipse at 80% 25%, rgba(210,160,55,0.38) 0%, transparent 55%)',
-      'radial-gradient(ellipse at 30% 85%, rgba(160,95,25,0.32) 0%, transparent 50%)',
-      '#060503',
-    ].join(', '),
-    border: 'rgba(180,140,50,0.45)',
-    ring:   'rgba(200,160,60,0.35)',
-    titleColor: 'linear-gradient(180deg,#f8e8b0 0%,#d4a020 50%,#8a6010 100%)',
-    divider: '#9a7828',
-    glowBottom: 'rgba(180,120,30,0.2)',
+    // Tradicional — dourado
+    accent:      '#c9a84c',
+    accentBright:'#f5d87a',
+    bg:          'linear-gradient(145deg, #100e04 0%, #0a0800 100%)',
+    border:      'rgba(201,168,76,0.28)',
+    borderHover: 'rgba(201,168,76,0.7)',
+    glow:        '0 0 40px rgba(201,168,76,0.08)',
+    priceBg:     'rgba(201,168,76,0.07)',
+    priceBorder: 'rgba(201,168,76,0.18)',
+    labelColor:  'rgba(245,216,122,0.45)',
+    tag:         null,
   },
   {
-    // Hidro Light — cool blue-teal
-    bg: [
-      'radial-gradient(ellipse at 75% 20%, rgba(50,140,180,0.4) 0%, transparent 55%)',
-      'radial-gradient(ellipse at 25% 80%, rgba(30,100,140,0.3) 0%, transparent 50%)',
-      '#020508',
-    ].join(', '),
-    border: 'rgba(60,150,200,0.45)',
-    ring:   'rgba(80,170,220,0.35)',
-    titleColor: 'linear-gradient(180deg,#b0dff8 0%,#2090c8 50%,#105888 100%)',
-    divider: '#1e78a8',
-    glowBottom: 'rgba(30,120,180,0.2)',
+    // Hidro Light — azul água
+    accent:      '#2eb8cc',
+    accentBright:'#7de8f5',
+    bg:          'linear-gradient(145deg, #03101400 0%, #010a0d 100%)',
+    border:      'rgba(46,184,204,0.28)',
+    borderHover: 'rgba(46,184,204,0.7)',
+    glow:        '0 0 40px rgba(46,184,204,0.08)',
+    priceBg:     'rgba(46,184,204,0.07)',
+    priceBorder: 'rgba(46,184,204,0.18)',
+    labelColor:  'rgba(125,232,245,0.45)',
+    tag:         null,
   },
   {
-    // VIP Piscina — rich purple-violet
-    bg: [
-      'radial-gradient(ellipse at 70% 20%, rgba(140,60,200,0.42) 0%, transparent 55%)',
-      'radial-gradient(ellipse at 30% 80%, rgba(100,30,160,0.32) 0%, transparent 50%)',
-      '#040208',
-    ].join(', '),
-    border: 'rgba(150,80,210,0.45)',
-    ring:   'rgba(170,100,230,0.35)',
-    titleColor: 'linear-gradient(180deg,#e0b0f8 0%,#a040d0 50%,#601090 100%)',
-    divider: '#7a28a8',
-    glowBottom: 'rgba(120,40,180,0.22)',
+    // VIP Piscina — violeta
+    accent:      '#a855f7',
+    accentBright:'#d8b4fe',
+    bg:          'linear-gradient(145deg, #0c0416 0%, #070210 100%)',
+    border:      'rgba(168,85,247,0.28)',
+    borderHover: 'rgba(168,85,247,0.7)',
+    glow:        '0 0 40px rgba(168,85,247,0.10)',
+    priceBg:     'rgba(168,85,247,0.07)',
+    priceBorder: 'rgba(168,85,247,0.18)',
+    labelColor:  'rgba(216,180,254,0.45)',
+    tag:         'Premium',
   },
+]
+
+const PRICE_ROWS = [
+  { key: 'period'   as const, label: 'Período', sublabel: '2 horas' },
+  { key: 'overnight'as const, label: 'Pernoite', sublabel: '~12 horas' },
+  { key: 'diaria'  as const, label: 'Diária',  sublabel: '24 horas' },
 ]
 
 export default function StepSuiteCategoria() {
@@ -69,82 +75,15 @@ export default function StepSuiteCategoria() {
         Qual suíte<br />
         <span className="gold-gradient font-semibold italic pr-1 lg:pr-3">vocês preferem?</span>
       </h1>
-      <p className="text-gold-700/70 text-sm mb-6 sm:mb-8">
+      <p className="text-gold-700/70 text-sm mb-8 sm:mb-10">
         Escolha a categoria e veja os preços por duração.
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl xl:max-w-4xl">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 max-w-3xl xl:max-w-4xl">
         {SUITE_CATEGORIES.map((cat, i) => {
-          const style = CARD_STYLES[i]
+          const t = THEMES[i]
           return (
-            <div
-              key={cat.id}
-              className="relative text-left rounded-2xl overflow-hidden flex flex-col"
-              style={{
-                background: style.bg,
-                border: `1px solid ${style.border}`,
-                boxShadow: `inset 0 0 50px rgba(0,0,0,0.55), 0 0 20px ${style.glowBottom}`,
-                minHeight: '280px',
-              }}
-            >
-              {/* Content */}
-              <div className="flex-1 flex flex-col justify-end p-6 pb-3">
-                <div className="flex items-center gap-2 mb-4">
-                  <div
-                    className="h-px w-8"
-                    style={{ background: style.divider, boxShadow: `0 0 6px ${style.divider}` }}
-                  />
-                </div>
-
-                <h2
-                  className="font-serif font-bold text-transparent bg-clip-text leading-none mb-2"
-                  style={{
-                    fontSize: 'clamp(1.5rem, 4vw, 2rem)',
-                    letterSpacing: '0.04em',
-                    backgroundImage: style.titleColor,
-                  }}
-                >
-                  {cat.label}
-                </h2>
-
-                <p className="text-xs text-gold-600/60 leading-relaxed mb-4">
-                  {cat.description}
-                </p>
-
-                {/* Price table */}
-                <div className="space-y-1 mb-1">
-                  <PriceRow label="Período 2h"  value={fmt(cat.prices.period)}    divider={style.divider} />
-                  <PriceRow label="Pernoite"     value={fmt(cat.prices.overnight)} divider={style.divider} />
-                  <PriceRow label="Diária 24h"   value={fmt(cat.prices.diaria)}    divider={style.divider} />
-                </div>
-              </div>
-
-              {/* CTA */}
-              <div
-                className="px-6 pb-5 pt-3 border-t"
-                style={{ borderColor: `${style.divider}25` }}
-              >
-                <button
-                  onClick={() => choose(cat)}
-                  className="w-full flex items-center justify-center gap-1.5 py-3 rounded-lg text-xs tracking-wide uppercase font-bold text-black transition-all duration-200 hover:opacity-90 active:scale-95"
-                  style={{
-                    background: `linear-gradient(135deg, ${style.divider}, ${style.ring.replace('0.35', '1')}, ${style.divider})`,
-                    boxShadow: `0 0 22px ${style.divider}55, inset 0 1px 0 rgba(255,255,255,0.15)`,
-                  }}
-                >
-                  Escolher <span className="text-sm leading-none">→</span>
-                </button>
-              </div>
-
-              {/* Bottom glow strip */}
-              <div
-                className="absolute bottom-0 left-0 right-0 h-1 rounded-b-2xl pointer-events-none"
-                style={{
-                  background: `linear-gradient(to right, transparent, ${style.divider}90, transparent)`,
-                  boxShadow: `0 0 12px 4px ${style.divider}60`,
-                }}
-              />
-            </div>
+            <Card key={cat.id} cat={cat} theme={t} onChoose={() => choose(cat)} />
           )
         })}
       </div>
@@ -152,16 +91,118 @@ export default function StepSuiteCategoria() {
   )
 }
 
-function PriceRow({ label, value, divider }: { label: string; value: string; divider: string }) {
+function Card({
+  cat,
+  theme: t,
+  onChoose,
+}: {
+  cat: SuiteCategoryDef
+  theme: typeof THEMES[number]
+  onChoose: () => void
+}) {
   return (
-    <div className="flex items-center justify-between gap-2">
-      <span className="text-[11px] text-gold-700/60">{label}</span>
-      <span
-        className="text-[13px] font-semibold font-serif"
-        style={{ color: divider }}
-      >
-        {value}
-      </span>
+    <div
+      className="relative flex flex-col rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.015]"
+      style={{
+        background: t.bg,
+        border: `1px solid ${t.border}`,
+        boxShadow: t.glow,
+      }}
+    >
+      {/* Tag premium */}
+      {t.tag && (
+        <div className="absolute top-4 right-4">
+          <span
+            className="text-[10px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full"
+            style={{
+              background: `${t.accent}20`,
+              border: `1px solid ${t.accent}50`,
+              color: t.accentBright,
+            }}
+          >
+            {t.tag}
+          </span>
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="px-6 pt-7 pb-5">
+        {/* Accent line */}
+        <div
+          className="w-8 h-0.5 mb-5 rounded-full"
+          style={{ background: t.accent, boxShadow: `0 0 8px ${t.accent}` }}
+        />
+
+        {/* Title */}
+        <h2
+          className="font-serif font-semibold leading-none mb-3"
+          style={{
+            fontSize: 'clamp(1.6rem, 4.5vw, 2.1rem)',
+            color: t.accentBright,
+            textShadow: `0 0 30px ${t.accent}60`,
+          }}
+        >
+          {cat.label}
+        </h2>
+
+        {/* Description */}
+        <p className="text-sm leading-relaxed" style={{ color: 'rgba(210,200,185,0.6)' }}>
+          {cat.description}
+        </p>
+      </div>
+
+      {/* Divider */}
+      <div className="mx-6" style={{ height: '1px', background: `${t.accent}20` }} />
+
+      {/* Prices */}
+      <div className="px-6 py-5 flex-1 space-y-2">
+        {PRICE_ROWS.map(row => (
+          <div
+            key={row.key}
+            className="flex items-center justify-between rounded-xl px-4 py-3"
+            style={{
+              background: t.priceBg,
+              border: `1px solid ${t.priceBorder}`,
+            }}
+          >
+            <div>
+              <p className="text-sm font-medium" style={{ color: 'rgba(230,220,200,0.85)' }}>
+                {row.label}
+              </p>
+              <p className="text-[11px]" style={{ color: t.labelColor }}>
+                {row.sublabel}
+              </p>
+            </div>
+            <p
+              className="font-serif font-semibold text-xl"
+              style={{ color: t.accentBright }}
+            >
+              {fmt(cat.prices[row.key])}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* CTA */}
+      <div className="px-6 pb-6 pt-1">
+        <button
+          onClick={onChoose}
+          className="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
+          style={{
+            background: `linear-gradient(135deg, ${t.accent}cc, ${t.accentBright}cc, ${t.accent}cc)`,
+            color: '#000',
+            boxShadow: `0 0 24px ${t.accent}50`,
+          }}
+        >
+          Escolher esta suíte →
+        </button>
+      </div>
+
+      {/* Bottom accent glow */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-px pointer-events-none"
+        style={{ background: `linear-gradient(to right, transparent, ${t.accent}80, transparent)` }}
+      />
     </div>
   )
 }
