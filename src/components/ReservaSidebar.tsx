@@ -1,4 +1,5 @@
 import { useStore } from '../store/useStore'
+import { SUITE_CATEGORIES } from '../data/suiteCategories'
 
 function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -12,10 +13,14 @@ function fmtDt(d: Date) {
 }
 
 export default function ReservaSidebar() {
-  const { package: pkg, drink, food, type, suite, checkIn, checkOut, totalAmount } = useStore()
+  const { mode, package: pkg, suiteCategory, drink, food, type, suite, checkIn, checkOut, totalAmount } = useStore()
   const total = totalAmount()
   const checkout = checkOut()
   const showPrice = total > 0
+
+  const catDef = suiteCategory ? SUITE_CATEGORIES.find(c => c.dbCategory === suiteCategory) : null
+
+  const typeLabel = type === 'period' ? 'Período' : type === 'overnight' ? 'Pernoite' : type === 'diaria' ? 'Diária 24h' : null
 
   return (
     <>
@@ -27,11 +32,17 @@ export default function ReservaSidebar() {
           </div>
 
           <div className="px-5 xl:px-6 py-4 xl:py-5 space-y-4 bg-black/60">
-            {pkg ? <Row label="Pacote" value={pkg.label} /> : <Placeholder label="Pacote" />}
+            {mode === 'suite' ? (
+              catDef
+                ? <Row label="Categoria" value={catDef.label} />
+                : <Placeholder label="Categoria" />
+            ) : (
+              pkg ? <Row label="Pacote" value={pkg.label} /> : <Placeholder label="Pacote" />
+            )}
             {drink && <Row label="Bebida" value={drink === 'vinho' ? '🍷 Vinho' : '🥂 Frisante'} />}
             {food && <Row label="Refeição" value={food === 'jantar' ? '🍽 Jantar' : '🍣 Sushi'} />}
-            {type
-              ? <Row label="Modalidade" value={type === 'period' ? 'Período' : 'Pernoite'} />
+            {typeLabel
+              ? <Row label="Modalidade" value={typeLabel} />
               : <Placeholder label="Modalidade" />
             }
             {suite ? <Row label="Suíte" value={suite.name} /> : <Placeholder label="Suíte" />}
@@ -47,10 +58,8 @@ export default function ReservaSidebar() {
                     : <span className="text-gold-800/50 text-sm">—</span>
                   }
                 </div>
-                {type && (
-                  <p className="text-[11px] text-gold-700/50 mt-1">
-                    {type === 'period' ? 'Período promocional' : 'Pernoite'}
-                  </p>
+                {typeLabel && (
+                  <p className="text-[11px] text-gold-700/50 mt-1">{typeLabel}</p>
                 )}
               </div>
             )}
@@ -59,19 +68,19 @@ export default function ReservaSidebar() {
       </aside>
 
       {/* Mobile bottom bar — only when something is selected */}
-      {(pkg || total > 0) && (
+      {(pkg || catDef || total > 0) && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-black/95 backdrop-blur border-t border-gold-800/30 px-4 py-3">
           <div className="flex items-center justify-between max-w-5xl mx-auto">
             <div className="flex items-center gap-3 min-w-0">
-              {pkg && (
-                <span className="text-xs text-gold-400 font-medium truncate">{pkg.label}</span>
+              {mode === 'suite' ? (
+                catDef && <span className="text-xs text-gold-400 font-medium truncate">{catDef.label}</span>
+              ) : (
+                pkg && <span className="text-xs text-gold-400 font-medium truncate">{pkg.label}</span>
               )}
-              {type && (
+              {typeLabel && (
                 <>
                   <span className="text-gold-800/50 text-xs">·</span>
-                  <span className="text-xs text-gold-600/70 truncate">
-                    {type === 'period' ? 'Período' : 'Pernoite'}
-                  </span>
+                  <span className="text-xs text-gold-600/70 truncate">{typeLabel}</span>
                 </>
               )}
               {suite && (

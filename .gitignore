@@ -37,3 +37,4 @@ infra/*.dump
 
 # Supabase CLI local cache (functions download etc)
 supabase/.temp/
+.env*

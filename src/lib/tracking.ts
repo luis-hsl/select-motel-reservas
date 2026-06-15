@@ -78,12 +78,12 @@ let lastTrack: { step: number; mode: string | null; at: number } | null = null
 
 /**
  * Reporta a step atual da sessão de onboarding pro backend.
- * Idempotente: chamadas rápidas pra mesma step são ignoradas.
+ * Idempotente: chamadas rápidas pra mesma step+mode são ignoradas.
  * `mode` é opcional — backend só persiste se vier preenchido (não sobrescreve com null).
  */
 export async function trackStep(
   step: number,
-  mode?: 'package' | 'experience' | null,
+  mode?: 'package' | 'experience' | 'suite' | null,
 ): Promise<void> {
   if (trackingDisabled()) return
   const m = mode ?? null

@@ -1,5 +1,5 @@
 export type PackageName = 'ouro' | 'prata' | 'bronze'
-export type ReservationType = 'period' | 'overnight'
+export type ReservationType = 'period' | 'overnight' | 'diaria'
 export type SuiteSize = 'large' | 'small'
 export type SuiteCategory = 'VIP Piscina' | 'Hidro' | 'Hidro Light' | 'Standard'
 
@@ -28,7 +28,7 @@ export interface Suite {
   price_overnight_alacarte?: number | null
 }
 
-export type ReservationMode = 'package' | 'experience'
+export type ReservationMode = 'package' | 'experience' | 'suite'
 
 export type ItemCategory = 'food' | 'drink' | 'extra'
 

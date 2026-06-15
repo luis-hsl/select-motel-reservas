@@ -42,7 +42,7 @@ const RESERVED_SUITES: Suite[] = [
 ]
 
 export default function StepSuite() {
-  const { mode, package: pkg, suite: selected, setSuite, nextStep, prevStep, checkIn, checkOut } = useStore()
+  const { mode, package: pkg, suiteCategory, suite: selected, setSuite, nextStep, prevStep, checkIn, checkOut } = useStore()
   const [loading, setLoading] = useState(true)
   const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set())
   const [galleryFor, setGalleryFor] = useState<Suite | null>(null)
@@ -51,10 +51,13 @@ export default function StepSuite() {
   const [alacarteMap, setAlacarteMap] = useState<Record<string, { period: number | null; overnight: number | null }>>({})
 
   // Modo pacote: só suítes daquele pacote.
+  // Modo suíte: filtra pela categoria escolhida.
   // Modo experiência: todas as suítes ativas (cliente escolhe livre).
-  const packageSuites = mode === 'experience' || !pkg
-    ? SUITES
-    : SUITES.filter(s => s.packageIds.includes(pkg.id as never))
+  const packageSuites = mode === 'suite' && suiteCategory
+    ? SUITES.filter(s => s.category === suiteCategory)
+    : mode === 'experience' || !pkg
+      ? SUITES
+      : SUITES.filter(s => s.packageIds.includes(pkg.id as never))
 
   const availableCount = packageSuites.filter(s => !occupiedIds.has(s.id)).length
 

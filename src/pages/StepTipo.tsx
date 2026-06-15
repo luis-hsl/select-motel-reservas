@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../store/useStore'
+import { SUITE_CATEGORIES } from '../data/suiteCategories'
+import type { ReservationType } from '../types'
 
 const FAQ_ITEMS = [
   {
@@ -108,16 +110,206 @@ const TIPOS = [
   },
 ] as const
 
+function fmt(v: number) {
+  return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 })
+}
+
+// ─── Suite mode: 3 durations ───────────────────────────────────────────────
+
+const TIPOS_SUITE = [
+  {
+    id: 'period' as const,
+    label: 'PERÍODO',
+    subtitle: 'Algumas horas só de vocês dois.',
+    notice: 'Duração de 2 horas',
+    bg: TIPOS[1].bg,
+    border: TIPOS[1].border,
+    ring: TIPOS[1].ring,
+    divider: TIPOS[1].divider,
+    titleColor: TIPOS[1].titleColor,
+    subtitleColor: TIPOS[1].subtitleColor,
+    detailColor: TIPOS[1].detailColor,
+    glowBottom: TIPOS[1].glowBottom,
+    accentColor: TIPOS[1].accentColor,
+    badgeBg: TIPOS[1].badgeBg,
+    noticeIcon: TIPOS[1].noticeIcon,
+  },
+  {
+    id: 'overnight' as const,
+    label: 'PERNOITE',
+    subtitle: 'Uma noite inteira para criar memórias.',
+    notice: 'Check-in a partir das 22h',
+    bg: TIPOS[0].bg,
+    border: TIPOS[0].border,
+    ring: TIPOS[0].ring,
+    divider: TIPOS[0].divider,
+    titleColor: TIPOS[0].titleColor,
+    subtitleColor: TIPOS[0].subtitleColor,
+    detailColor: TIPOS[0].detailColor,
+    glowBottom: TIPOS[0].glowBottom,
+    accentColor: TIPOS[0].accentColor,
+    badgeBg: TIPOS[0].badgeBg,
+    noticeIcon: TIPOS[0].noticeIcon,
+  },
+  {
+    id: 'diaria' as const,
+    label: 'DIÁRIA',
+    subtitle: 'Aproveitem sem pressa o dia todo.',
+    notice: 'Duração de 24 horas',
+    bg: [
+      'radial-gradient(ellipse at 70% 20%, rgba(140,60,200,0.38) 0%, transparent 55%)',
+      'radial-gradient(ellipse at 30% 80%, rgba(100,30,160,0.28) 0%, transparent 50%)',
+      '#040208',
+    ].join(', '),
+    border: 'rgba(150,80,210,0.45)',
+    ring: 'rgba(170,100,230,0.35)',
+    divider: '#7a28a8',
+    titleColor: 'linear-gradient(180deg,#e0b0f8 0%,#a040d0 50%,#601090 100%)',
+    subtitleColor: 'rgba(200,150,230,0.55)',
+    detailColor: 'rgba(170,110,210,0.5)',
+    glowBottom: 'rgba(120,40,180,0.22)',
+    accentColor: '#a040d0',
+    badgeBg: 'linear-gradient(135deg,#601090,#d080f0,#501080)',
+    noticeIcon: (
+      <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+        <circle cx="5.5" cy="5.5" r="4.5" stroke="currentColor" strokeWidth="0.9" />
+        <path d="M5.5 3.2v2.5l1.6 1.1" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+] as const
+
 export default function StepTipo() {
-  const { mode, package: pkg, type, setType, nextStep, prevStep } = useStore()
+  const { mode, package: pkg, type, suiteCategory, setType, nextStep, prevStep } = useStore()
 
   // Sem early-return: no modo experiência o cliente chega aqui sem ter escolhido
   // um pacote (porque pula a step de pacote).
 
-  function choose(t: 'period' | 'overnight') {
+  function choose(t: ReservationType) {
     setType(t)
     nextStep()
   }
+
+  // ─── Suite mode ───────────────────────────────────────────────────────────
+  if (mode === 'suite') {
+    const catDef = suiteCategory
+      ? SUITE_CATEGORIES.find(c => c.dbCategory === suiteCategory)
+      : null
+
+    return (
+      <div>
+        <button
+          onClick={prevStep}
+          className="flex items-center gap-1 text-gold-700/60 text-sm mb-8 hover:text-gold-500 transition-colors"
+        >
+          <span>←</span> Voltar
+        </button>
+
+        <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light mb-2 leading-tight">
+          Período, pernoite<br />
+          <span className="gold-gradient font-semibold italic pr-1 lg:pr-3">ou diária?</span>
+        </h1>
+        <p className="text-gold-700/70 text-sm mb-6 sm:mb-8">
+          {catDef
+            ? <>Preços para a suíte <strong className="text-gold-500 font-medium">{catDef.label}</strong>.</>
+            : <>Escolha a duração da sua reserva.</>}
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl xl:max-w-4xl">
+          {TIPOS_SUITE.map((opt) => {
+            const isSel = type === opt.id
+            const price = catDef
+              ? opt.id === 'period' ? catDef.prices.period
+                : opt.id === 'overnight' ? catDef.prices.overnight
+                : catDef.prices.diaria
+              : null
+            return (
+              <div
+                key={opt.id}
+                className="relative text-left rounded-2xl overflow-hidden transition-all duration-300 flex flex-col"
+                style={{
+                  background: opt.bg,
+                  border: `1px solid ${isSel ? opt.ring : opt.border}`,
+                  boxShadow: isSel
+                    ? `0 0 0 2px ${opt.ring}, 0 0 40px ${opt.glowBottom}, inset 0 0 50px rgba(0,0,0,0.45)`
+                    : `inset 0 0 50px rgba(0,0,0,0.55), 0 0 20px ${opt.glowBottom}`,
+                  minHeight: '260px',
+                }}
+              >
+                <div className="flex-1 flex flex-col justify-end p-6 pb-3">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="h-px w-8" style={{ background: opt.divider, boxShadow: `0 0 6px ${opt.divider}` }} />
+                  </div>
+                  <h2
+                    className="font-serif font-bold text-transparent bg-clip-text leading-none mb-2"
+                    style={{ fontSize: 'clamp(1.8rem, 5vw, 2.4rem)', letterSpacing: '0.06em', backgroundImage: opt.titleColor }}
+                  >
+                    {opt.label}
+                  </h2>
+                  <p className="text-xs leading-relaxed mb-3" style={{ color: opt.subtitleColor }}>
+                    {opt.subtitle}
+                  </p>
+                  {price !== null && (
+                    <p className="font-serif text-xl font-semibold mb-3" style={{ color: opt.divider }}>
+                      {fmt(price)}
+                    </p>
+                  )}
+                  <div
+                    className="inline-flex items-center gap-1.5 self-start px-3 py-1.5 rounded-full"
+                    style={{ background: `${opt.divider}18`, border: `1px solid ${opt.divider}40`, color: opt.detailColor }}
+                  >
+                    {opt.noticeIcon}
+                    <span className="text-[10px] tracking-widest uppercase font-medium">{opt.notice}</span>
+                  </div>
+                </div>
+
+                <div className="px-6 pb-5 pt-3 border-t" style={{ borderColor: `${opt.divider}25` }}>
+                  <button
+                    onClick={() => choose(opt.id)}
+                    className="w-full flex items-center justify-center gap-1.5 py-3 rounded-lg text-xs tracking-wide uppercase font-bold text-black transition-all duration-200 hover:opacity-90 active:scale-95"
+                    style={{
+                      background: opt.badgeBg,
+                      boxShadow: isSel
+                        ? `0 0 18px ${opt.accentColor}90`
+                        : `0 0 22px ${opt.accentColor}55, inset 0 1px 0 rgba(255,255,255,0.15)`,
+                    }}
+                  >
+                    {isSel ? <><span>✓</span> Escolhido</> : <>Escolher <span className="text-sm leading-none">→</span></>}
+                  </button>
+                </div>
+
+                <div
+                  className="absolute bottom-0 left-0 right-0 h-1 rounded-b-2xl pointer-events-none"
+                  style={{
+                    background: `linear-gradient(to right, transparent, ${opt.divider}90, transparent)`,
+                    boxShadow: `0 0 12px 4px ${opt.divider}60`,
+                  }}
+                />
+                {isSel && (
+                  <div className="absolute top-4 left-4 w-5 h-5 rounded-full flex items-center justify-center" style={{ background: opt.divider }}>
+                    <svg className="w-3 h-3 text-black" fill="none" viewBox="0 0 12 12">
+                      <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="mt-10 max-w-3xl xl:max-w-4xl">
+          <p className="text-[10px] tracking-[0.4em] uppercase text-gold-700/55 mb-3">Dúvidas frequentes</p>
+          <div className="space-y-2">
+            {FAQ_ITEMS.map((item, i) => (
+              <FaqItem key={i} question={item.q} answer={item.a} />
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ─── Package / Experience mode (original) ────────────────────────────────
 
   return (
     <div>

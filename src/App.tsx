@@ -9,6 +9,7 @@ import ReservaSidebar from './components/ReservaSidebar'
 import CardPaymentReturn from './components/CardPaymentReturn'
 import StepEscolha from './pages/StepEscolha'
 import StepPacote from './pages/StepPacote'
+import StepSuiteCategoria from './pages/StepSuiteCategoria'
 import StepTipo from './pages/StepTipo'
 import StepData from './pages/StepData'
 import StepSuite from './pages/StepSuite'
@@ -17,11 +18,22 @@ import StepPagamento from './pages/StepPagamento'
 import { useStore } from './store/useStore'
 
 // Dados coletados inline no StepEscolha — StepDados removido do fluxo.
-//   PACOTE:      Escolha → Pacote → Tipo → Data → Suíte → Extras → Pagamento  (7 steps)
-//   EXPERIÊNCIA: Escolha → Tipo  → Data → Suíte → Extras → Pagamento          (6 steps)
+//   PACOTE:      Escolha → Pacote     → Tipo → Data → Suíte → Extras → Pagamento  (7 steps)
+//   SUITE:       Escolha → Categoria  → Tipo → Data → Suíte → Extras → Pagamento  (7 steps)
+//   EXPERIÊNCIA: Escolha → Tipo       → Data → Suíte → Extras → Pagamento          (6 steps)
 const STEPS_PACKAGE: Record<number, React.ComponentType> = {
   1: StepEscolha,
   2: StepPacote,
+  3: StepTipo,
+  4: StepData,
+  5: StepSuite,
+  6: StepExtras,
+  7: StepPagamento,
+}
+
+const STEPS_SUITE: Record<number, React.ComponentType> = {
+  1: StepEscolha,
+  2: StepSuiteCategoria,
   3: StepTipo,
   4: StepData,
   5: StepSuite,
@@ -70,7 +82,7 @@ export default function App() {
     return <CardPaymentReturn reservationId={paymentReturn} />
   }
 
-  const STEPS = mode === 'experience' ? STEPS_EXPERIENCE : STEPS_PACKAGE
+  const STEPS = mode === 'experience' ? STEPS_EXPERIENCE : mode === 'suite' ? STEPS_SUITE : STEPS_PACKAGE
   const StepComponent = STEPS[currentStep] ?? StepEscolha
 
   return (

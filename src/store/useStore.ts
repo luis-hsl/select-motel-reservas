@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import type { Package, Suite, ReservationType, ReservationMode, ExperienceItem } from '../types'
+import type { Package, Suite, SuiteCategory, ReservationType, ReservationMode, ExperienceItem } from '../types'
+import { SUITE_CATEGORIES } from '../data/suiteCategories'
 
 interface StoreState {
   currentStep: number
@@ -12,6 +13,9 @@ interface StoreState {
   jantarPrato: string | null
   jantarHorario: string | null
   fondueHorario: string | null      // horário do fondue (seção independente)
+
+  // ────── SUITE MODE ──────
+  suiteCategory: SuiteCategory | null
 
   // ────── EXPERIENCE MODE ──────
   // Items selecionados (cada um com seu preço, somam no total)
@@ -37,6 +41,7 @@ interface StoreState {
   setJantarPrato: (prato: string | null) => void
   setJantarHorario: (horario: string | null) => void
   setFondueHorario: (horario: string | null) => void
+  setSuiteCategory: (cat: SuiteCategory) => void
   setType: (type: ReservationType) => void
   setSuite: (suite: Suite) => void
   setCheckIn: (date: Date) => void
@@ -63,6 +68,7 @@ const INITIAL = {
   jantarPrato: null,
   jantarHorario: null,
   fondueHorario: null,
+  suiteCategory: null,
   selectedItems: [] as ExperienceItem[],
   type: null,
   suite: null,
@@ -86,6 +92,7 @@ export const useStore = create<StoreState>((set, get) => ({
   setJantarPrato: (jantarPrato) => set({ jantarPrato }),
   setJantarHorario: (jantarHorario) => set({ jantarHorario }),
   setFondueHorario: (fondueHorario) => set({ fondueHorario }),
+  setSuiteCategory: (suiteCategory) => set({ suiteCategory }),
   setType: (type) => set({ type }),
   setSuite: (suite) => set({ suite }),
   setCheckIn: (date) => set({ checkIn: date, suite: null }),
@@ -106,13 +113,24 @@ export const useStore = create<StoreState>((set, get) => ({
   reset: () => set(INITIAL),
 
   totalAmount: () => {
-    const { mode, package: pkg, type, suite, selectedItems } = get()
+    const { mode, package: pkg, type, suite, suiteCategory, selectedItems } = get()
     if (!type) return 0
 
     // ─── Modo Pacote: preço fixo do pacote por tipo ───
     if (mode === 'package' || (!mode && pkg)) {
       if (!pkg) return 0
       return type === 'period' ? pkg.price_period : pkg.price_overnight
+    }
+
+    // ─── Modo Suíte: preço por categoria + tipo ───
+    if (mode === 'suite') {
+      if (!suiteCategory) return 0
+      const cat = SUITE_CATEGORIES.find(c => c.dbCategory === suiteCategory)
+      if (!cat) return 0
+      if (type === 'period')   return cat.prices.period
+      if (type === 'overnight') return cat.prices.overnight
+      if (type === 'diaria')   return cat.prices.diaria
+      return 0
     }
 
     // ─── Modo Experiência: suíte + itens ───
@@ -132,7 +150,8 @@ export const useStore = create<StoreState>((set, get) => ({
     const { checkIn, type } = get()
     if (!checkIn || !type) return null
     const out = new Date(checkIn)
-    out.setHours(out.getHours() + (type === 'period' ? 2 : 12))
+    const hours = type === 'period' ? 2 : type === 'diaria' ? 24 : 12
+    out.setHours(out.getHours() + hours)
     return out
   },
 
@@ -146,6 +165,7 @@ export const useStore = create<StoreState>((set, get) => ({
 export const TOTAL_STEPS_BY_MODE: Record<ReservationMode, number> = {
   package:    7,
   experience: 6,
+  suite:      7,
 }
 
 /** Retorna o total de steps com base no mode escolhido (default 7 enquanto não escolheu). */

@@ -46,8 +46,8 @@ type Option = {
 }
 const OPTIONS: Option[] = [
   {
-    id: 'package', label: 'pacote', sublabel: 'tudo incluso',
-    desc: 'Decoração, jantar, fondue e bebida. Só chegar e se apaixonar.',
+    id: 'suite', label: 'faça sua\nreserva', sublabel: 'escolha sua suíte',
+    desc: 'Escolha a categoria de suíte e a duração que preferir.',
     recommended: true,
   },
   {
@@ -172,7 +172,7 @@ export default function StepEscolha() {
           </span>
         </h1>
         <p className="text-sm text-gold-600/60 mt-4 max-w-xs mx-auto leading-relaxed">
-          Pacote completo ou monte do seu jeito.
+          Reserve sua suíte ou monte do seu jeito.
         </p>
       </div>
 
@@ -331,7 +331,7 @@ export default function StepEscolha() {
             : !formVisible
               ? 'Preencha seus dados para continuar'
               : canContinue
-                ? picked === 'package'
+                ? picked === 'suite'
                   ? <>Garantir minha reserva →</>
                   : <>Criar minha experiência →</>
                 : 'Preencha seus dados para continuar'}
@@ -346,7 +346,7 @@ export default function StepEscolha() {
 /* ── OptionCard ── */
 function OptionCard({ opt, selected, onPick }: { opt: Option; selected: boolean; onPick: () => void }) {
   const rec = !!opt.recommended
-  const imgSrc = opt.id === 'package' ? '/card-pacote.webp' : '/card-experiencia.webp'
+  const imgSrc = opt.id === 'suite' ? '/card-pacote.webp' : '/card-experiencia.webp'
 
   return (
     <button
