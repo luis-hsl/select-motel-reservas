@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { getAvailableDates, calcCheckOut, PERIOD_SLOTS, OVERNIGHT_CHECKIN } from '../data'
+import { getAvailableDates, calcCheckOut, PERIOD_SLOTS } from '../data'
 import { useStore } from '../store/useStore'
 
 const AVAILABLE_DATES = getAvailableDates()
@@ -129,7 +129,8 @@ export default function StepData() {
   const slotsRef = useRef<HTMLDivElement>(null)
   const ctaRef = useRef<HTMLButtonElement>(null)
 
-  const slots = type === 'period' ? PERIOD_SLOTS : [OVERNIGHT_CHECKIN]
+  // Período, pernoite e diária usam os mesmos horários disponíveis
+  const slots = PERIOD_SLOTS
 
   function slotCheckIn(slot: string, date: Date): Date {
     const [h, m] = slot.split(':').map(Number)
@@ -205,42 +206,28 @@ export default function StepData() {
                 Horário de check-in
               </p>
 
-              {type === 'overnight' ? (
-                <button
-                  onClick={() => setSelectedSlot(OVERNIGHT_CHECKIN)}
-                  className={[
-                    'w-full py-4 rounded-xl border text-sm font-medium transition-all duration-200',
-                    selectedSlot
-                      ? 'border-gold-500 bg-gold-900/20 text-gold-300'
-                      : 'border-gold-700/50 text-gold-500/80 hover:border-gold-500/70 hover:text-gold-300',
-                  ].join(' ')}
-                >
-                  00:00 — entrada à meia-noite
-                </button>
-              ) : (
-                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-                  {slots.map((slot) => {
-                    const sel = selectedSlot === slot
-                    const [h] = slot.split(':').map(Number)
-                    const period = h < 12 ? 'Manhã' : h < 18 ? 'Tarde' : 'Noite'
-                    return (
-                      <button
-                        key={slot}
-                        onClick={() => setSelectedSlot(slot)}
-                        className={[
-                          'py-3 rounded-xl border text-sm font-medium transition-all duration-200 outline-none flex flex-col items-center gap-0.5',
-                          sel
-                            ? 'border-gold-500 bg-gold-900/20 text-gold-300'
-                            : 'border-gold-700/50 text-gold-500/80 hover:border-gold-500/70 hover:text-gold-300',
-                        ].join(' ')}
-                      >
-                        <span>{slot}</span>
-                        <span className={['text-[9px] tracking-widest', sel ? 'text-gold-500/60' : 'text-gold-600/80'].join(' ')}>{period}</span>
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
+              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                {slots.map((slot) => {
+                  const sel = selectedSlot === slot
+                  const [h] = slot.split(':').map(Number)
+                  const period = h < 12 ? 'Manhã' : h < 18 ? 'Tarde' : 'Noite'
+                  return (
+                    <button
+                      key={slot}
+                      onClick={() => setSelectedSlot(slot)}
+                      className={[
+                        'py-3 rounded-xl border text-sm font-medium transition-all duration-200 outline-none flex flex-col items-center gap-0.5',
+                        sel
+                          ? 'border-gold-500 bg-gold-900/20 text-gold-300'
+                          : 'border-gold-700/50 text-gold-500/80 hover:border-gold-500/70 hover:text-gold-300',
+                      ].join(' ')}
+                    >
+                      <span>{slot}</span>
+                      <span className={['text-[9px] tracking-widests', sel ? 'text-gold-500/60' : 'text-gold-600/80'].join(' ')}>{period}</span>
+                    </button>
+                  )
+                })}
+              </div>
 
               {selectedCheckOut && selectedSlot && (
                 <div className="mt-4 px-4 py-3 rounded-xl border border-gold-800/30 bg-gold-900/10">

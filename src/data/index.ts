@@ -73,16 +73,15 @@ export const PERIOD_SLOTS = [
 ]
 export const OVERNIGHT_CHECKIN = '00:00'
 
+/** Retorna os próximos 90 dias a partir de hoje (inclusive). */
 export function getAvailableDates(): Date[] {
-  const start = new Date(2026, 5, 8)   // 8 de junho de 2026
-  const end   = new Date(2026, 5, 14)  // 14 de junho de 2026
-  start.setHours(0, 0, 0, 0)
-  end.setHours(0, 0, 0, 0)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
   const dates: Date[] = []
-  const cur = new Date(start)
-  while (cur <= end) {
-    dates.push(new Date(cur))
-    cur.setDate(cur.getDate() + 1)
+  for (let i = 0; i < 90; i++) {
+    const d = new Date(today)
+    d.setDate(d.getDate() + i)
+    dates.push(d)
   }
   return dates
 }

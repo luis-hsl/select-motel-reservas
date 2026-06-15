@@ -52,7 +52,7 @@ const TIPOS = [
     id: 'overnight' as const,
     label: 'PERNOITE',
     subtitle: 'Uma noite inteira para criar memórias inesquecíveis.',
-    notice: 'Check-in a partir das 22h',
+    notice: 'Duração de ~12 horas',
     noticeIcon: (
       <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
         <circle cx="5.5" cy="5.5" r="4.5" stroke="currentColor" strokeWidth="0.9" />
@@ -138,7 +138,7 @@ const TIPOS_SUITE = [
     id: 'overnight' as const,
     label: 'PERNOITE',
     subtitle: 'Uma noite inteira para criar memórias.',
-    notice: 'Check-in a partir das 22h',
+    notice: 'Duração de ~12 horas',
     bg: TIPOS[0].bg,
     border: TIPOS[0].border,
     ring: TIPOS[0].ring,

@@ -68,6 +68,8 @@ export default function StepExtras() {
     nextStep, prevStep,
   } = useStore()
   const [items, setItems] = useState<ExperienceItem[]>([])
+  // Nos modos experience/suite mostra primeiro uma tela de opt-in
+  const [opted, setOpted] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -211,6 +213,69 @@ export default function StepExtras() {
     return (
       <div className="text-gold-700/40 text-sm py-16 text-center">
         Carregando opções…
+      </div>
+    )
+  }
+
+  // Tela de opt-in para experience / suite (pacote sempre mostra comida+bebida)
+  if (!isPackage && !opted) {
+    return (
+      <div>
+        <button
+          onClick={prevStep}
+          className="flex items-center gap-1 text-gold-700/60 text-sm mb-8 hover:text-gold-500 transition-colors"
+        >
+          <span>←</span> Voltar
+        </button>
+
+        <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light mb-3 leading-tight">
+          Adicionar algo<br />
+          <span className="gold-gradient font-semibold italic pr-1">à reserva?</span>
+        </h1>
+        <p className="text-gold-700/70 text-sm mb-10">
+          Comidas, bebidas e extras opcionais para tornar a experiência ainda mais especial.
+        </p>
+
+        <div className="flex flex-col gap-4 max-w-md">
+          <button
+            onClick={() => setOpted(true)}
+            className="flex items-center gap-4 px-6 py-5 rounded-2xl text-left transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
+            style={{
+              background: 'rgba(201,168,76,0.08)',
+              border: '1px solid rgba(201,168,76,0.3)',
+            }}
+          >
+            <span
+              className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-xl"
+              style={{ background: 'rgba(201,168,76,0.15)', color: '#f5d87a' }}
+            >
+              +
+            </span>
+            <div>
+              <p className="text-gold-200 font-semibold text-base">Adicionar bebidas, comidas e extras</p>
+              <p className="text-gold-700/60 text-sm mt-0.5">Veja o que temos disponível para você</p>
+            </div>
+          </button>
+
+          <button
+            onClick={nextStep}
+            className="flex items-center gap-4 px-6 py-5 rounded-2xl text-left transition-all duration-200 hover:bg-white/5 active:scale-[0.98]"
+            style={{ border: '1px solid rgba(255,255,255,0.08)' }}
+          >
+            <span
+              className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center"
+              style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(180,160,120,0.6)' }}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </span>
+            <div>
+              <p className="text-gold-400/70 font-medium text-base">Não, obrigado — continuar</p>
+              <p className="text-gold-800/50 text-sm mt-0.5">Ir direto para o pagamento</p>
+            </div>
+          </button>
+        </div>
       </div>
     )
   }
