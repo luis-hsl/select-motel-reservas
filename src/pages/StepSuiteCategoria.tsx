@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useStore } from '../store/useStore'
 import { SUITE_CATEGORIES } from '../data/suiteCategories'
@@ -13,7 +13,6 @@ function fmt(v: number) {
 
 const THEMES = [
   {
-    // Suíte Tradicional — âmbar dourado
     accent:      '#b8975a',
     accentBright:'#dfc07a',
     bg:          'linear-gradient(160deg, #0d0b08 0%, #080602 100%)',
@@ -25,7 +24,6 @@ const THEMES = [
     tag:         null,
   },
   {
-    // Hidro Light — teal gelado
     accent:      '#4aafc0',
     accentBright:'#78d0e4',
     bg:          'linear-gradient(160deg, #050c11 0%, #030810 100%)',
@@ -37,7 +35,6 @@ const THEMES = [
     tag:         null,
   },
   {
-    // VIP Piscina — cobre terracotta
     accent:      '#c07260',
     accentBright:'#e49a84',
     bg:          'linear-gradient(160deg, #100807 0%, #0c0503 100%)',
@@ -67,19 +64,21 @@ export default function StepSuiteCategoria() {
   const [selectedType, setSelectedType] = useState<ReservationType | null>(null)
 
   function handleSelectType(t: ReservationType) {
-    setSelectedType(prev => (prev === t ? null : t)) // toggle on re-click
+    setSelectedType(prev => (prev === t ? null : t))
   }
 
   function choose(cat: SuiteCategoryDef) {
+    if (!selectedType) return // bloqueado sem duração
     setSuiteCategory(cat.dbCategory)
-    if (selectedType) setType(selectedType)
+    setType(selectedType)
     nextStep()
   }
 
   function chooseSuiteFromModal(cat: SuiteCategoryDef, suite: Suite) {
+    // selectedType garantido pelo modal antes de chamar esta função
     setSuiteCategory(cat.dbCategory)
     setSuite(suite)
-    if (selectedType) setType(selectedType)
+    setType(selectedType!)
     setStep(4) // pula StepSuite — suíte já escolhida no modal
     setModalCat(null)
   }
@@ -98,7 +97,7 @@ export default function StepSuiteCategoria() {
         <span className="gold-gradient font-semibold italic pr-1 lg:pr-3">vocês preferem?</span>
       </h1>
       <p className="text-gold-700/70 text-sm mb-8 sm:mb-10">
-        Escolha a categoria e veja os preços por duração.
+        Escolha a categoria, selecione a duração e continue.
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 max-w-3xl xl:max-w-4xl">
@@ -119,6 +118,8 @@ export default function StepSuiteCategoria() {
         <SuiteVideoModal
           cat={modalCat.cat}
           theme={THEMES[modalCat.themeIdx]}
+          selectedType={selectedType}
+          onSelectType={handleSelectType}
           onClose={() => setModalCat(null)}
           onSelectSuite={(suite) => chooseSuiteFromModal(modalCat.cat, suite)}
         />,
@@ -145,6 +146,20 @@ function Card({
   onChoose: () => void
   onViewVideos: () => void
 }) {
+  const [showWarning, setShowWarning] = useState(false)
+
+  useEffect(() => {
+    if (selectedType) setShowWarning(false)
+  }, [selectedType])
+
+  function handleChoose() {
+    if (!selectedType) {
+      setShowWarning(true)
+      return
+    }
+    onChoose()
+  }
+
   return (
     <div
       className="relative flex flex-col rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.012]"
@@ -191,8 +206,11 @@ function Card({
       {/* Divider */}
       <div className="mx-6" style={{ height: '1px', background: `${t.accent}15` }} />
 
-      {/* Prices — clicáveis para pré-selecionar duração */}
+      {/* Preços — clicáveis para selecionar duração */}
       <div className="px-6 py-5 flex-1 space-y-1.5">
+        <p className="text-[9px] uppercase tracking-widest mb-2" style={{ color: t.labelColor }}>
+          Selecione a duração
+        </p>
         {PRICE_ROWS.map(row => {
           const price = cat.prices[row.key]
           if (price === undefined) return null
@@ -243,28 +261,57 @@ function Card({
 
       {/* CTAs */}
       <div className="px-6 pb-6 pt-1 space-y-2">
+        {/* Aviso: sem duração selecionada */}
+        {showWarning && !selectedType && (
+          <p
+            className="text-[10px] text-center py-1 px-2 rounded-lg"
+            style={{
+              color: t.accentBright,
+              background: `${t.accent}12`,
+              border: `1px solid ${t.accent}30`,
+            }}
+          >
+            Selecione 1 hora, período, pernoite ou diária acima
+          </p>
+        )}
+
         <button
-          onClick={onChoose}
-          className="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
+          onClick={handleChoose}
+          className="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition-all duration-200 active:scale-[0.98]"
           style={{
-            background: `linear-gradient(135deg, ${t.accent}cc, ${t.accentBright}cc, ${t.accent}cc)`,
-            color: '#080502',
+            background: selectedType
+              ? `linear-gradient(135deg, ${t.accent}cc, ${t.accentBright}cc, ${t.accent}cc)`
+              : `${t.accent}30`,
+            color: selectedType ? '#080502' : t.labelColor,
+            cursor: selectedType ? 'pointer' : 'default',
+          }}
+          onMouseEnter={e => {
+            if (selectedType) (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.1)'
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLButtonElement).style.filter = ''
           }}
         >
           Continuar reserva →
         </button>
 
-        <button
-          onClick={onViewVideos}
-          className="w-full py-2.5 rounded-xl text-[11px] font-medium tracking-widest uppercase transition-all duration-200 hover:opacity-100 active:scale-[0.98]"
-          style={{
-            background: 'transparent',
-            border: `1px solid ${t.border}`,
-            color: t.labelColor,
-          }}
-        >
-          Ver vídeos
-        </button>
+        {/* Hint + botão de vídeos */}
+        <div>
+          <p className="text-[9px] text-center mb-1" style={{ color: t.labelColor }}>
+            Quer ver como são as suítes por dentro?
+          </p>
+          <button
+            onClick={onViewVideos}
+            className="w-full py-2.5 rounded-xl text-[11px] font-medium tracking-widest uppercase transition-all duration-200 hover:opacity-100 active:scale-[0.98]"
+            style={{
+              background: 'transparent',
+              border: `1px solid ${t.border}`,
+              color: t.labelColor,
+            }}
+          >
+            Ver vídeos das suítes
+          </button>
+        </div>
       </div>
 
       {/* Bottom accent */}
@@ -281,11 +328,15 @@ function Card({
 function SuiteVideoModal({
   cat,
   theme: t,
+  selectedType,
+  onSelectType,
   onClose,
   onSelectSuite,
 }: {
   cat: SuiteCategoryDef
   theme: typeof THEMES[number]
+  selectedType: ReservationType | null
+  onSelectType: (type: ReservationType) => void
   onClose: () => void
   onSelectSuite: (suite: Suite) => void
 }) {
@@ -293,15 +344,22 @@ function SuiteVideoModal({
   const [videoUrls, setVideoUrls] = useState<Record<string, string>>({})
   const [visible, setVisible] = useState(false)
   const [currentIdx, setCurrentIdx] = useState(0)
+  const [showWarning, setShowWarning] = useState(false)
+  const touchStartX = useRef<number | null>(null)
 
-  // Animação de entrada (mesmo padrão do SuiteGallery em StepSuite)
+  // Animação de entrada (mesmo padrão do SuiteGallery)
   useEffect(() => {
     document.body.style.overflow = 'hidden'
     requestAnimationFrame(() => setTimeout(() => setVisible(true), 10))
     return () => { document.body.style.overflow = '' }
   }, [])
 
-  // Busca video_url de cada suíte no Supabase
+  // Limpa aviso quando tipo é selecionado
+  useEffect(() => {
+    if (selectedType) setShowWarning(false)
+  }, [selectedType])
+
+  // Busca video_url do Supabase
   useEffect(() => {
     if (suites.length === 0) return
     const ids = suites.map(s => s.id)
@@ -324,8 +382,32 @@ function SuiteVideoModal({
     setTimeout(onClose, 360)
   }
 
+  function navigate(dir: 1 | -1) {
+    setCurrentIdx(i => Math.min(Math.max(0, i + dir), suites.length - 1))
+  }
+
+  // Swipe gesture no vídeo
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX
+  }
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null) return
+    const delta = touchStartX.current - e.changedTouches[0].clientX
+    if (Math.abs(delta) > 45) navigate(delta > 0 ? 1 : -1)
+    touchStartX.current = null
+  }
+
+  function handleSelect() {
+    if (!selectedType) {
+      setShowWarning(true)
+      return
+    }
+    if (currentSuite) onSelectSuite(currentSuite)
+  }
+
   const currentSuite = suites[currentIdx] ?? null
   const videoUrl = currentSuite ? videoUrls[currentSuite.id] : undefined
+  const hasMultiple = suites.length > 1
 
   return (
     <div
@@ -345,7 +427,7 @@ function SuiteVideoModal({
 
       {/* Sheet */}
       <div
-        className="relative w-full sm:max-w-md max-h-[85vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl scrollbar-hide"
+        className="relative w-full sm:max-w-md max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl scrollbar-hide"
         style={{
           backgroundColor: '#0c0702',
           border: `1px solid ${t.border}`,
@@ -372,7 +454,7 @@ function SuiteVideoModal({
               {cat.label}
             </h3>
             <p className="text-[11px] mt-0.5" style={{ color: 'rgba(200,188,168,0.42)' }}>
-              Ver vídeos
+              Ver vídeos das suítes
             </p>
           </div>
           <button
@@ -384,8 +466,13 @@ function SuiteVideoModal({
           </button>
         </div>
 
-        {/* Vídeo / Placeholder */}
-        <div className="relative bg-black" style={{ minHeight: '200px' }}>
+        {/* Vídeo / Placeholder com swipe */}
+        <div
+          className="relative bg-black select-none"
+          style={{ minHeight: '200px', touchAction: 'pan-y' }}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
           {videoUrl ? (
             <video
               key={videoUrl}
@@ -403,19 +490,16 @@ function SuiteVideoModal({
                   el.play().catch(() => {})
                 })
               }}
-              className="block w-full"
-              style={{ maxHeight: '55vh' }}
+              className="block w-full pointer-events-auto"
+              style={{ maxHeight: '52vh' }}
             />
           ) : (
-            <div
-              className="flex items-center justify-center"
-              style={{ height: '200px' }}
-            >
+            <div className="flex flex-col items-center justify-center gap-2" style={{ height: '200px' }}>
               {currentSuite ? (
                 <span
                   className="font-serif font-bold text-transparent bg-clip-text select-none"
                   style={{
-                    fontSize: 'clamp(5rem, 22vw, 8rem)',
+                    fontSize: 'clamp(4rem, 18vw, 7rem)',
                     backgroundImage: 'linear-gradient(160deg, #fce8a8 0%, #d4a017 35%, #8b6010 70%, #c9a84c 100%)',
                     lineHeight: 1,
                     filter: 'drop-shadow(0 4px 20px rgba(200,150,30,0.5))',
@@ -424,14 +508,46 @@ function SuiteVideoModal({
                   {currentSuite.room_number}
                 </span>
               ) : (
-                <p className="text-sm" style={{ color: 'rgba(200,188,168,0.30)' }}>
-                  Sem vídeo disponível
-                </p>
+                <p className="text-sm" style={{ color: 'rgba(200,188,168,0.30)' }}>Sem vídeo disponível</p>
               )}
             </div>
           )}
 
-          {/* Fechar sobre o vídeo */}
+          {/* Botões de navegação laterais sobre o vídeo — grandes */}
+          {hasMultiple && (
+            <>
+              <button
+                onClick={() => navigate(-1)}
+                disabled={currentIdx === 0}
+                className="absolute left-0 top-0 bottom-0 flex items-center justify-center transition-all"
+                style={{
+                  width: '20%',
+                  background: 'linear-gradient(to right, rgba(0,0,0,0.55), transparent)',
+                  opacity: currentIdx === 0 ? 0.2 : 1,
+                }}
+              >
+                <span style={{ fontSize: '2rem', color: 'rgba(255,255,255,0.8)', textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
+                  ‹
+                </span>
+              </button>
+              <button
+                onClick={() => navigate(1)}
+                disabled={currentIdx === suites.length - 1}
+                className="absolute right-0 top-0 bottom-0 flex items-center justify-center transition-all"
+                style={{
+                  width: '20%',
+                  background: 'linear-gradient(to left, rgba(0,0,0,0.55), transparent)',
+                  opacity: currentIdx === suites.length - 1 ? 0.2 : 1,
+                }}
+              >
+                <span style={{ fontSize: '2rem', color: 'rgba(255,255,255,0.8)', textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
+                  ›
+                </span>
+              </button>
+            </>
+          )}
+
+          {/* Fechar */}
           <button
             onClick={close}
             aria-label="Fechar"
@@ -446,71 +562,129 @@ function SuiteVideoModal({
           </button>
         </div>
 
-        {/* Info + navegação entre suítes */}
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between mb-1">
+        {/* Info da suíte + indicador de navegação */}
+        <div className="px-6 pt-4 pb-2">
+          <div className="flex items-center justify-between mb-0.5">
             <p className="text-sm font-semibold" style={{ color: 'rgba(228,218,198,0.88)' }}>
               {currentSuite?.name ?? ''}
             </p>
-
-            {suites.length > 1 && (
+            {hasMultiple && (
               <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => setCurrentIdx(i => Math.max(0, i - 1))}
-                  disabled={currentIdx === 0}
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-xs transition-all"
-                  style={{
-                    background: `${t.accent}15`,
-                    border: `1px solid ${t.border}`,
-                    color: currentIdx === 0 ? 'rgba(200,188,168,0.2)' : t.accentBright,
-                    opacity: currentIdx === 0 ? 0.35 : 1,
-                  }}
-                >
-                  ←
-                </button>
-                <span className="text-[10px] tabular-nums" style={{ color: 'rgba(200,188,168,0.32)' }}>
-                  {currentIdx + 1} / {suites.length}
-                </span>
-                <button
-                  onClick={() => setCurrentIdx(i => Math.min(suites.length - 1, i + 1))}
-                  disabled={currentIdx === suites.length - 1}
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-xs transition-all"
-                  style={{
-                    background: `${t.accent}15`,
-                    border: `1px solid ${t.border}`,
-                    color: currentIdx === suites.length - 1 ? 'rgba(200,188,168,0.2)' : t.accentBright,
-                    opacity: currentIdx === suites.length - 1 ? 0.35 : 1,
-                  }}
-                >
-                  →
-                </button>
+                {suites.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCurrentIdx(i)}
+                    className="rounded-full transition-all duration-200"
+                    style={{
+                      width: i === currentIdx ? '20px' : '6px',
+                      height: '6px',
+                      background: i === currentIdx ? t.accentBright : `${t.accent}40`,
+                    }}
+                  />
+                ))}
               </div>
             )}
           </div>
-
           <p className="text-[11px]" style={{ color: t.labelColor }}>
             {currentSuite?.description ?? ''}
           </p>
+
+          {/* Hint deslize */}
+          {hasMultiple && (
+            <p className="text-[9px] mt-2" style={{ color: 'rgba(200,188,168,0.22)' }}>
+              ← Deslize no vídeo ou toque nas setas para ver mais suítes →
+            </p>
+          )}
         </div>
 
         {/* Divider */}
-        <div className="mx-6" style={{ height: '1px', background: `${t.accent}15` }} />
+        <div className="mx-6 mt-2" style={{ height: '1px', background: `${t.accent}15` }} />
+
+        {/* Mini seletor de duração */}
+        <div className="px-6 pt-4 pb-2">
+          <p className="text-[9px] uppercase tracking-widest mb-2.5" style={{ color: t.labelColor }}>
+            Selecione a duração
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {PRICE_ROWS.map(row => {
+              const price = cat.prices[row.key]
+              if (price === undefined) return null
+              const isSel = selectedType === row.key
+              return (
+                <button
+                  key={row.key}
+                  onClick={() => onSelectType(row.key)}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all duration-150 active:scale-[0.97]"
+                  style={{
+                    background: isSel ? `${t.accent}20` : 'transparent',
+                    border: `1px solid ${isSel ? t.accent + '65' : t.priceBorder}`,
+                  }}
+                >
+                  <span
+                    className="text-[11px] font-medium"
+                    style={{ color: isSel ? 'rgba(235,225,205,0.92)' : 'rgba(200,188,168,0.60)' }}
+                  >
+                    {row.label}
+                  </span>
+                  <span
+                    className="font-sans font-bold tabular-nums text-[11px]"
+                    style={{ color: isSel ? t.accentBright : t.labelColor }}
+                  >
+                    {fmt(price)}
+                  </span>
+                  {isSel && (
+                    <div
+                      className="w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0"
+                      style={{ background: t.accent }}
+                    >
+                      <svg className="w-2 h-2" fill="none" viewBox="0 0 12 12">
+                        <path d="M2 6l3 3 5-5" stroke="#080502" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </div>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Aviso sem duração */}
+        {showWarning && !selectedType && (
+          <div className="px-6 pt-1">
+            <p
+              className="text-[10px] text-center py-1.5 px-3 rounded-lg"
+              style={{
+                color: t.accentBright,
+                background: `${t.accent}12`,
+                border: `1px solid ${t.accent}30`,
+              }}
+            >
+              Selecione 1 hora, período, pernoite ou diária acima para continuar
+            </p>
+          </div>
+        )}
 
         {/* Selecionar esta suíte */}
         <div className="px-6 py-5">
           <button
-            onClick={() => currentSuite && onSelectSuite(currentSuite)}
-            className="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
+            onClick={handleSelect}
+            className="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition-all duration-200 active:scale-[0.98]"
             style={{
-              background: `linear-gradient(135deg, ${t.accent}cc, ${t.accentBright}cc, ${t.accent}cc)`,
-              color: '#080502',
+              background: selectedType
+                ? `linear-gradient(135deg, ${t.accent}cc, ${t.accentBright}cc, ${t.accent}cc)`
+                : `${t.accent}30`,
+              color: selectedType ? '#080502' : t.labelColor,
+              cursor: selectedType ? 'pointer' : 'default',
+            }}
+            onMouseEnter={e => {
+              if (selectedType) (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.1)'
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLButtonElement).style.filter = ''
             }}
           >
             {currentSuite ? `Selecionar ${currentSuite.name} →` : 'Selecionar →'}
           </button>
-          <p className="text-center text-[10px] mt-3" style={{ color: 'rgba(200,188,168,0.22)' }}>
-            Ao selecionar você avança para escolher o tipo de estadia.
-          </p>
         </div>
       </div>
     </div>

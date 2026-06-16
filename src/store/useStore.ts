@@ -162,11 +162,12 @@ export const useStore = create<StoreState>((set, get) => ({
 
 // Total de steps muda por modo (StepDados foi fundido inline no StepEscolha):
 //   Pacote:     Escolha → Pacote → Tipo → Data → Suíte → Extras → Pagamento  (7)
+//   Suite:      Escolha → Categoria → Suíte → Data → Extras → Pagamento      (6) — duração na etapa 2
 //   Experiência:Escolha → Tipo  → Data → Suíte → Extras → Pagamento          (6)
 export const TOTAL_STEPS_BY_MODE: Record<ReservationMode, number> = {
   package:    7,
   experience: 6,
-  suite:      7,
+  suite:      6,
 }
 
 /** Retorna o total de steps com base no mode escolhido (default 7 enquanto não escolheu). */

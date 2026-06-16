@@ -19,8 +19,9 @@ import { useStore } from './store/useStore'
 
 // Dados coletados inline no StepEscolha — StepDados removido do fluxo.
 //   PACOTE:      Escolha → Pacote    → Tipo  → Data → Suíte → Extras → Pagamento  (7 steps)
-//   SUITE:       Escolha → Categoria → Suíte → Tipo → Data  → Extras → Pagamento  (7 steps)
-//                (se suíte escolhida no modal da etapa 2 → setStep(4) pula StepSuite)
+//   SUITE:       Escolha → Categoria → Suíte → Data → Extras → Pagamento          (6 steps)
+//                Duração selecionada na etapa 2 (StepSuiteCategoria).
+//                (se suíte escolhida no modal da etapa 2 → setStep(4) pula StepSuite → vai p/ StepData)
 //   EXPERIÊNCIA: Escolha → Tipo      → Data  → Suíte → Extras → Pagamento         (6 steps)
 const STEPS_PACKAGE: Record<number, React.ComponentType> = {
   1: StepEscolha,
@@ -36,10 +37,9 @@ const STEPS_SUITE: Record<number, React.ComponentType> = {
   1: StepEscolha,
   2: StepSuiteCategoria,
   3: StepSuite,
-  4: StepTipo,
-  5: StepData,
-  6: StepExtras,
-  7: StepPagamento,
+  4: StepData,
+  5: StepExtras,
+  6: StepPagamento,
 }
 
 const STEPS_EXPERIENCE: Record<number, React.ComponentType> = {
