@@ -6,6 +6,7 @@ export interface SuiteCategoryDef {
   dbCategory: SuiteCategory
   description: string
   prices: {
+    oneHour?: number  // apenas Standard
     period: number    // 2h
     overnight: number // ~12h
     diaria: number    // 24h
@@ -18,7 +19,7 @@ export const SUITE_CATEGORIES: SuiteCategoryDef[] = [
     label: 'Tradicional',
     dbCategory: 'Standard',
     description: 'Conforto e privacidade com tudo que vocês precisam.',
-    prices: { period: 95, overnight: 150, diaria: 260 },
+    prices: { oneHour: 75, period: 95, overnight: 150, diaria: 260 },
   },
   {
     id: 'hidro-light',

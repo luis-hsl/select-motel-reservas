@@ -114,9 +114,37 @@ function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 })
 }
 
-// ─── Suite mode: 3 durations ───────────────────────────────────────────────
+// ─── Suite mode: up to 4 durations ────────────────────────────────────────
+
+const CLOCK_ICON = (
+  <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+    <circle cx="5.5" cy="5.5" r="4.5" stroke="currentColor" strokeWidth="0.9" />
+    <path d="M5.5 3.2v2.5l1.6 1.1" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+)
 
 const TIPOS_SUITE = [
+  {
+    id: 'oneHour' as const,
+    label: '1 HORA',
+    subtitle: 'Uma pausa rápida e especial só de vocês.',
+    notice: 'Duração de 1 hora',
+    bg: [
+      'radial-gradient(ellipse at 60% 20%, rgba(220,80,120,0.38) 0%, transparent 55%)',
+      'radial-gradient(ellipse at 30% 80%, rgba(180,50,90,0.28) 0%, transparent 50%)',
+      '#08020a',
+    ].join(', '),
+    border: 'rgba(220,80,120,0.45)',
+    ring: 'rgba(240,110,145,0.35)',
+    divider: '#b03060',
+    titleColor: 'linear-gradient(180deg,#f8b0cc 0%,#e04080 50%,#901040 100%)',
+    subtitleColor: 'rgba(230,150,185,0.55)',
+    detailColor: 'rgba(200,100,140,0.5)',
+    glowBottom: 'rgba(180,40,80,0.22)',
+    accentColor: '#e04080',
+    badgeBg: 'linear-gradient(135deg,#901040,#f070a0,#801030)',
+    noticeIcon: CLOCK_ICON,
+  },
   {
     id: 'period' as const,
     label: 'PERÍODO',
@@ -170,14 +198,9 @@ const TIPOS_SUITE = [
     glowBottom: 'rgba(120,40,180,0.22)',
     accentColor: '#a040d0',
     badgeBg: 'linear-gradient(135deg,#601090,#d080f0,#501080)',
-    noticeIcon: (
-      <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-        <circle cx="5.5" cy="5.5" r="4.5" stroke="currentColor" strokeWidth="0.9" />
-        <path d="M5.5 3.2v2.5l1.6 1.1" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
+    noticeIcon: CLOCK_ICON,
   },
-] as const
+]
 
 export default function StepTipo() {
   const { mode, package: pkg, type, suiteCategory, setType, nextStep, prevStep } = useStore()
@@ -215,14 +238,18 @@ export default function StepTipo() {
             : <>Escolha a duração da sua reserva.</>}
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl xl:max-w-4xl">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-3xl xl:max-w-4xl">
           {TIPOS_SUITE.map((opt) => {
             const isSel = type === opt.id
             const price = catDef
-              ? opt.id === 'period' ? catDef.prices.period
+              ? opt.id === 'oneHour'    ? catDef.prices.oneHour ?? null
+                : opt.id === 'period'   ? catDef.prices.period
                 : opt.id === 'overnight' ? catDef.prices.overnight
                 : catDef.prices.diaria
               : null
+
+            // 1 hora só disponível em categorias que têm esse preço
+            if (opt.id === 'oneHour' && price === null) return null
             return (
               <div
                 key={opt.id}

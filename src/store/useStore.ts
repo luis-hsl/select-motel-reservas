@@ -127,9 +127,10 @@ export const useStore = create<StoreState>((set, get) => ({
       if (!suiteCategory) return 0
       const cat = SUITE_CATEGORIES.find(c => c.dbCategory === suiteCategory)
       if (!cat) return 0
-      if (type === 'period')   return cat.prices.period
+      if (type === 'oneHour')   return cat.prices.oneHour ?? 0
+      if (type === 'period')    return cat.prices.period
       if (type === 'overnight') return cat.prices.overnight
-      if (type === 'diaria')   return cat.prices.diaria
+      if (type === 'diaria')    return cat.prices.diaria
       return 0
     }
 
@@ -150,7 +151,7 @@ export const useStore = create<StoreState>((set, get) => ({
     const { checkIn, type } = get()
     if (!checkIn || !type) return null
     const out = new Date(checkIn)
-    const hours = type === 'period' ? 2 : type === 'diaria' ? 24 : 12
+    const hours = type === 'oneHour' ? 1 : type === 'period' ? 2 : type === 'diaria' ? 24 : 12
     out.setHours(out.getHours() + hours)
     return out
   },

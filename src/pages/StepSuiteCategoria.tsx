@@ -49,9 +49,10 @@ const THEMES = [
 ]
 
 const PRICE_ROWS = [
-  { key: 'period'   as const, label: 'Período', sublabel: '2 horas' },
+  { key: 'oneHour'  as const, label: '1 Hora',   sublabel: '1 hora' },
+  { key: 'period'   as const, label: 'Período',  sublabel: '2 horas' },
   { key: 'overnight'as const, label: 'Pernoite', sublabel: '~12 horas' },
-  { key: 'diaria'  as const, label: 'Diária',  sublabel: '24 horas' },
+  { key: 'diaria'   as const, label: 'Diária',   sublabel: '24 horas' },
 ]
 
 export default function StepSuiteCategoria() {
@@ -156,31 +157,35 @@ function Card({
 
       {/* Prices */}
       <div className="px-6 py-5 flex-1 space-y-2">
-        {PRICE_ROWS.map(row => (
-          <div
-            key={row.key}
-            className="flex items-center justify-between rounded-xl px-4 py-3"
-            style={{
-              background: t.priceBg,
-              border: `1px solid ${t.priceBorder}`,
-            }}
-          >
-            <div>
-              <p className="text-sm font-medium" style={{ color: 'rgba(230,220,200,0.85)' }}>
-                {row.label}
-              </p>
-              <p className="text-[11px]" style={{ color: t.labelColor }}>
-                {row.sublabel}
+        {PRICE_ROWS.map(row => {
+          const price = cat.prices[row.key]
+          if (price === undefined) return null
+          return (
+            <div
+              key={row.key}
+              className="flex items-center justify-between rounded-xl px-4 py-3"
+              style={{
+                background: t.priceBg,
+                border: `1px solid ${t.priceBorder}`,
+              }}
+            >
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'rgba(230,220,200,0.85)' }}>
+                  {row.label}
+                </p>
+                <p className="text-[11px]" style={{ color: t.labelColor }}>
+                  {row.sublabel}
+                </p>
+              </div>
+              <p
+                className="font-serif font-semibold text-xl"
+                style={{ color: t.accentBright }}
+              >
+                {fmt(price)}
               </p>
             </div>
-            <p
-              className="font-serif font-semibold text-xl"
-              style={{ color: t.accentBright }}
-            >
-              {fmt(cat.prices[row.key])}
-            </p>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* CTA */}
