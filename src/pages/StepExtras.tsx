@@ -179,8 +179,8 @@ export default function StepExtras() {
     )
   }
 
-  // Tela de opt-in (modos suite / experience)
-  if (!isPackage && !opted) {
+  // Tela de opt-in (apenas no modo suite — no experience vai direto pros itens)
+  if (mode === 'suite' && !opted) {
     return (
       <div>
         <button
