@@ -49,6 +49,7 @@ export default function StepEscolha() {
 
   const [picked, setPicked]           = useState<ReservationMode | null>(storedMode)
   const [formVisible, setFormVisible] = useState(!!storedMode && hasStoredData)
+  const [showLocation, setShowLocation] = useState(false)
 
   /* form fields — pré-populados com dados do store se o usuário voltou */
   const [name,             setName]             = useState(customerName  || '')
@@ -153,6 +154,69 @@ export default function StepEscolha() {
         <p className="text-sm text-gold-600/60 mt-4 max-w-xs mx-auto leading-relaxed">
           Reserve sua suíte ou monte do seu jeito.
         </p>
+
+        {/* Localização */}
+        <div className="mt-5 flex flex-col items-center">
+          <button
+            type="button"
+            onClick={() => setShowLocation(v => !v)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full transition-all duration-200 active:scale-[0.97]"
+            style={{
+              background: showLocation ? 'rgba(201,168,76,0.10)' : 'rgba(201,168,76,0.05)',
+              border: `1px solid ${showLocation ? 'rgba(201,168,76,0.30)' : 'rgba(201,168,76,0.14)'}`,
+            }}
+          >
+            <svg width="11" height="13" viewBox="0 0 11 13" fill="none">
+              <path d="M5.5 0C3.015 0 1 2.015 1 4.5c0 3.375 4.5 8.5 4.5 8.5S10 7.875 10 4.5C10 2.015 7.985 0 5.5 0zm0 6a1.5 1.5 0 110-3 1.5 1.5 0 010 3z"
+                fill="rgba(201,168,76,0.65)" />
+            </svg>
+            <span style={{ fontSize: '0.7rem', color: 'rgba(201,168,76,0.65)', letterSpacing: '0.06em' }}>
+              COMO CHEGAR
+            </span>
+          </button>
+
+          {/* Card de endereço */}
+          <div
+            style={{
+              maxHeight: showLocation ? '120px' : '0px',
+              opacity: showLocation ? 1 : 0,
+              overflow: 'hidden',
+              transition: 'max-height 0.35s cubic-bezier(0.22,1,0.36,1), opacity 0.3s ease',
+            }}
+          >
+            <div
+              className="mt-3 px-5 py-4 rounded-2xl text-center"
+              style={{
+                background: 'rgba(201,168,76,0.05)',
+                border: '1px solid rgba(201,168,76,0.14)',
+              }}
+            >
+              <p className="text-[10px] tracking-widest uppercase mb-1" style={{ color: 'rgba(201,168,76,0.45)' }}>
+                Nosso endereço
+              </p>
+              <p className="text-xs leading-relaxed mb-3" style={{ color: 'rgba(220,205,175,0.75)' }}>
+                Rodovia Celso Fumiu Makita<br />
+                Parque Industrial, Ivaiporã – PR
+              </p>
+              <a
+                href="https://www.google.com/maps/dir/?api=1&destination=Rodovia+Celso+Fumiu+Makita,+Parque+Industrial,+Ivaip%C3%B3r%C3%A3,+PR"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-[11px] font-semibold transition-all duration-200 hover:brightness-110 active:scale-[0.97]"
+                style={{
+                  background: 'rgba(201,168,76,0.14)',
+                  border: '1px solid rgba(201,168,76,0.28)',
+                  color: 'rgba(223,192,122,0.90)',
+                }}
+              >
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                </svg>
+                Abrir no Google Maps →
+              </a>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Botões de escolha */}
