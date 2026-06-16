@@ -478,15 +478,15 @@ export default function StepExtras() {
           </button>
         )}
         <button
-          onClick={() => canContinue && nextStep()}
-          disabled={!canContinue}
+          onClick={() => { if (!isPackage || canContinue) nextStep() }}
+          disabled={isPackage && !canContinue}
           className="flex-1 px-6 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200"
           style={{
-            background: canContinue
+            background: (!isPackage || canContinue)
               ? 'linear-gradient(135deg, rgba(184,151,90,0.9), rgba(223,192,122,0.95), rgba(184,151,90,0.9))'
               : 'rgba(201,168,76,0.08)',
-            color: canContinue ? '#080502' : 'rgba(201,168,76,0.25)',
-            cursor: canContinue ? 'pointer' : 'not-allowed',
+            color: (!isPackage || canContinue) ? '#080502' : 'rgba(201,168,76,0.25)',
+            cursor: (!isPackage || canContinue) ? 'pointer' : 'not-allowed',
           }}
         >
           Continuar →
