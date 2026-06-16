@@ -178,10 +178,10 @@ export default function StepEscolha() {
           {/* Card de endereço */}
           <div
             style={{
-              maxHeight: showLocation ? '120px' : '0px',
+              maxHeight: showLocation ? '220px' : '0px',
               opacity: showLocation ? 1 : 0,
               overflow: 'hidden',
-              transition: 'max-height 0.35s cubic-bezier(0.22,1,0.36,1), opacity 0.3s ease',
+              transition: 'max-height 0.4s cubic-bezier(0.22,1,0.36,1), opacity 0.3s ease',
             }}
           >
             <div
