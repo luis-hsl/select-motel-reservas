@@ -16,7 +16,7 @@ export interface SuiteCategoryDef {
 export const SUITE_CATEGORIES: SuiteCategoryDef[] = [
   {
     id: 'standard',
-    label: 'Tradicional',
+    label: 'Suíte Tradicional',
     dbCategory: 'Standard',
     description: 'Conforto e privacidade com tudo que vocês precisam.',
     prices: { oneHour: 75, period: 95, overnight: 150, diaria: 260 },
