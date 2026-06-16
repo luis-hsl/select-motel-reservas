@@ -169,7 +169,7 @@ export default function StepExtras() {
        (!sushiSelected  || !!jantarHorario) &&
        (!pizzaSelected  || !!jantarHorario) &&
        (!fondueInCart   || !!fondueHorario))
-    : (decoItems.length === 0 || !!selectedDecor)
+    : true
 
   if (loading) {
     return (
@@ -263,7 +263,7 @@ export default function StepExtras() {
         <p className="text-sm" style={{ color: 'rgba(200,168,100,0.55)' }}>
           {isPackage
             ? 'Selecione 1 comida e 1 bebida inclusos no seu pacote.'
-            : 'Selecione comida, bebida e decoração. Decoração é obrigatória.'}
+            : 'Selecione o que quiser. Pode combinar ou avançar sem adicionar nada.'}
         </p>
       </header>
 
@@ -437,7 +437,7 @@ export default function StepExtras() {
 
       {/* Decoração */}
       {!isPackage && decoItems.length > 0 && (
-        <Section title="Decoração" hint="obrigatória" kicker="03">
+        <Section title="Decoração" hint="opcional" kicker="03">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {decoItems.map(deco => (
               <DecorCard

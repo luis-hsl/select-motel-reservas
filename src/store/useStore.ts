@@ -122,16 +122,18 @@ export const useStore = create<StoreState>((set, get) => ({
       return type === 'period' ? pkg.price_period : pkg.price_overnight
     }
 
-    // ─── Modo Suíte: preço por categoria + tipo ───
+    // ─── Modo Suíte: preço por categoria + tipo + extras ───
     if (mode === 'suite') {
       if (!suiteCategory) return 0
       const cat = SUITE_CATEGORIES.find(c => c.dbCategory === suiteCategory)
       if (!cat) return 0
-      if (type === 'oneHour')   return cat.prices.oneHour ?? 0
-      if (type === 'period')    return cat.prices.period
-      if (type === 'overnight') return cat.prices.overnight
-      if (type === 'diaria')    return cat.prices.diaria
-      return 0
+      const suitePrice =
+        type === 'oneHour'   ? (cat.prices.oneHour ?? 0) :
+        type === 'period'    ? cat.prices.period :
+        type === 'overnight' ? cat.prices.overnight :
+        type === 'diaria'    ? cat.prices.diaria : 0
+      const extrasTotal = selectedItems.reduce((sum, i) => sum + Number(i.price || 0), 0)
+      return suitePrice + extrasTotal
     }
 
     // ─── Modo Experiência: suíte + itens ───
