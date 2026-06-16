@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react'
-import { createPortal } from 'react-dom'
 import { useStore } from '../store/useStore'
 import { SUITE_CATEGORIES } from '../data/suiteCategories'
 import { SUITES } from '../data/index'
@@ -38,11 +37,11 @@ const THEMES = [
   },
 ]
 
-const PRICE_ROWS: { key: ReservationType; label: string; sublabel: string }[] = [
-  { key: 'oneHour',   label: '1 Hora',   sublabel: '1h' },
-  { key: 'period',    label: 'Período',  sublabel: '2h' },
-  { key: 'overnight', label: 'Pernoite', sublabel: '~12h' },
-  { key: 'diaria',    label: 'Diária',   sublabel: '24h' },
+const PRICE_ROWS: { key: ReservationType; label: string }[] = [
+  { key: 'oneHour',   label: '1 Hora'   },
+  { key: 'period',    label: 'Período'  },
+  { key: 'overnight', label: 'Pernoite' },
+  { key: 'diaria',    label: 'Diária'   },
 ]
 
 function getSuitesForCategory(cat: SuiteCategoryDef): Suite[] {
@@ -52,37 +51,32 @@ function getSuitesForCategory(cat: SuiteCategoryDef): Suite[] {
 export default function StepSuiteCategoria() {
   const { setSuiteCategory, setSuite, setType, setStep, prevStep } = useStore()
 
-  const [selectedCatIdx, setSelectedCatIdx] = useState(0)
-  const [selectedType, setSelectedType]     = useState<ReservationType | null>(null)
+  const [selectedCatIdx, setSelectedCatIdx]   = useState(0)
+  const [selectedType, setSelectedType]       = useState<ReservationType | null>(null)
   const [currentSuiteIdx, setCurrentSuiteIdx] = useState(0)
-  const [videoUrls, setVideoUrls]           = useState<Record<string, string>>({})
-  const [showWarning, setShowWarning]       = useState(false)
-  const [visible, setVisible]               = useState(false)
-  const touchStartX = useRef<number | null>(null)
+  const [videoUrls, setVideoUrls]             = useState<Record<string, string>>({})
+  const [showWarning, setShowWarning]         = useState(false)
+  const touchStartX                           = useRef<number | null>(null)
 
-  const cat     = SUITE_CATEGORIES[selectedCatIdx]
-  const t       = THEMES[selectedCatIdx]
-  const suites  = getSuitesForCategory(cat)
+  const cat          = SUITE_CATEGORIES[selectedCatIdx]
+  const t            = THEMES[selectedCatIdx]
+  const suites       = getSuitesForCategory(cat)
   const currentSuite = suites[currentSuiteIdx] ?? null
   const videoUrl     = currentSuite ? videoUrls[currentSuite.id] : undefined
   const hasMultiple  = suites.length > 1
 
-  /* entry animation */
-  useEffect(() => {
-    requestAnimationFrame(() => setTimeout(() => setVisible(true), 10))
-  }, [])
-
-  /* reset suite index when category changes */
+  /* reset ao trocar categoria */
   useEffect(() => {
     setCurrentSuiteIdx(0)
+    setSelectedType(null)
   }, [selectedCatIdx])
 
-  /* clear warning when type is selected */
+  /* limpa aviso quando duração é selecionada */
   useEffect(() => {
     if (selectedType) setShowWarning(false)
   }, [selectedType])
 
-  /* fetch video URLs for all suites upfront */
+  /* busca URLs de vídeo de todas as suítes */
   useEffect(() => {
     const ids = SUITE_CATEGORIES.flatMap(getSuitesForCategory).map(s => s.id)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -124,83 +118,79 @@ export default function StepSuiteCategoria() {
     }
   }
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-      style={{ pointerEvents: visible ? 'auto' : 'none' }}
-    >
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 transition-opacity duration-350"
-        style={{
-          background: 'rgba(0,0,0,0.90)',
-          backdropFilter: 'blur(8px)',
-          opacity: visible ? 1 : 0,
-        }}
-      />
-
-      {/* Sheet */}
-      <div
-        className="relative w-full sm:max-w-md max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl scrollbar-hide"
-        style={{
-          backgroundColor: '#0c0702',
-          border: `1px solid ${t.border}`,
-          boxShadow: '0 -24px 80px rgba(0,0,0,0.9)',
-          transform: visible ? 'translateY(0)' : 'translateY(100%)',
-          opacity: visible ? 1 : 0,
-          transition: 'transform 0.38s cubic-bezier(0.4,0,0.2,1), opacity 0.38s ease, border-color 0.3s ease',
-        }}
-        onClick={e => e.stopPropagation()}
+  return (
+    <div>
+      <button
+        onClick={prevStep}
+        className="flex items-center gap-1 text-gold-700/60 text-sm mb-8 hover:text-gold-500 transition-colors"
       >
-        {/* Handle mobile */}
-        <div className="flex justify-center pt-3 pb-1 sm:hidden">
-          <div className="w-10 h-1 rounded-full" style={{ background: `${t.accent}30` }} />
-        </div>
+        <span>←</span> Voltar
+      </button>
 
-        {/* Header */}
-        <div className="px-6 pt-4 pb-3 flex items-start justify-between">
-          <div>
-            <div className="w-5 h-px mb-3 transition-colors duration-300" style={{ background: t.accent }} />
-            <h3
-              className="font-serif font-semibold uppercase tracking-wider transition-colors duration-300"
-              style={{ fontSize: '1.1rem', color: t.accentBright, letterSpacing: '0.06em' }}
+      <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light mb-2 leading-tight">
+        Qual tipo de<br />
+        <span className="gold-gradient font-semibold italic pr-1 lg:pr-3">suíte?</span>
+      </h1>
+      <p className="text-gold-700/70 text-sm mb-8 sm:mb-10">
+        Escolha a categoria e a duração da sua reserva.
+      </p>
+
+      {/* Seleção de categoria */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-3xl xl:max-w-4xl mb-8">
+        {SUITE_CATEGORIES.map((c, i) => {
+          const th       = THEMES[i]
+          const isSelected = selectedCatIdx === i
+          const minPrice = c.prices.oneHour ?? c.prices.period
+          return (
+            <button
+              key={c.id}
+              onClick={() => setSelectedCatIdx(i)}
+              className="relative flex flex-col rounded-2xl overflow-hidden transition-all duration-300 text-left hover:scale-[1.012] active:scale-[0.99]"
+              style={{
+                background:  th.bg,
+                border:      `1px solid ${isSelected ? th.accentBright + '55' : th.border}`,
+                boxShadow:   isSelected
+                  ? `0 0 0 1px ${th.accent}28, 0 2px 20px ${th.accent}08`
+                  : `0 2px 12px ${th.accent}04`,
+                padding: '1.25rem 1.5rem',
+              }}
             >
-              Escolha sua suíte
-            </h3>
-            <p className="text-[11px] mt-0.5" style={{ color: 'rgba(200,188,168,0.42)' }}>
-              Selecione a categoria e a duração
-            </p>
-          </div>
-          <button
-            onClick={prevStep}
-            className="text-[11px] px-3 py-1.5 rounded-lg hover:opacity-80 opacity-40 transition-opacity"
-            style={{ color: 'rgba(200,188,168,0.9)', border: '1px solid rgba(200,188,168,0.12)' }}
-          >
-            ✕
-          </button>
-        </div>
+              {isSelected && (
+                <div
+                  className="absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center"
+                  style={{ background: th.accent }}
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 12 12">
+                    <path d="M2 6l3 3 5-5" stroke="#080502" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+              )}
 
-        {/* Category tabs */}
-        <div className="px-6 pb-4">
-          <div className="flex gap-2">
-            {SUITE_CATEGORIES.map((c, i) => (
-              <button
-                key={c.id}
-                onClick={() => setSelectedCatIdx(i)}
-                className="flex-1 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider transition-all duration-200"
-                style={{
-                  background:  i === selectedCatIdx ? `${THEMES[i].accent}22` : 'transparent',
-                  border:      `1px solid ${i === selectedCatIdx ? THEMES[i].accent + '65' : 'rgba(200,188,168,0.12)'}`,
-                  color:       i === selectedCatIdx ? THEMES[i].accentBright : 'rgba(200,188,168,0.35)',
-                }}
+              <div className="w-5 h-px mb-4 transition-colors duration-300" style={{ background: th.accent }} />
+
+              <h2
+                className="font-serif font-semibold uppercase leading-tight mb-2"
+                style={{ fontSize: '1.05rem', letterSpacing: '0.06em', color: th.accentBright }}
               >
                 {c.label}
-              </button>
-            ))}
-          </div>
-        </div>
+              </h2>
+              <p className="text-xs leading-relaxed mb-3" style={{ color: 'rgba(205,195,178,0.50)' }}>
+                {c.description}
+              </p>
+              <div className="text-[10px] font-medium" style={{ color: th.labelColor }}>
+                A partir de {fmt(minPrice)}
+              </div>
+            </button>
+          )
+        })}
+      </div>
 
-        {/* Vídeo / Placeholder com swipe */}
+      {/* Preview da suíte + seleção de duração */}
+      <div
+        className="max-w-3xl xl:max-w-4xl rounded-2xl overflow-hidden transition-colors duration-300"
+        style={{ background: '#0c0702', border: `1px solid ${t.border}` }}
+      >
+        {/* Vídeo / placeholder com swipe */}
         <div
           className="relative bg-black select-none"
           style={{ minHeight: '200px', touchAction: 'pan-y' }}
@@ -247,7 +237,7 @@ export default function StepSuiteCategoria() {
             </div>
           )}
 
-          {/* Botões de navegação laterais sobre o vídeo */}
+          {/* Setas de navegação sobre o vídeo */}
           {hasMultiple && (
             <>
               <button
@@ -278,7 +268,7 @@ export default function StepSuiteCategoria() {
           )}
         </div>
 
-        {/* Info da suíte + setas de navegação */}
+        {/* Info da suíte + paginação */}
         <div className="px-6 pt-4 pb-2">
           <div className="flex items-center gap-3 mb-0.5">
             {hasMultiple && (
@@ -405,7 +395,7 @@ export default function StepSuiteCategoria() {
                 border: `1px solid ${t.accent}30`,
               }}
             >
-              Selecione 1 hora, período, pernoite ou diária acima para continuar
+              Selecione a duração acima para continuar
             </p>
           </div>
         )}
@@ -433,7 +423,6 @@ export default function StepSuiteCategoria() {
           </button>
         </div>
       </div>
-    </div>,
-    document.body,
+    </div>
   )
 }
