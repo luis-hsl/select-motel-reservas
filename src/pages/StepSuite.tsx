@@ -99,12 +99,17 @@ export default function StepSuite() {
     const cin = checkIn
     const cout = checkOut()
     if (cin && cout) {
-      const cinIso = cin.toISOString()
       const coutIso = cout.toISOString()
+      // Subtrai 1h do check-in para que o overlap check respeite o buffer de limpeza:
+      // uma suíte com checkout às 20h só fica livre às 21h (20h + 1h limpeza).
+      // Passar cinBuf = cin - 1h faz o banco bloquear reservas cujo check_out > cinBuf,
+      // ou seja, qualquer reserva que termine dentro de 1h antes do nosso check-in.
+      const cinBuf = new Date(cin.getTime() - 60 * 60 * 1000)
+      const cinBufIso = cinBuf.toISOString()
       promises.push(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase as any)
-          .rpc('get_occupied_suite_ids', { p_check_in: cinIso, p_check_out: coutIso })
+          .rpc('get_occupied_suite_ids', { p_check_in: cinBufIso, p_check_out: coutIso })
           .then(async ({ data, error }: { data: { suite_id: string }[] | null; error: unknown }) => {
             if (!error && data) {
               setOccupiedIds(new Set(data.map((r: { suite_id: string }) => r.suite_id)))
@@ -116,7 +121,7 @@ export default function StepSuite() {
               .select('suite_id')
               .in('status', ['paid', 'pending'])
               .lt('check_in', coutIso)
-              .gt('check_out', cinIso)
+              .gt('check_out', cinBufIso)
             if (rows) setOccupiedIds(new Set(rows.map(r => r.suite_id as string)))
           })
       )
