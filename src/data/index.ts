@@ -50,8 +50,8 @@ export const SUITES: Suite[] = [
   { id: 'suite-16', name: 'Suíte 16', category: 'VIP Piscina', description: 'Suíte VIP com piscina privativa', room_number: 16, size: 'large', cleaning_buffer_h: 1, packageIds: ['ouro'] },
 
   // ── Pacote Prata ─────────────────────────────────────────
-  { id: 'suite-15', name: 'Suíte 15', category: 'Hidro', description: 'Suíte com banheira de hidromassagem', room_number: 15, size: 'large', cleaning_buffer_h: 1, packageIds: ['prata'] },
-  { id: 'suite-18', name: 'Suíte 18', category: 'Hidro', description: 'Suíte com banheira de hidromassagem', room_number: 18, size: 'large', cleaning_buffer_h: 1, packageIds: ['prata'] },
+  { id: 'suite-15', name: 'Suíte 15', category: 'Hidro Light', description: 'Suíte com banheira de hidromassagem', room_number: 15, size: 'large', cleaning_buffer_h: 1, packageIds: ['prata'] },
+  { id: 'suite-18', name: 'Suíte 18', category: 'Hidro Light', description: 'Suíte com banheira de hidromassagem', room_number: 18, size: 'large', cleaning_buffer_h: 1, packageIds: ['prata'] },
 
   // ── Pacote Bronze · Hidro Light ──────────────────────────
   { id: 'suite-12', name: 'Suíte 12', category: 'Hidro Light', description: 'Suíte com hidromassagem compacta', room_number: 12, size: 'small', cleaning_buffer_h: 1, packageIds: ['bronze'] },
