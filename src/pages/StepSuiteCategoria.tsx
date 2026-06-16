@@ -522,12 +522,12 @@ function SuiteVideoModal({
                 disabled={currentIdx === 0}
                 className="absolute left-0 top-0 bottom-0 flex items-center justify-center transition-all"
                 style={{
-                  width: '20%',
-                  background: 'linear-gradient(to right, rgba(0,0,0,0.55), transparent)',
-                  opacity: currentIdx === 0 ? 0.2 : 1,
+                  width: '22%',
+                  background: 'linear-gradient(to right, rgba(0,0,0,0.65), transparent)',
+                  opacity: currentIdx === 0 ? 0.15 : 1,
                 }}
               >
-                <span style={{ fontSize: '2rem', color: 'rgba(255,255,255,0.8)', textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
+                <span style={{ fontSize: '2.2rem', color: 'rgba(255,255,255,0.95)', textShadow: '0 2px 12px rgba(0,0,0,0.9)' }}>
                   ‹
                 </span>
               </button>
@@ -536,15 +536,44 @@ function SuiteVideoModal({
                 disabled={currentIdx === suites.length - 1}
                 className="absolute right-0 top-0 bottom-0 flex items-center justify-center transition-all"
                 style={{
-                  width: '20%',
-                  background: 'linear-gradient(to left, rgba(0,0,0,0.55), transparent)',
-                  opacity: currentIdx === suites.length - 1 ? 0.2 : 1,
+                  width: '22%',
+                  background: 'linear-gradient(to left, rgba(0,0,0,0.65), transparent)',
+                  opacity: currentIdx === suites.length - 1 ? 0.15 : 1,
                 }}
               >
-                <span style={{ fontSize: '2rem', color: 'rgba(255,255,255,0.8)', textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
+                <span style={{ fontSize: '2.2rem', color: 'rgba(255,255,255,0.95)', textShadow: '0 2px 12px rgba(0,0,0,0.9)' }}>
                   ›
                 </span>
               </button>
+
+              {/* Contador de suítes — canto superior direito */}
+              <div
+                className="absolute top-2.5 right-2.5 z-30 pointer-events-none"
+                style={{
+                  background: 'rgba(0,0,0,0.62)',
+                  border: '1px solid rgba(255,255,255,0.14)',
+                  borderRadius: '999px',
+                  padding: '3px 9px',
+                }}
+              >
+                <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.82)', fontVariantNumeric: 'tabular-nums', letterSpacing: '0.04em' }}>
+                  {currentIdx + 1} / {suites.length}
+                </span>
+              </div>
+
+              {/* Banner de swipe — base do vídeo, some na última suíte */}
+              {currentIdx < suites.length - 1 && (
+                <div
+                  className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none flex items-center justify-center gap-2 py-2"
+                  style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 100%)' }}
+                >
+                  <span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.55)' }}>‹</span>
+                  <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.80)', letterSpacing: '0.06em', textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>
+                    deslize para ver mais suítes
+                  </span>
+                  <span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.55)' }}>›</span>
+                </div>
+              )}
             </>
           )}
 
@@ -617,8 +646,8 @@ function SuiteVideoModal({
 
           {/* Hint deslize */}
           {hasMultiple && (
-            <p className="text-[9px] mt-2" style={{ color: 'rgba(200,188,168,0.22)' }}>
-              ← Deslize no vídeo ou toque nas setas para ver mais suítes →
+            <p className="text-[10px] mt-2" style={{ color: 'rgba(200,188,168,0.45)' }}>
+              ← toque nas setas ou deslize o vídeo para navegar entre suítes
             </p>
           )}
         </div>
