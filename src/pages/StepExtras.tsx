@@ -268,7 +268,7 @@ export default function StepExtras() {
       </header>
 
       {/* Comida */}
-      <Section title="Comida" hint={isPackage ? 'inclusa' : 'a la carte'} kicker="01">
+      <Section title="Comida" hint={isPackage ? 'inclusa' : 'opcional'} kicker="01">
         {grouped.food.map(item => (
           <MenuCard
             key={item.id}
@@ -375,7 +375,7 @@ export default function StepExtras() {
       )}
 
       {/* Bebida */}
-      <Section title="Bebida" hint={isPackage ? 'inclusa' : 'a la carte'} kicker="02">
+      <Section title="Bebida" hint={isPackage ? 'inclusa' : 'opcional'} kicker="02">
         {grouped.drink.map(item => (
           <MenuCard
             key={item.id}
