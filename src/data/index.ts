@@ -86,9 +86,9 @@ export function getAvailableDates(): Date[] {
   return dates
 }
 
-export function calcCheckOut(checkIn: Date, type: 'period' | 'overnight' | 'diaria'): Date {
+export function calcCheckOut(checkIn: Date, type: 'period' | 'overnight' | 'diaria' | 'oneHour'): Date {
   const out = new Date(checkIn)
-  const hours = type === 'period' ? 2 : type === 'diaria' ? 24 : 12
+  const hours = type === 'oneHour' ? 1 : type === 'period' ? 2 : type === 'diaria' ? 24 : 12
   out.setHours(out.getHours() + hours)
   return out
 }
