@@ -32,8 +32,8 @@ const DECOR_BY_SUITE_TIER: Record<string, string[]> = {
 }
 
 const FOOD_NOTA: Record<string, { icon: 'check' | 'warn'; text: string }> = {
-  jantar: { icon: 'check', text: 'O jantar inclui entrada : tábua de frios com salame, lombo, queijo, amendoim e azeitonas.' },
-  sushi:  { icon: 'check', text: 'No sushi o casal ganha uma barca : o combinado premium é servido diretamente para vocês.' },
+  jantar: { icon: 'check', text: 'O jantar inclui entrada com tábua de frios: salame, lombo, queijo, amendoim e azeitonas.' },
+  sushi:  { icon: 'check', text: 'No sushi o casal ganha uma barca de combinado premium servida diretamente para vocês.' },
 }
 
 const PRATOS = [
@@ -359,7 +359,6 @@ export default function StepExtras() {
             <h2 className="font-serif italic text-gold-200 text-xl sm:text-2xl">Escolha o prato</h2>
             <span className="text-[9px] tracking-[0.35em] uppercase text-gold-700/40">obrigatório</span>
           </div>
-          <span className="block h-px w-full bg-gradient-to-r from-gold-700/30 via-transparent to-transparent mb-4" />
           <div className="space-y-2.5">
             {PRATOS.map(p => (
               <button
@@ -412,7 +411,6 @@ export default function StepExtras() {
               {checkIn ? `check-in às ${checkIn.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : 'obrigatório'}
             </span>
           </div>
-          <span className="block h-px w-full bg-gradient-to-r from-gold-700/30 via-transparent to-transparent mb-4" />
           {dynamicTimeSlots.length === 0 ? (
             <p className="text-xs text-gold-700/40">Selecione um horário de check-in primeiro.</p>
           ) : (
@@ -482,8 +480,7 @@ export default function StepExtras() {
                   {checkIn ? `check-in às ${checkIn.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : 'obrigatório'}
                 </span>
               </div>
-              <span className="block h-px w-full bg-gradient-to-r from-gold-700/30 via-transparent to-transparent mb-4" />
-              {dynamicTimeSlots.length === 0 ? (
+                  {dynamicTimeSlots.length === 0 ? (
                 <p className="text-xs text-gold-700/40">Selecione um horário de check-in primeiro.</p>
               ) : (
                 <div className="flex flex-wrap gap-2.5">
@@ -583,17 +580,21 @@ function Section({
   title: string; hint: string; kicker: string; children: React.ReactNode
 }) {
   return (
-    <section className="mb-7 sm:mb-9">
-      <header className="flex items-baseline justify-between gap-3 mb-3 sm:mb-4">
-        <div className="flex items-baseline gap-3">
-          <span className="font-serif italic text-gold-600/60 text-sm tabular-nums">{kicker}.</span>
-          <h2 className="font-serif italic text-gold-200 text-xl sm:text-2xl">{title}</h2>
+    <section className="mb-8 sm:mb-10">
+      <header className="flex items-center justify-between gap-3 mb-4 sm:mb-5">
+        <div className="flex items-center gap-2.5">
+          <span
+            className="text-[10px] font-bold tabular-nums"
+            style={{ color: 'rgba(201,168,76,0.35)', letterSpacing: '0.1em' }}
+          >
+            {kicker}
+          </span>
+          <h2 className="font-serif font-light text-gold-100 text-xl sm:text-2xl">{title}</h2>
         </div>
-        <span className="text-[9px] tracking-[0.35em] uppercase text-gold-700/40 shrink-0">
+        <span className="text-[9px] tracking-[0.35em] uppercase shrink-0" style={{ color: 'rgba(201,168,76,0.35)' }}>
           {hint}
         </span>
       </header>
-      <span className="block h-px w-full bg-gradient-to-r from-gold-700/30 via-transparent to-transparent mb-4" />
       {children}
     </section>
   )
@@ -620,77 +621,65 @@ function ItemCard({
       type="button"
       onClick={onClick}
       aria-pressed={selected}
-      className={[
-        'group relative aspect-[3/4] rounded-xl overflow-hidden border outline-none',
-        'transition-all duration-300 active:scale-[0.97] focus-visible:ring-1 focus-visible:ring-gold-500',
-        selected
-          ? 'border-gold-400 shadow-lg shadow-gold-500/20'
-          : 'border-gold-900/40 hover:border-gold-700/70',
-      ].join(' ')}
+      className="group relative outline-none transition-all duration-300 active:scale-[0.97]"
+      style={{
+        aspectRatio: '3/4',
+        borderRadius: '16px',
+        overflow: 'hidden',
+        border: `1px solid ${selected ? 'rgba(201,168,76,0.55)' : 'rgba(201,168,76,0.10)'}`,
+        boxShadow: selected
+          ? '0 0 0 1px rgba(201,168,76,0.20), 0 8px 32px rgba(0,0,0,0.55)'
+          : '0 4px 16px rgba(0,0,0,0.4)',
+      }}
     >
-      {/* Foto background */}
+      {/* Foto */}
       {item.photo_url ? (
         <img
           src={item.photo_url}
           alt={item.label}
           loading="lazy"
           decoding="async"
-          className={[
-            'absolute inset-0 w-full h-full object-cover transition-all duration-500',
-            selected ? 'scale-105' : 'scale-100 group-hover:scale-105',
-          ].join(' ')}
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          style={{ transform: selected ? 'scale(1.05)' : undefined }}
         />
       ) : (
         <div
           className="absolute inset-0 flex items-center justify-center"
-          style={{ background: 'radial-gradient(ellipse at center, rgba(201,168,76,0.18) 0%, #0a0805 70%)' }}
+          style={{ background: 'radial-gradient(ellipse at center, rgba(201,168,76,0.14) 0%, #080604 70%)' }}
         >
-          <span className="font-serif italic text-gold-700/50 text-3xl">✦</span>
+          <span className="font-serif text-gold-700/30 text-4xl">✦</span>
         </div>
       )}
 
-      {/* Overlay degradê preto pra leitura */}
+      {/* Overlay */}
       <div
-        aria-hidden
         className="absolute inset-0"
         style={{
           background: selected
-            ? 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.35) 55%, rgba(201,168,76,0.10) 100%)'
-            : 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.40) 55%, rgba(0,0,0,0.10) 100%)',
+            ? 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.22) 55%, rgba(201,168,76,0.07) 100%)'
+            : 'linear-gradient(to top, rgba(0,0,0,0.86) 0%, rgba(0,0,0,0.28) 55%, rgba(0,0,0,0.04) 100%)',
         }}
       />
 
-      {/* Check indicator */}
-      <span
-        aria-hidden
-        className={[
-          'absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300',
-          selected
-            ? 'bg-gold-400 scale-100 opacity-100'
-            : 'bg-black/60 border border-gold-700/40 scale-90 opacity-70',
-        ].join(' ')}
-      >
-        {selected ? (
-          <svg viewBox="0 0 14 14" className="w-3.5 h-3.5 text-black" fill="none">
-            <path d="M3 7l3 3 5-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      {/* Check */}
+      {selected && (
+        <div
+          className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center"
+          style={{ background: 'rgba(201,168,76,0.95)' }}
+        >
+          <svg viewBox="0 0 12 12" className="w-3 h-3" fill="none">
+            <path d="M2 6l3 3 5-5" stroke="#080502" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-        ) : (
-          <span className="w-1.5 h-1.5 rounded-full bg-gold-700/50" />
-        )}
-      </span>
+        </div>
+      )}
 
-      {/* Conteúdo inferior */}
-      <div className="absolute inset-x-0 bottom-0 p-2.5 sm:p-3 text-left">
-        <p className="font-serif italic text-gold-100 text-base sm:text-lg leading-tight truncate">
+      {/* Texto inferior */}
+      <div className="absolute inset-x-0 bottom-0 px-3 py-3">
+        <p className="font-serif text-gold-100 text-sm sm:text-base leading-tight">
           {item.label}
         </p>
-        {item.description && (
-          <p className="text-[10px] sm:text-[11px] text-gold-300/65 leading-snug mt-0.5 line-clamp-2 hidden sm:block">
-            {item.description}
-          </p>
-        )}
         {showPrice && item.price > 0 && (
-          <p className="mt-1.5 text-xs font-semibold text-gold-300 tabular-nums">
+          <p className="mt-1 text-[11px] font-semibold tabular-nums" style={{ color: 'rgba(223,192,122,0.75)' }}>
             {fmtBRL(item.price)}
           </p>
         )}
@@ -703,73 +692,67 @@ function DecorCard({
   label, tier, price, selected, onClick,
 }: {
   label: string
-  tier: string  // 'bronze' | 'prata' | 'ouro' | '' (sem decoração)
+  tier: string
   price: number
   selected: boolean
   onClick: () => void
 }) {
   const accent = tier === 'ouro'   ? '#fcd34d'
                : tier === 'prata'  ? '#d1d5db'
-               : tier === 'bronze' ? '#b07a3c'
-               :                     'rgba(154,125,10,0.5)'
+               : tier === 'bronze' ? '#c08040'
+               :                     'rgba(154,125,10,0.45)'
 
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={selected}
-      className={[
-        'relative rounded-xl overflow-hidden border outline-none px-3 py-3 sm:py-4',
-        'transition-all duration-300 active:scale-[0.97]',
-        selected
-          ? 'border-gold-400'
-          : 'border-gold-900/40 hover:border-gold-700/70',
-      ].join(' ')}
+      className="relative flex flex-col items-center outline-none transition-all duration-300 active:scale-[0.97] px-4 py-5"
       style={{
+        borderRadius: '16px',
         background: selected
-          ? `radial-gradient(ellipse at top, ${accent}22 0%, transparent 65%), #0a0805`
-          : 'linear-gradient(180deg, #0a0805 0%, #060403 100%)',
+          ? `radial-gradient(ellipse at top, ${accent}16 0%, transparent 70%), #0c0903`
+          : '#09070400',
+        border: `1px solid ${selected ? accent + '50' : 'rgba(201,168,76,0.10)'}`,
+        boxShadow: selected ? `0 0 0 1px ${accent}18, 0 8px 28px rgba(0,0,0,0.5)` : 'none',
       }}
     >
-      {/* Ornamento topo (faz a hierarquia visual entre bronze/prata/ouro) */}
-      <span
-        aria-hidden
-        className="block h-px mb-2.5"
+      {/* Linha de acento superior */}
+      <div
+        className="mb-4"
         style={{
+          height: '1px',
+          width: tier === 'ouro' ? '3rem' : tier === 'prata' ? '2.5rem' : '2rem',
           background: `linear-gradient(90deg, transparent, ${accent}, transparent)`,
-          width: tier === 'ouro' ? '80%' : tier === 'prata' ? '60%' : tier === 'bronze' ? '40%' : '20%',
-          margin: '0 auto',
-          marginBottom: '10px',
+          opacity: selected ? 1 : 0.5,
         }}
       />
 
-      {tier ? (
-        <p className="font-serif italic text-center text-base sm:text-lg leading-none" style={{ color: accent }}>
-          {label}
-        </p>
-      ) : (
-        <p className="text-center text-[11px] tracking-[0.25em] uppercase text-gold-700/55 leading-none">
-          {label}
-        </p>
-      )}
+      <p
+        className="font-serif font-light text-center text-base sm:text-lg leading-none"
+        style={{ color: selected ? accent : `${accent}90` }}
+      >
+        {label}
+      </p>
 
-      {price > 0 ? (
-        <p className="mt-1.5 text-center text-[11px] font-semibold text-gold-300/85 tabular-nums">
-          {`+ ${price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}
+      {price > 0 && (
+        <p
+          className="mt-2 text-[11px] font-semibold tabular-nums"
+          style={{ color: selected ? 'rgba(223,192,122,0.80)' : 'rgba(201,168,76,0.40)' }}
+        >
+          + {fmtBRL(price)}
         </p>
-      ) : (
-        <p className="mt-1.5 text-center text-[10px] text-gold-700/40">—</p>
       )}
 
       {selected && (
-        <span
-          aria-hidden
-          className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-gold-400 flex items-center justify-center"
+        <div
+          className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center"
+          style={{ background: accent }}
         >
-          <svg viewBox="0 0 10 10" className="w-2.5 h-2.5 text-black" fill="none">
-            <path d="M2 5l2 2 4-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <svg viewBox="0 0 12 12" className="w-3 h-3" fill="none">
+            <path d="M2 6l3 3 5-5" stroke="#080502" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-        </span>
+        </div>
       )}
     </button>
   )
