@@ -401,18 +401,18 @@ function SuiteCard({ suite, photoUrl, occupied, slotLabel, selected, onChoose, o
               Reservado
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-1">
+            <div className="grid grid-cols-2 gap-1.5">
               <button
                 onClick={(e) => { e.stopPropagation(); onViewMore() }}
-                className="py-1 rounded-lg text-[9px] tracking-widest uppercase font-medium transition-all duration-200 active:scale-95"
-                style={{ background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(201,168,76,0.35)', color: 'rgba(220,185,100,0.75)' }}
+                className="py-2 rounded-xl text-[11px] tracking-widest uppercase font-semibold transition-all duration-200 active:scale-95"
+                style={{ background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(201,168,76,0.45)', color: 'rgba(230,195,110,0.90)' }}
               >
                 Ver Suíte
               </button>
               <button
                 onClick={onChoose}
-                className="py-1 rounded-lg text-[9px] tracking-wide font-semibold text-black transition-all duration-200 active:scale-95"
-                style={{ background: selected ? 'linear-gradient(135deg,#c9a84c,#f5d87a,#a07820)' : 'rgba(201,168,76,0.85)' }}
+                className="py-2 rounded-xl text-[11px] tracking-wide font-bold text-black transition-all duration-200 active:scale-95"
+                style={{ background: selected ? 'linear-gradient(135deg,#c9a84c,#f5d87a,#a07820)' : 'rgba(201,168,76,0.92)' }}
               >
                 {selected ? '✓ Escolhida' : 'Escolher'}
               </button>

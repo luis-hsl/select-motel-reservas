@@ -208,7 +208,7 @@ function Card({
 
       {/* Preços — clicáveis para selecionar duração */}
       <div className="px-6 py-5 flex-1 space-y-1.5">
-        <p className="text-[9px] uppercase tracking-widest mb-2" style={{ color: t.labelColor }}>
+        <p className="text-xs font-semibold uppercase tracking-wider mb-2.5" style={{ color: t.accentBright }}>
           Selecione a duração
         </p>
         {PRICE_ROWS.map(row => {
@@ -297,16 +297,17 @@ function Card({
 
         {/* Hint + botão de vídeos */}
         <div>
-          <p className="text-[9px] text-center mb-1" style={{ color: t.labelColor }}>
+          <p className="text-xs text-center font-medium mb-1.5" style={{ color: t.accentBright, opacity: 0.65 }}>
             Quer ver como são as suítes por dentro?
           </p>
           <button
             onClick={onViewVideos}
-            className="w-full py-2.5 rounded-xl text-[11px] font-medium tracking-widest uppercase transition-all duration-200 hover:opacity-100 active:scale-[0.98]"
+            className="w-full py-2.5 rounded-xl text-xs font-semibold tracking-widest uppercase transition-all duration-200 hover:opacity-100 active:scale-[0.98]"
             style={{
               background: 'transparent',
               border: `1px solid ${t.border}`,
-              color: t.labelColor,
+              color: t.accentBright,
+              opacity: 0.75,
             }}
           >
             Ver vídeos das suítes
@@ -547,45 +548,70 @@ function SuiteVideoModal({
             </>
           )}
 
-          {/* Fechar */}
-          <button
-            onClick={close}
-            aria-label="Fechar"
-            className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center text-sm hover:opacity-80"
-            style={{
-              background: 'rgba(0,0,0,0.6)',
-              color: 'rgba(220,185,100,0.8)',
-              border: '1px solid rgba(201,168,76,0.3)',
-            }}
-          >
-            <span aria-hidden="true">✕</span>
-          </button>
         </div>
 
-        {/* Info da suíte + indicador de navegação */}
+        {/* Info da suíte + setas de navegação abaixo do vídeo */}
         <div className="px-6 pt-4 pb-2">
-          <div className="flex items-center justify-between mb-0.5">
-            <p className="text-sm font-semibold" style={{ color: 'rgba(228,218,198,0.88)' }}>
-              {currentSuite?.name ?? ''}
-            </p>
+          <div className="flex items-center gap-3 mb-0.5">
+            {/* Seta esquerda */}
             {hasMultiple && (
-              <div className="flex items-center gap-1.5">
-                {suites.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setCurrentIdx(i)}
-                    className="rounded-full transition-all duration-200"
-                    style={{
-                      width: i === currentIdx ? '20px' : '6px',
-                      height: '6px',
-                      background: i === currentIdx ? t.accentBright : `${t.accent}40`,
-                    }}
-                  />
-                ))}
-              </div>
+              <button
+                onClick={() => navigate(-1)}
+                disabled={currentIdx === 0}
+                className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-95"
+                style={{
+                  background: currentIdx === 0 ? `${t.accent}10` : `${t.accent}22`,
+                  border: `1px solid ${currentIdx === 0 ? t.priceBorder : t.accent + '55'}`,
+                  color: currentIdx === 0 ? 'rgba(200,188,168,0.2)' : t.accentBright,
+                  fontSize: '1.2rem',
+                }}
+              >
+                ‹
+              </button>
+            )}
+
+            {/* Nome + dots */}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold truncate" style={{ color: 'rgba(228,218,198,0.88)' }}>
+                {currentSuite?.name ?? ''}
+              </p>
+              {hasMultiple && (
+                <div className="flex items-center gap-1 mt-1">
+                  {suites.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCurrentIdx(i)}
+                      className="rounded-full transition-all duration-200"
+                      style={{
+                        width: i === currentIdx ? '16px' : '5px',
+                        height: '5px',
+                        background: i === currentIdx ? t.accentBright : `${t.accent}40`,
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Seta direita */}
+            {hasMultiple && (
+              <button
+                onClick={() => navigate(1)}
+                disabled={currentIdx === suites.length - 1}
+                className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-95"
+                style={{
+                  background: currentIdx === suites.length - 1 ? `${t.accent}10` : `${t.accent}22`,
+                  border: `1px solid ${currentIdx === suites.length - 1 ? t.priceBorder : t.accent + '55'}`,
+                  color: currentIdx === suites.length - 1 ? 'rgba(200,188,168,0.2)' : t.accentBright,
+                  fontSize: '1.2rem',
+                }}
+              >
+                ›
+              </button>
             )}
           </div>
-          <p className="text-[11px]" style={{ color: t.labelColor }}>
+
+          <p className="text-[11px] mt-1" style={{ color: t.labelColor }}>
             {currentSuite?.description ?? ''}
           </p>
 

@@ -46,12 +46,12 @@ export const PACKAGES: Package[] = [
 
 export const SUITES: Suite[] = [
   // ── Pacote Ouro ─────────────────────────────────────────
-  { id: 'suite-14', name: 'Suíte 14', category: 'VIP Piscina', description: 'Suíte VIP com piscina privativa', room_number: 14, size: 'large', cleaning_buffer_h: 2, packageIds: ['ouro'] },
-  { id: 'suite-16', name: 'Suíte 16', category: 'VIP Piscina', description: 'Suíte VIP com piscina privativa', room_number: 16, size: 'large', cleaning_buffer_h: 2, packageIds: ['ouro'] },
+  { id: 'suite-14', name: 'Suíte 14', category: 'VIP Piscina', description: 'Suíte VIP com piscina privativa', room_number: 14, size: 'large', cleaning_buffer_h: 1, packageIds: ['ouro'] },
+  { id: 'suite-16', name: 'Suíte 16', category: 'VIP Piscina', description: 'Suíte VIP com piscina privativa', room_number: 16, size: 'large', cleaning_buffer_h: 1, packageIds: ['ouro'] },
 
   // ── Pacote Prata ─────────────────────────────────────────
-  { id: 'suite-15', name: 'Suíte 15', category: 'Hidro', description: 'Suíte com banheira de hidromassagem', room_number: 15, size: 'large', cleaning_buffer_h: 2, packageIds: ['prata'] },
-  { id: 'suite-18', name: 'Suíte 18', category: 'Hidro', description: 'Suíte com banheira de hidromassagem', room_number: 18, size: 'large', cleaning_buffer_h: 2, packageIds: ['prata'] },
+  { id: 'suite-15', name: 'Suíte 15', category: 'Hidro', description: 'Suíte com banheira de hidromassagem', room_number: 15, size: 'large', cleaning_buffer_h: 1, packageIds: ['prata'] },
+  { id: 'suite-18', name: 'Suíte 18', category: 'Hidro', description: 'Suíte com banheira de hidromassagem', room_number: 18, size: 'large', cleaning_buffer_h: 1, packageIds: ['prata'] },
 
   // ── Pacote Bronze · Hidro Light ──────────────────────────
   { id: 'suite-12', name: 'Suíte 12', category: 'Hidro Light', description: 'Suíte com hidromassagem compacta', room_number: 12, size: 'small', cleaning_buffer_h: 1, packageIds: ['bronze'] },
@@ -68,8 +68,10 @@ export const SUITES: Suite[] = [
 ]
 
 export const PERIOD_SLOTS = [
-  '00:00', '02:00', '04:00', '06:00', '08:00', '10:00',
-  '12:00', '14:00', '16:00', '18:00', '20:00', '22:00',
+  '00:00', '01:00', '02:00', '03:00', '04:00', '05:00',
+  '06:00', '07:00', '08:00', '09:00', '10:00', '11:00',
+  '12:00', '13:00', '14:00', '15:00', '16:00', '17:00',
+  '18:00', '19:00', '20:00', '21:00', '22:00', '23:00',
 ]
 export const OVERNIGHT_CHECKIN = '00:00'
 
