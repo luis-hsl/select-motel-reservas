@@ -35,27 +35,6 @@ function maskPhone(v: string) {
   return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`
 }
 
-/* ── option data ── */
-type Option = {
-  id: ReservationMode
-  label: string
-  sublabel: string
-  desc: string
-  bullets?: string[]
-  recommended?: boolean
-}
-const OPTIONS: Option[] = [
-  {
-    id: 'suite', label: 'faça sua\nreserva', sublabel: 'escolha sua suíte',
-    desc: 'Escolha a categoria de suíte e a duração que preferir.',
-    recommended: true,
-  },
-  {
-    id: 'experience', label: 'monte sua\nexperiência', sublabel: 'do seu jeito',
-    desc: 'Suíte decorada + escolha o que quiser adicionar.',
-  },
-]
-
 /* ── component ── */
 export default function StepEscolha() {
   const {
@@ -176,16 +155,51 @@ export default function StepEscolha() {
         </p>
       </div>
 
-      {/* Cards */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-5 max-w-3xl mx-auto">
-        {OPTIONS.map(opt => (
-          <OptionCard
-            key={opt.id}
-            opt={opt}
-            selected={picked === opt.id}
-            onPick={() => pick(opt.id)}
-          />
-        ))}
+      {/* Botões de escolha */}
+      <div className="flex flex-col items-center gap-3 max-w-sm mx-auto">
+        {/* Botão principal — Fazer uma reserva */}
+        <button
+          type="button"
+          onClick={() => pick('suite')}
+          aria-pressed={picked === 'suite'}
+          className={[
+            'w-full px-6 py-4 rounded-xl text-sm font-semibold transition-all duration-300 active:scale-[0.98]',
+            picked === 'suite'
+              ? 'bg-gradient-to-r from-gold-700 to-gold-500 text-black shadow-[0_0_28px_rgba(201,168,76,0.35)]'
+              : 'bg-gradient-to-r from-gold-700 to-gold-500 text-black hover:from-gold-600 hover:to-gold-400',
+          ].join(' ')}
+        >
+          {picked === 'suite' && (
+            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-black/20 mr-2 align-middle">
+              <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 12 12">
+                <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
+          )}
+          Fazer uma reserva
+        </button>
+
+        {/* Botão secundário — Monte sua experiência */}
+        <button
+          type="button"
+          onClick={() => pick('experience')}
+          aria-pressed={picked === 'experience'}
+          className={[
+            'w-full text-center text-sm transition-all duration-300 py-2 rounded-lg',
+            picked === 'experience'
+              ? 'text-gold-400 underline underline-offset-4'
+              : 'text-gold-700/60 hover:text-gold-600/80',
+          ].join(' ')}
+        >
+          {picked === 'experience' && (
+            <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-gold-500/60 mr-1.5 align-middle">
+              <svg className="w-2 h-2" fill="none" viewBox="0 0 12 12">
+                <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.8" />
+              </svg>
+            </span>
+          )}
+          Monte sua experiência do seu jeito
+        </button>
       </div>
 
       {/* Social proof */}
@@ -343,46 +357,6 @@ export default function StepEscolha() {
   )
 }
 
-/* ── OptionCard ── */
-function OptionCard({ opt, selected, onPick }: { opt: Option; selected: boolean; onPick: () => void }) {
-  const rec = !!opt.recommended
-  const imgSrc = opt.id === 'suite' ? '/card-pacote.webp' : '/card-experiencia.webp'
-
-  return (
-    <button
-      type="button" onClick={onPick} aria-pressed={selected}
-      aria-label={opt.label}
-      className="relative overflow-hidden rounded-2xl outline-none transition-all duration-300 hover:brightness-110 active:scale-[0.97] focus-visible:ring-1 focus-visible:ring-gold-500"
-      style={{
-        minHeight: '220px',
-        border: `1px solid ${selected ? 'rgba(220,175,60,0.95)' : 'rgba(255,255,255,0.12)'}`,
-        boxShadow: selected
-          ? `0 0 0 2px rgba(252,211,77,0.45), 0 0 32px rgba(201,168,76,0.22)`
-          : '0 2px 16px rgba(0,0,0,0.35)',
-        transform: selected ? 'translateY(-3px)' : 'translateY(0)',
-      }}
-    >
-      <img
-        src={imgSrc}
-        alt=""
-        aria-hidden
-        draggable={false}
-        className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none select-none"
-        style={{ transform: 'scale(1.18)' }}
-      />
-
-      {/* Checkmark ao selecionar */}
-      {selected && (
-        <span className="absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center z-10"
-              style={{ background: rec ? '#c9a84c' : '#9a7828', boxShadow: '0 0 10px rgba(201,168,76,0.5)' }}>
-          <svg className="w-3.5 h-3.5 text-black" fill="none" viewBox="0 0 12 12">
-            <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </span>
-      )}
-    </button>
-  )
-}
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
