@@ -438,18 +438,15 @@ export default function StepExtras() {
       {/* Decoração */}
       {!isPackage && decoItems.length > 0 && (
         <Section title="Decoração" hint="opcional" kicker="03">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {decoItems.map(deco => (
-              <DecorCard
-                key={deco.id}
-                label={deco.label.replace('Decoração ', '')}
-                tier={deco.id.replace('extra-deco-', '')}
-                price={deco.price}
-                selected={selectedDecor?.id === deco.id}
-                onClick={() => pickDecor(deco)}
-              />
-            ))}
-          </div>
+          {decoItems.map(deco => (
+            <MenuCard
+              key={deco.id}
+              item={deco}
+              selected={selectedDecor?.id === deco.id}
+              showPrice={true}
+              onClick={() => pickDecor(deco)}
+            />
+          ))}
         </Section>
       )}
 
@@ -611,65 +608,3 @@ function MenuCard({ item, selected, showPrice, onClick }: {
   )
 }
 
-function DecorCard({ label, tier, price, selected, onClick }: {
-  label: string; tier: string; price: number; selected: boolean; onClick: () => void
-}) {
-  const accent = tier === 'ouro'   ? '#fcd34d'
-               : tier === 'prata'  ? '#d1d5db'
-               : tier === 'bronze' ? '#c08040'
-               :                     'rgba(154,125,10,0.45)'
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={selected}
-      className="relative flex flex-col items-center outline-none transition-all duration-300 active:scale-[0.97] px-4 py-6"
-      style={{
-        borderRadius: '16px',
-        background: selected
-          ? `radial-gradient(ellipse at top, ${accent}14 0%, transparent 70%), #0c0903`
-          : 'transparent',
-        border: `1px solid ${selected ? accent + '48' : 'rgba(201,168,76,0.09)'}`,
-        boxShadow: selected ? `0 0 0 1px ${accent}15, 0 8px 28px rgba(0,0,0,0.45)` : 'none',
-      }}
-    >
-      <div
-        className="mb-4"
-        style={{
-          height: '1px',
-          width: tier === 'ouro' ? '3rem' : tier === 'prata' ? '2.25rem' : '1.75rem',
-          background: `linear-gradient(90deg, transparent, ${accent}, transparent)`,
-          opacity: selected ? 1 : 0.45,
-        }}
-      />
-
-      <p
-        className="font-serif font-light text-center text-base leading-none"
-        style={{ color: selected ? accent : `${accent}80` }}
-      >
-        {label}
-      </p>
-
-      {price > 0 && (
-        <p
-          className="mt-2 text-[11px] font-semibold tabular-nums"
-          style={{ color: selected ? 'rgba(223,192,122,0.75)' : 'rgba(201,168,76,0.35)' }}
-        >
-          + {fmtBRL(price)}
-        </p>
-      )}
-
-      {selected && (
-        <div
-          className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center"
-          style={{ background: accent }}
-        >
-          <svg viewBox="0 0 12 12" className="w-2.5 h-2.5" fill="none">
-            <path d="M2 6l3 3 5-5" stroke="#080502" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </div>
-      )}
-    </button>
-  )
-}
