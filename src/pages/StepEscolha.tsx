@@ -450,7 +450,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 // ── Promos Page (full-screen, desliza da direita) ────────────────────────────
 
 function PromosSheet({ promos, onClose }: { promos: Promo[]; onClose: () => void }) {
-  const { setStep } = useStore()
+  const { setStep, setMode } = useStore()
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
@@ -466,7 +466,12 @@ function PromosSheet({ promos, onClose }: { promos: Promo[]; onClose: () => void
 
   function navigateToStep(step: number) {
     setVisible(false)
-    setTimeout(() => { onClose(); setStep(step) }, 380)
+    setTimeout(() => {
+      onClose()
+      // Garante o fluxo "Fazer uma reserva" (suite) para etapas > 1
+      if (step > 1) setMode('suite')
+      setStep(step)
+    }, 380)
   }
 
   return (

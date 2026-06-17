@@ -32,15 +32,15 @@ const EMPTY_DRAFT: EditDraft = {
   active: true,
 }
 
-// Rótulos das etapas conforme App.tsx
+// Rótulos das etapas do fluxo "Fazer uma reserva" (modo suite)
+// Suite: Escolha → Categoria → Suíte → Data → Extras → Pagamento (6 etapas)
 export const STEP_OPTIONS: { value: number; label: string }[] = [
   { value: 1, label: 'Etapa 1 — Início da reserva' },
-  { value: 2, label: 'Etapa 2 — Pacote / Categoria / Tipo' },
-  { value: 3, label: 'Etapa 3 — Tipo / Suíte / Data' },
-  { value: 4, label: 'Etapa 4 — Data / Suíte' },
-  { value: 5, label: 'Etapa 5 — Suíte / Extras' },
-  { value: 6, label: 'Etapa 6 — Extras / Pagamento' },
-  { value: 7, label: 'Etapa 7 — Pagamento (modo Pacote)' },
+  { value: 2, label: 'Etapa 2 — Escolher categoria de suíte' },
+  { value: 3, label: 'Etapa 3 — Escolher suíte' },
+  { value: 4, label: 'Etapa 4 — Data e horário' },
+  { value: 5, label: 'Etapa 5 — Extras' },
+  { value: 6, label: 'Etapa 6 — Pagamento' },
 ]
 
 export default function PromosTab() {
