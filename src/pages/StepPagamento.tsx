@@ -596,7 +596,7 @@ export default function StepPagamento() {
 
           {/* Suporte WhatsApp */}
           <a
-            href="https://wa.me/message/LWHU2YIL7X6AJ1"
+            href={`https://wa.me/${whatsappNum}?text=${encodeURIComponent('Tenho dúvida com a minha reserva ou pagamento no site')}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl transition-all duration-200 hover:opacity-90 active:scale-[0.97]"
