@@ -275,6 +275,20 @@ function Card({
           </p>
         )}
 
+        {/* Dica: duração selecionada — instrui a clicar em continuar */}
+        {selectedType && (
+          <p
+            className="text-[10px] text-center py-1.5 px-2 rounded-lg"
+            style={{
+              color: t.accentBright,
+              background: `${t.accent}10`,
+              border: `1px solid ${t.accent}28`,
+            }}
+          >
+            Clique em <strong>continuar reserva</strong> para escolher sua suíte
+          </p>
+        )}
+
         <button
           onClick={handleChoose}
           className="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition-all duration-200 active:scale-[0.98]"
