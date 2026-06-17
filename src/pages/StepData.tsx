@@ -132,6 +132,27 @@ export default function StepData() {
   // Período, pernoite e diária usam os mesmos horários disponíveis
   const slots = PERIOD_SLOTS
 
+  // Horários do dia atual que já passaram ficam indisponíveis
+  const now = new Date()
+  const isToday = selectedDate
+    ? selectedDate.toDateString() === now.toDateString()
+    : false
+  const nowTotalMin = now.getHours() * 60 + now.getMinutes()
+
+  function isSlotPast(slot: string): boolean {
+    if (!isToday) return false
+    const [h, m] = slot.split(':').map(Number)
+    return (h * 60 + (m ?? 0)) <= nowTotalMin
+  }
+
+  // Se o slot selecionado já passou (ex: usuário voltou mais tarde), limpa
+  useEffect(() => {
+    if (selectedSlot && isSlotPast(selectedSlot)) {
+      setSelectedSlot(null)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate])
+
   function slotCheckIn(slot: string, date: Date): Date {
     const [h, m] = slot.split(':').map(Number)
     const d = new Date(date)
@@ -211,19 +232,28 @@ export default function StepData() {
                   const sel = selectedSlot === slot
                   const [h] = slot.split(':').map(Number)
                   const period = h < 12 ? 'Manhã' : h < 18 ? 'Tarde' : 'Noite'
+                  const past = isSlotPast(slot)
                   return (
                     <button
                       key={slot}
-                      onClick={() => setSelectedSlot(slot)}
+                      onClick={() => !past && setSelectedSlot(slot)}
+                      disabled={past}
                       className={[
                         'py-3 rounded-xl border text-sm font-medium transition-all duration-200 outline-none flex flex-col items-center gap-0.5',
-                        sel
+                        past
+                          ? 'border-gold-900/15 text-gold-900/30 cursor-not-allowed'
+                          : sel
                           ? 'border-gold-500 bg-gold-900/20 text-gold-300'
                           : 'border-gold-700/50 text-gold-500/80 hover:border-gold-500/70 hover:text-gold-300',
                       ].join(' ')}
                     >
-                      <span>{slot}</span>
-                      <span className={['text-[9px] tracking-widests', sel ? 'text-gold-500/60' : 'text-gold-600/80'].join(' ')}>{period}</span>
+                      <span className={past ? 'line-through' : ''}>{slot}</span>
+                      <span className={[
+                        'text-[9px] tracking-widests',
+                        past ? 'text-gold-900/25' : sel ? 'text-gold-500/60' : 'text-gold-600/80',
+                      ].join(' ')}>
+                        {past ? 'indisponível' : period}
+                      </span>
                     </button>
                   )
                 })}
