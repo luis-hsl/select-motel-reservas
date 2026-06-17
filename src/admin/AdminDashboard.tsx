@@ -11,8 +11,9 @@ import CardapioTab from './tabs/CardapioTab'
 import WhatsAppTab from './tabs/WhatsAppTab'
 import AoVivoTab from './tabs/AoVivoTab'
 import LeadsTab from './tabs/LeadsTab'
+import PromosTab from './tabs/PromosTab'
 
-type Tab = 'visao-geral' | 'ao-vivo' | 'reservas' | 'leads' | 'suites' | 'pacotes' | 'cardapio' | 'presente' | 'whatsapp' | 'config'
+type Tab = 'visao-geral' | 'ao-vivo' | 'reservas' | 'leads' | 'suites' | 'pacotes' | 'cardapio' | 'presente' | 'whatsapp' | 'promos' | 'config'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'visao-geral', label: 'Visão Geral' },
@@ -24,6 +25,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'cardapio',    label: 'Cardápio' },
   { id: 'presente',    label: 'Presente' },
   { id: 'whatsapp',    label: 'WhatsApp' },
+  { id: 'promos',      label: 'Promoções' },
   { id: 'config',      label: 'Configurações' },
 ]
 
@@ -84,6 +86,7 @@ export default function AdminDashboard({ user }: { user: User }) {
         {tab === 'cardapio'    && <CardapioTab />}
         {tab === 'presente'    && <PresenteTab />}
         {tab === 'whatsapp'    && <WhatsAppTab />}
+        {tab === 'promos'      && <PromosTab />}
         {tab === 'config'      && <ConfigTab />}
       </main>
     </div>

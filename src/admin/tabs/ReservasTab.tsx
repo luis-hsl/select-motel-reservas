@@ -4,8 +4,9 @@ import { downloadCsv } from '../utils/exportCsv'
 
 type Reservation = {
   id: string
-  package_id: string
+  package_id: string | null
   type: string
+  mode: string
   suite_id: string
   check_in: string
   customer_name: string
@@ -73,9 +74,9 @@ export default function ReservasTab() {
       Cliente: r.customer_name,
       Telefone: r.customer_phone,
       Email: r.customer_email,
-      Pacote: r.package_id,
-      Tipo: r.type === 'period' ? 'Período' : 'Pernoite',
-      Suite: r.suite_id.replace('suite-', ''),
+      Pacote: r.package_id ?? '—',
+      Tipo: r.type === 'period' ? 'Período' : r.type === 'overnight' ? 'Pernoite' : r.type === 'diaria' ? 'Diária' : r.type === 'oneHour' ? '1 Hora' : r.type,
+      Suite: r.suite_id ? r.suite_id.replace('suite-', '') : '—',
       'Check-in': fmtDate(r.check_in),
       Valor: fmtBRL(r.total_amount),
       Status: STATUS_LABEL[r.status] ?? r.status,
@@ -219,8 +220,10 @@ export default function ReservasTab() {
                     <p>{r.customer_phone} · {r.customer_email}</p>
                     <p>
                       Suíte {r.suite_id.replace('suite-', '')} ·{' '}
-                      Pacote {r.package_id.charAt(0).toUpperCase() + r.package_id.slice(1)} ·{' '}
-                      {r.type === 'period' ? 'Período' : 'Pernoite'}
+                      {r.package_id
+                        ? `Pacote ${r.package_id.charAt(0).toUpperCase() + r.package_id.slice(1)} · `
+                        : ''}
+                      {r.type === 'period' ? 'Período' : r.type === 'overnight' ? 'Pernoite' : r.type === 'diaria' ? 'Diária' : r.type === 'oneHour' ? '1 Hora' : r.type}
                     </p>
                     <p>
                       Check-in: {fmtDate(r.check_in)} ·{' '}

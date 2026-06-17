@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      promotions: {
+        Row: {
+          id: string
+          title: string
+          description: string
+          photo_url: string | null
+          button_text: string
+          button_url: string
+          active: boolean
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          description?: string
+          photo_url?: string | null
+          button_text?: string
+          button_url?: string
+          active?: boolean
+          sort_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          description?: string
+          photo_url?: string | null
+          button_text?: string
+          button_url?: string
+          active?: boolean
+          sort_order?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           id: string
@@ -113,7 +149,8 @@ export type Database = {
           customer_name: string
           customer_phone: string
           id: string
-          package_id: string
+          mode: string
+          package_id: string | null
           payment_id: string | null
           status: string
           suite_id: string
@@ -129,7 +166,8 @@ export type Database = {
           customer_name: string
           customer_phone: string
           id?: string
-          package_id: string
+          mode?: string
+          package_id?: string | null
           payment_id?: string | null
           status?: string
           suite_id: string
@@ -145,7 +183,8 @@ export type Database = {
           customer_name?: string
           customer_phone?: string
           id?: string
-          package_id?: string
+          mode?: string
+          package_id?: string | null
           payment_id?: string | null
           status?: string
           suite_id?: string

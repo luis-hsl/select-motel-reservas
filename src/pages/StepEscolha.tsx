@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useStore } from '../store/useStore'
 import LegalModal, { type LegalKind } from '../components/LegalModal'
 import { metaEvents } from '../lib/metaPixel'
@@ -6,6 +7,15 @@ import { supabase } from '../lib/supabase'
 import { getSessionToken } from '../lib/tracking'
 import type { ReservationMode } from '../types'
 import Reviews from '../components/Reviews'
+
+type Promo = {
+  id: string
+  title: string
+  description: string
+  photo_url: string | null
+  button_text: string
+  button_url: string
+}
 
 /* ── helpers ── */
 function maskCPF(v: string) {
@@ -59,6 +69,9 @@ export default function StepEscolha() {
   const [acceptedTerms,    setAcceptedTerms]    = useState(!!consentAt)
   const [whatsappConsent,  setWhatsappConsent]  = useState(false)
   const [legalOpen,        setLegalOpen]        = useState<LegalKind | null>(null)
+  const [promosOpen,       setPromosOpen]       = useState(false)
+  const [promos,           setPromos]           = useState<Promo[]>([])
+  const [promosFetched,    setPromosFetched]    = useState(false)
 
   const formRef = useRef<HTMLDivElement>(null)
   const ctaRef  = useRef<HTMLButtonElement>(null)
@@ -93,6 +106,20 @@ export default function StepEscolha() {
       ctaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     )
   }, [canContinue])
+
+  async function openPromos() {
+    setPromosOpen(true)
+    if (!promosFetched) {
+      const { data } = await supabase
+        .from('promotions')
+        .select('id, title, description, photo_url, button_text, button_url')
+        .eq('active', true)
+        .order('sort_order')
+        .order('created_at')
+      setPromos(data ?? [])
+      setPromosFetched(true)
+    }
+  }
 
   function pick(mode: ReservationMode) {
     setPicked(mode)
@@ -243,6 +270,29 @@ export default function StepEscolha() {
           Fazer uma reserva
         </button>
 
+        {/* Promoções button */}
+        <button
+          type="button"
+          onClick={openPromos}
+          className="w-full px-6 py-3.5 rounded-xl text-sm font-medium transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2"
+          style={{
+            background: 'transparent',
+            border: '1px solid rgba(201,168,76,0.22)',
+            color: 'rgba(201,168,76,0.70)',
+          }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(201,168,76,0.40)'
+            ;(e.currentTarget as HTMLButtonElement).style.color = 'rgba(201,168,76,0.90)'
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(201,168,76,0.22)'
+            ;(e.currentTarget as HTMLButtonElement).style.color = 'rgba(201,168,76,0.70)'
+          }}
+        >
+          <span style={{ fontSize: '0.75rem' }}>✦</span>
+          Nossas Promoções Exclusivas
+        </button>
+
       </div>
 
       {/* Social proof */}
@@ -377,6 +427,11 @@ export default function StepEscolha() {
       </div>
 
       {legalOpen && <LegalModal kind={legalOpen} onClose={() => setLegalOpen(null)} />}
+
+      {promosOpen && createPortal(
+        <PromosSheet promos={promos} onClose={() => setPromosOpen(false)} />,
+        document.body,
+      )}
     </div>
   )
 }
@@ -387,6 +442,144 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     <div>
       <label className="block text-[10px] tracking-widest uppercase text-gold-600/60 mb-2">{label}</label>
       {children}
+    </div>
+  )
+}
+
+// ── Promos Bottom Sheet ───────────────────────────────────────────────────────
+
+function PromosSheet({ promos, onClose }: { promos: Promo[]; onClose: () => void }) {
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    requestAnimationFrame(() => setTimeout(() => setVisible(true), 10))
+    return () => { document.body.style.overflow = '' }
+  }, [])
+
+  function close() {
+    setVisible(false)
+    setTimeout(onClose, 380)
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      style={{ pointerEvents: visible ? 'auto' : 'none' }}
+    >
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 transition-opacity duration-350"
+        style={{
+          background: 'rgba(0,0,0,0.92)',
+          backdropFilter: 'blur(8px)',
+          opacity: visible ? 1 : 0,
+        }}
+        onClick={close}
+      />
+
+      {/* Sheet */}
+      <div
+        className="relative w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl"
+        style={{
+          backgroundColor: '#0c0a07',
+          border: '1px solid rgba(201,168,76,0.18)',
+          boxShadow: '0 -24px 80px rgba(0,0,0,0.9)',
+          transform: visible ? 'translateY(0)' : 'translateY(100%)',
+          opacity: visible ? 1 : 0,
+          transition: 'transform 0.38s cubic-bezier(0.4,0,0.2,1), opacity 0.38s ease',
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Mobile handle */}
+        <div className="flex justify-center pt-3 pb-1 sm:hidden">
+          <div className="w-10 h-1 rounded-full" style={{ background: 'rgba(201,168,76,0.25)' }} />
+        </div>
+
+        {/* Header */}
+        <div className="px-6 pt-4 pb-4 flex items-center justify-between border-b border-white/[0.06]">
+          <div>
+            <div className="w-5 h-px mb-2.5" style={{ background: '#c8a035' }} />
+            <h3
+              className="font-serif font-semibold uppercase tracking-wider"
+              style={{ fontSize: '1.05rem', color: '#dfc07a', letterSpacing: '0.06em' }}
+            >
+              Promoções Exclusivas
+            </h3>
+          </div>
+          <button
+            onClick={close}
+            className="text-[11px] px-3 py-1.5 rounded-lg opacity-40 hover:opacity-80 transition-opacity"
+            style={{ color: 'rgba(200,188,168,0.9)', border: '1px solid rgba(200,188,168,0.12)' }}
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-5 space-y-4">
+          {promos.length === 0 ? (
+            <p className="text-center text-white/25 text-sm py-8">Nenhuma promoção disponível no momento.</p>
+          ) : (
+            promos.map(p => (
+              <PromoCard key={p.id} promo={p} />
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PromoCard({ promo }: { promo: Promo }) {
+  return (
+    <div
+      className="rounded-2xl overflow-hidden"
+      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(201,168,76,0.12)' }}
+    >
+      {/* Photo */}
+      {promo.photo_url ? (
+        <div style={{ aspectRatio: '16/9' }}>
+          <img
+            src={promo.photo_url}
+            alt={promo.title}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      ) : (
+        <div
+          className="flex items-center justify-center"
+          style={{ aspectRatio: '16/9', background: 'rgba(201,168,76,0.05)' }}
+        >
+          <span style={{ fontSize: '2.5rem', opacity: 0.2 }}>✦</span>
+        </div>
+      )}
+
+      {/* Body */}
+      <div className="px-5 py-4 space-y-2">
+        <p className="font-medium leading-snug" style={{ color: 'rgba(228,218,198,0.90)', fontSize: '0.95rem' }}>
+          {promo.title}
+        </p>
+        {promo.description && (
+          <p className="text-sm leading-relaxed" style={{ color: 'rgba(200,188,168,0.50)' }}>
+            {promo.description}
+          </p>
+        )}
+        {promo.button_url && (
+          <a
+            href={promo.button_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block mt-2 w-full text-center py-3 rounded-xl text-sm font-semibold transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
+            style={{
+              background: 'linear-gradient(135deg, #c8a035, #e8c060)',
+              color: '#080502',
+            }}
+          >
+            {promo.button_text || 'Saiba mais'}
+          </a>
+        )}
+      </div>
     </div>
   )
 }
