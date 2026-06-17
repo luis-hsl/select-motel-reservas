@@ -14,6 +14,7 @@ type Suite = {
 export default function SuitesTab() {
   const [suites, setSuites] = useState<Suite[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [uploading, setUploading] = useState<{ id: string; count: number } | null>(null)
   const [deleting, setDeleting] = useState<{ id: string; url: string } | null>(null)
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({})
@@ -21,11 +22,18 @@ export default function SuitesTab() {
   useEffect(() => { load() }, [])
 
   async function load() {
-    const { data } = await supabase
+    setLoadError(null)
+    // Usa select('*') para não depender do cache de schema do PostgREST
+    // (select com coluna explícita falha se o cache ainda não atualizou após ALTER TABLE)
+    const { data, error } = await supabase
       .from('suites')
-      .select('id, name, category, room_number, active, photo_url, photos')
+      .select('*')
       .order('sort_order')
-    setSuites(data ?? [])
+    if (error) {
+      console.error('[SuitesTab] load error:', error)
+      setLoadError(error.message)
+    }
+    setSuites((data ?? []).map(s => ({ ...s, photos: (s as Suite & { photos?: string[] | null }).photos ?? [] })))
     setLoading(false)
   }
 
@@ -97,6 +105,13 @@ export default function SuitesTab() {
   }
 
   if (loading) return <div className="text-white/30 py-16 text-center text-sm">Carregando...</div>
+  if (loadError) return (
+    <div className="py-16 text-center space-y-2">
+      <p className="text-red-400/80 text-sm">Erro ao carregar suítes</p>
+      <p className="text-white/25 text-xs font-mono">{loadError}</p>
+      <button onClick={load} className="mt-2 text-xs text-white/40 underline">Tentar novamente</button>
+    </div>
+  )
 
   return (
     <div>
