@@ -63,11 +63,9 @@ export default function StepSuite() {
   const [videoUrls, setVideoUrls]     = useState<Record<string, string>>({})
   const [alacarteMap, setAlacarteMap] = useState<Record<string, { period: number | null; overnight: number | null }>>({})
   const [currentIdx, setCurrentIdx]   = useState(0)
-  const [videoLoading, setVideoLoading] = useState(true)
+  const [videoReady, setVideoReady]   = useState(false)
+  const videoRef                      = useRef<HTMLVideoElement | null>(null)
   const touchStartX                   = useRef<number | null>(null)
-
-  // Reset loading spinner ao trocar de suíte
-  useEffect(() => { setVideoLoading(true) }, [currentIdx])
 
   const packageSuites = mode === 'suite' && suiteCategory
     ? SUITES.filter(s => s.category === suiteCategory)
@@ -141,13 +139,25 @@ export default function StepSuite() {
     Promise.all(promises).finally(() => setLoading(false))
   }, [checkIn, checkOut])
 
-  const currentSuite  = allSuites[currentIdx] ?? null
-  const nextSuite     = allSuites[currentIdx + 1] ?? null
-  const nextVideoUrl  = nextSuite ? videoUrls[nextSuite.id] : undefined
-  const isOccupied    = currentSuite
+  const currentSuite = allSuites[currentIdx] ?? null
+  const videoUrl     = currentSuite ? videoUrls[currentSuite.id] : undefined
+
+  // Gerencia src do <video> via ref — reutiliza o mesmo elemento DOM para evitar
+  // que o browser descarte o buffer ao trocar de suíte.
+  useEffect(() => {
+    const el = videoRef.current
+    if (!el) return
+    setVideoReady(false)
+    if (!videoUrl) return
+    el.pause()
+    el.src = videoUrl
+    el.load()
+    el.play().catch(() => { el.muted = true; el.play().catch(() => {}) })
+  }, [videoUrl])
+
+  const isOccupied  = currentSuite
     ? (occupiedIds.has(currentSuite.id) || RESERVED_SUITE_IDS.has(currentSuite.id))
     : false
-  const videoUrl   = currentSuite ? videoUrls[currentSuite.id] : undefined
   const hasMultiple = allSuites.length > 1
   const allRealOccupied = packageSuites.length > 0 && packageSuites.every(s => occupiedIds.has(s.id))
 
@@ -246,64 +256,56 @@ export default function StepSuite() {
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
           >
-            {videoUrl ? (
-              <>
-                <video
-                  key={videoUrl}
-                  src={videoUrl}
-                  autoPlay
-                  loop
-                  playsInline
-                  controls
-                  preload="auto"
-                  onCanPlay={() => setVideoLoading(false)}
-                  onWaiting={() => setVideoLoading(true)}
-                  ref={(el) => {
-                    if (!el) return
-                    el.muted = false
-                    el.volume = 1
-                    el.play().catch(() => {
-                      el.muted = true
-                      el.play().catch(() => {})
-                    })
+            {/* Número da suíte — placeholder sempre visível abaixo do vídeo */}
+            <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 0 }}>
+              {currentSuite && (
+                <span
+                  className="font-serif font-bold text-transparent bg-clip-text select-none"
+                  style={{
+                    fontSize: 'clamp(4rem, 18vw, 7rem)',
+                    backgroundImage: isOccupied
+                      ? 'linear-gradient(160deg, #a08060 0%, #7a5a30 35%, #5a3a10 70%, #8a6030 100%)'
+                      : 'linear-gradient(160deg, #fce8a8 0%, #d4a017 35%, #8b6010 70%, #c9a84c 100%)',
+                    lineHeight: 1,
+                    filter: isOccupied
+                      ? 'drop-shadow(0 2px 8px rgba(80,50,20,0.3))'
+                      : 'drop-shadow(0 4px 20px rgba(200,150,30,0.5))',
                   }}
-                  className="block w-full pointer-events-auto"
-                  style={{ maxHeight: '52vh' }}
-                />
-                {/* Spinner enquanto o vídeo carrega */}
-                {videoLoading && (
-                  <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none"
-                    style={{ background: 'rgba(0,0,0,0.45)' }}>
-                    <div className="w-9 h-9 rounded-full border-2 animate-spin"
-                      style={{ borderColor: 'rgba(255,255,255,0.15)', borderTopColor: 'rgba(255,255,255,0.80)' }} />
-                  </div>
-                )}
-                {/* Pré-carrega o próximo vídeo em background */}
-                {nextVideoUrl && (
-                  <video key={`pre-${nextVideoUrl}`} src={nextVideoUrl} preload="auto" muted playsInline style={{ display: 'none' }} />
-                )}
-              </>
-            ) : (
-              <div className="flex flex-col items-center justify-center" style={{ height: '220px' }}>
-                {currentSuite && (
-                  <span
-                    className="font-serif font-bold text-transparent bg-clip-text select-none"
-                    style={{
-                      fontSize: 'clamp(4rem, 18vw, 7rem)',
-                      backgroundImage: isOccupied
-                        ? 'linear-gradient(160deg, #a08060 0%, #7a5a30 35%, #5a3a10 70%, #8a6030 100%)'
-                        : 'linear-gradient(160deg, #fce8a8 0%, #d4a017 35%, #8b6010 70%, #c9a84c 100%)',
-                      lineHeight: 1,
-                      filter: isOccupied
-                        ? 'drop-shadow(0 2px 8px rgba(80,50,20,0.3))'
-                        : 'drop-shadow(0 4px 20px rgba(200,150,30,0.5))',
-                    }}
-                  >
-                    {currentSuite.room_number}
-                  </span>
-                )}
+                >
+                  {currentSuite.room_number}
+                </span>
+              )}
+            </div>
+
+            {/* Vídeo — mesmo elemento DOM, src atualizado via ref */}
+            <video
+              ref={videoRef}
+              loop playsInline controls
+              onLoadedData={() => setVideoReady(true)}
+              onWaiting={() => setVideoReady(false)}
+              className="block w-full pointer-events-auto"
+              style={{
+                maxHeight: '52vh',
+                position: 'relative',
+                zIndex: 1,
+                opacity: videoReady ? 1 : 0,
+                pointerEvents: videoReady ? 'auto' : 'none',
+                transition: 'opacity 0.3s ease',
+              }}
+            />
+
+            {/* Spinner sutil enquanto o vídeo carrega */}
+            {videoUrl && !videoReady && (
+              <div className="absolute inset-0 flex items-end justify-center pb-3 z-20 pointer-events-none">
+                <div className="w-5 h-5 rounded-full border-[1.5px] animate-spin"
+                     style={{ borderColor: 'rgba(255,255,255,0.12)', borderTopColor: 'rgba(255,255,255,0.65)' }} />
               </div>
             )}
+
+            {/* Pré-carrega todos os vídeos em background para troca instantânea */}
+            {Object.entries(videoUrls).filter(([id]) => id !== currentSuite?.id).map(([id, url]) => (
+              <video key={`pre-${id}`} src={url} preload="auto" muted playsInline style={{ display: 'none' }} />
+            ))}
 
             {/* Ribbon reservado */}
             {isOccupied && (
