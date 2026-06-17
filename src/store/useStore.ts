@@ -95,7 +95,7 @@ export const useStore = create<StoreState>((set, get) => ({
   setSuiteCategory: (suiteCategory) => set({ suiteCategory }),
   setType: (type) => set({ type }),
   setSuite: (suite) => set({ suite }),
-  setCheckIn: (date) => set({ checkIn: date, suite: null }),
+  setCheckIn: (date) => set({ checkIn: date }),
   setCustomer: (customerName, customerPhone, customerEmail, customerTaxId) =>
     set({ customerName, customerPhone, customerEmail, customerTaxId }),
   setObservations: (observations) => set({ observations }),
