@@ -447,7 +447,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   )
 }
 
-// ── Promos Bottom Sheet ───────────────────────────────────────────────────────
+// ── Promos Page (full-screen, desliza da direita) ────────────────────────────
 
 function PromosSheet({ promos, onClose }: { promos: Promo[]; onClose: () => void }) {
   const { setStep } = useStore()
@@ -471,126 +471,152 @@ function PromosSheet({ promos, onClose }: { promos: Promo[]; onClose: () => void
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-      style={{ pointerEvents: visible ? 'auto' : 'none' }}
+      className="fixed inset-0 z-50"
+      style={{
+        transform: visible ? 'translateX(0)' : 'translateX(100%)',
+        transition: 'transform 0.38s cubic-bezier(0.4,0,0.2,1)',
+        background: '#080602',
+      }}
     >
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 transition-opacity duration-350"
-        style={{
-          background: 'rgba(0,0,0,0.92)',
-          backdropFilter: 'blur(8px)',
-          opacity: visible ? 1 : 0,
-        }}
-        onClick={close}
-      />
+      {/* Linha decorativa top */}
+      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: 'linear-gradient(to right, transparent, rgba(201,168,76,0.35), transparent)' }} />
 
-      {/* Sheet */}
-      <div
-        className="relative w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl"
-        style={{
-          backgroundColor: '#0c0a07',
-          border: '1px solid rgba(201,168,76,0.18)',
-          boxShadow: '0 -24px 80px rgba(0,0,0,0.9)',
-          transform: visible ? 'translateY(0)' : 'translateY(100%)',
-          opacity: visible ? 1 : 0,
-          transition: 'transform 0.38s cubic-bezier(0.4,0,0.2,1), opacity 0.38s ease',
-        }}
-        onClick={e => e.stopPropagation()}
+      {/* Header fixo */}
+      <header
+        className="sticky top-0 z-10 flex items-center gap-4 px-5 py-4"
+        style={{ background: 'rgba(8,6,2,0.92)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(201,168,76,0.08)' }}
       >
-        {/* Mobile handle */}
-        <div className="flex justify-center pt-3 pb-1 sm:hidden">
-          <div className="w-10 h-1 rounded-full" style={{ background: 'rgba(201,168,76,0.25)' }} />
+        <button
+          onClick={close}
+          className="flex items-center gap-2 transition-opacity hover:opacity-70 active:scale-95"
+          style={{ color: 'rgba(201,168,76,0.70)' }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M19 12H5M12 5l-7 7 7 7" />
+          </svg>
+          <span className="text-sm font-medium">Voltar</span>
+        </button>
+
+        <div className="flex-1 text-center">
+          <p className="text-[10px] tracking-[0.4em] uppercase" style={{ color: 'rgba(201,168,76,0.45)' }}>Select Motel</p>
+          <h2 className="font-serif italic font-light" style={{ fontSize: '1.05rem', color: 'rgba(223,192,122,0.90)', letterSpacing: '-0.01em' }}>
+            Promoções Exclusivas
+          </h2>
         </div>
 
-        {/* Header */}
-        <div className="px-6 pt-4 pb-4 flex items-center justify-between border-b border-white/[0.06]">
-          <div>
-            <div className="w-5 h-px mb-2.5" style={{ background: '#c8a035' }} />
-            <h3
-              className="font-serif font-semibold uppercase tracking-wider"
-              style={{ fontSize: '1.05rem', color: '#dfc07a', letterSpacing: '0.06em' }}
-            >
-              Promoções Exclusivas
-            </h3>
+        {/* Espaço para centralizar o título */}
+        <div style={{ width: 64 }} />
+      </header>
+
+      {/* Conteúdo rolável */}
+      <div className="h-full overflow-y-auto pb-20" style={{ paddingTop: '0' }}>
+        {promos.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-32 gap-4">
+            <span style={{ fontSize: '3rem', opacity: 0.15 }}>✦</span>
+            <p style={{ color: 'rgba(200,188,168,0.30)', fontSize: '0.9rem' }}>Nenhuma promoção disponível no momento.</p>
           </div>
-          <button
-            onClick={close}
-            className="text-[11px] px-3 py-1.5 rounded-lg opacity-40 hover:opacity-80 transition-opacity"
-            style={{ color: 'rgba(200,188,168,0.9)', border: '1px solid rgba(200,188,168,0.12)' }}
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-5 space-y-4">
-          {promos.length === 0 ? (
-            <p className="text-center text-white/25 text-sm py-8">Nenhuma promoção disponível no momento.</p>
-          ) : (
-            promos.map(p => (
-              <PromoCard key={p.id} promo={p} onNavigate={navigateToStep} />
-            ))
-          )}
-        </div>
+        ) : (
+          <div className="max-w-2xl mx-auto px-4 py-8 space-y-10">
+            {promos.map((p, i) => (
+              <PromoCard key={p.id} promo={p} index={i} onNavigate={navigateToStep} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
-function PromoCard({ promo, onNavigate }: { promo: Promo; onNavigate: (step: number) => void }) {
+function PromoCard({ promo, index, onNavigate }: { promo: Promo; index: number; onNavigate: (step: number) => void }) {
   const hasAction = promo.button_step !== null || !!promo.button_url
 
   return (
-    <div
-      className="rounded-2xl overflow-hidden"
-      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(201,168,76,0.12)' }}
+    <article
+      className="rounded-3xl overflow-hidden"
+      style={{
+        background: 'linear-gradient(160deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)',
+        border: '1px solid rgba(201,168,76,0.14)',
+        boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
+      }}
     >
-      {/* Photo */}
+      {/* Imagem no tamanho real — sem crop */}
       {promo.photo_url ? (
-        <div style={{ aspectRatio: '16/9' }}>
-          <img src={promo.photo_url} alt={promo.title} className="w-full h-full object-cover" />
-        </div>
+        <img
+          src={promo.photo_url}
+          alt={promo.title}
+          className="w-full h-auto block"
+          style={{ display: 'block' }}
+        />
       ) : (
-        <div className="flex items-center justify-center" style={{ aspectRatio: '16/9', background: 'rgba(201,168,76,0.05)' }}>
-          <span style={{ fontSize: '2.5rem', opacity: 0.2 }}>✦</span>
+        <div
+          className="w-full flex items-center justify-center py-16"
+          style={{ background: 'rgba(201,168,76,0.04)' }}
+        >
+          <span style={{ fontSize: '3.5rem', opacity: 0.12 }}>✦</span>
         </div>
       )}
 
-      {/* Body */}
-      <div className="px-5 py-4 space-y-2">
-        <p className="font-medium leading-snug" style={{ color: 'rgba(228,218,198,0.90)', fontSize: '0.95rem' }}>
-          {promo.title}
+      {/* Separador dourado */}
+      <div style={{ height: '1px', background: 'linear-gradient(to right, transparent, rgba(201,168,76,0.25), transparent)' }} />
+
+      {/* Corpo */}
+      <div className="px-6 py-7 space-y-4">
+        {/* Índice decorativo */}
+        <p className="text-[10px] tracking-[0.45em] uppercase" style={{ color: 'rgba(201,168,76,0.40)' }}>
+          Oferta {String(index + 1).padStart(2, '0')}
         </p>
+
+        {/* Título */}
+        <h3
+          className="font-serif font-light leading-tight"
+          style={{
+            fontSize: 'clamp(1.35rem, 4vw, 1.75rem)',
+            color: 'rgba(240,230,210,0.95)',
+            letterSpacing: '-0.02em',
+          }}
+        >
+          {promo.title}
+        </h3>
+
+        {/* Descrição */}
         {promo.description && (
-          <p className="text-sm leading-relaxed" style={{ color: 'rgba(200,188,168,0.50)' }}>
+          <p
+            className="leading-relaxed"
+            style={{
+              fontSize: '0.95rem',
+              color: 'rgba(210,198,178,0.65)',
+              lineHeight: 1.7,
+            }}
+          >
             {promo.description}
           </p>
         )}
+
+        {/* Botão de ação */}
         {hasAction && (
-          promo.button_step !== null ? (
-            /* Navega para etapa do app — fecha o sheet e vai para o step */
-            <button
-              onClick={() => onNavigate(promo.button_step!)}
-              className="mt-2 w-full py-3 rounded-xl text-sm font-semibold transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
-              style={{ background: 'linear-gradient(135deg, #c8a035, #e8c060)', color: '#080502' }}
-            >
-              {promo.button_text || 'Aproveitar'}
-            </button>
-          ) : (
-            /* Link externo — abre em nova aba */
-            <a
-              href={promo.button_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block mt-2 w-full text-center py-3 rounded-xl text-sm font-semibold transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
-              style={{ background: 'linear-gradient(135deg, #c8a035, #e8c060)', color: '#080502' }}
-            >
-              {promo.button_text || 'Saiba mais'}
-            </a>
-          )
+          <div className="pt-2">
+            {promo.button_step !== null ? (
+              <button
+                onClick={() => onNavigate(promo.button_step!)}
+                className="w-full py-4 rounded-2xl text-sm font-semibold tracking-wide transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
+                style={{ background: 'linear-gradient(135deg, #b8892a, #e8c060, #b8892a)', color: '#080502' }}
+              >
+                {promo.button_text || 'Aproveitar oferta'}
+              </button>
+            ) : (
+              <a
+                href={promo.button_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full py-4 rounded-2xl text-sm font-semibold tracking-wide text-center transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
+                style={{ background: 'linear-gradient(135deg, #b8892a, #e8c060, #b8892a)', color: '#080502' }}
+              >
+                {promo.button_text || 'Saiba mais'}
+              </a>
+            )}
+          </div>
         )}
       </div>
-    </div>
+    </article>
   )
 }
