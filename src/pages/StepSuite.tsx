@@ -60,11 +60,10 @@ export default function StepSuite() {
 
   const [loading, setLoading]         = useState(true)
   const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set())
-  const [videoUrls, setVideoUrls]     = useState<Record<string, string>>({})
+  const [photosMap, setPhotosMap]     = useState<Record<string, string[]>>({})
   const [alacarteMap, setAlacarteMap] = useState<Record<string, { period: number | null; overnight: number | null }>>({})
   const [currentIdx, setCurrentIdx]   = useState(0)
-  const [videoReady, setVideoReady]   = useState(false)
-  const videoRef                      = useRef<HTMLVideoElement | null>(null)
+  const [photoIdx, setPhotoIdx]       = useState(0)
   const touchStartX                   = useRef<number | null>(null)
 
   const packageSuites = mode === 'suite' && suiteCategory
@@ -95,16 +94,16 @@ export default function StepSuite() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase as any)
         .from('suites')
-        .select('id, video_url, price_period_alacarte, price_overnight_alacarte')
-        .then(({ data }: { data: { id: string; video_url: string | null; price_period_alacarte: number | null; price_overnight_alacarte: number | null }[] | null }) => {
+        .select('id, photos, price_period_alacarte, price_overnight_alacarte')
+        .then(({ data }: { data: { id: string; photos: string[] | null; price_period_alacarte: number | null; price_overnight_alacarte: number | null }[] | null }) => {
           if (data) {
-            const vids: Record<string, string> = {}
+            const pmap: Record<string, string[]> = {}
             const alacarte: Record<string, { period: number | null; overnight: number | null }> = {}
             data.forEach(s => {
-              if (s.video_url) vids[s.id] = s.video_url
+              if (Array.isArray(s.photos) && s.photos.length > 0) pmap[s.id] = s.photos
               alacarte[s.id] = { period: s.price_period_alacarte ?? null, overnight: s.price_overnight_alacarte ?? null }
             })
-            setVideoUrls(vids)
+            setPhotosMap(pmap)
             setAlacarteMap(alacarte)
           }
         })
@@ -139,21 +138,12 @@ export default function StepSuite() {
     Promise.all(promises).finally(() => setLoading(false))
   }, [checkIn, checkOut])
 
-  const currentSuite = allSuites[currentIdx] ?? null
-  const videoUrl     = currentSuite ? videoUrls[currentSuite.id] : undefined
+  const currentSuite   = allSuites[currentIdx] ?? null
+  const currentPhotos  = currentSuite ? (photosMap[currentSuite.id] ?? []) : []
+  const currentPhoto   = currentPhotos[photoIdx] ?? null
 
-  // Gerencia src do <video> via ref — reutiliza o mesmo elemento DOM para evitar
-  // que o browser descarte o buffer ao trocar de suíte.
-  useEffect(() => {
-    const el = videoRef.current
-    if (!el) return
-    setVideoReady(false)
-    if (!videoUrl) return
-    el.pause()
-    el.src = videoUrl
-    el.load()
-    el.play().catch(() => { el.muted = true; el.play().catch(() => {}) })
-  }, [videoUrl])
+  // Reset foto ao trocar de suíte
+  useEffect(() => { setPhotoIdx(0) }, [currentIdx])
 
   const isOccupied  = currentSuite
     ? (occupiedIds.has(currentSuite.id) || RESERVED_SUITE_IDS.has(currentSuite.id))
@@ -163,8 +153,8 @@ export default function StepSuite() {
 
   const t = suiteCategory ? (THEMES[suiteCategory] ?? DEFAULT_THEME) : DEFAULT_THEME
 
-  function navigate(dir: 1 | -1) {
-    setCurrentIdx(i => Math.min(Math.max(0, i + dir), allSuites.length - 1))
+  function navigatePhoto(dir: 1 | -1) {
+    setPhotoIdx(i => Math.min(Math.max(0, i + dir), (currentPhotos.length || 1) - 1))
   }
 
   function handleTouchStart(e: React.TouchEvent) {
@@ -173,7 +163,7 @@ export default function StepSuite() {
   function handleTouchEnd(e: React.TouchEvent) {
     if (touchStartX.current === null) return
     const delta = touchStartX.current - e.changedTouches[0].clientX
-    if (Math.abs(delta) > 45) navigate(delta > 0 ? 1 : -1)
+    if (Math.abs(delta) > 45) navigatePhoto(delta > 0 ? 1 : -1)
     touchStartX.current = null
   }
 
@@ -249,14 +239,51 @@ export default function StepSuite() {
           className="max-w-md rounded-2xl overflow-hidden transition-colors duration-300"
           style={{ background: '#0c0702', border: `1px solid ${t.border}` }}
         >
-          {/* Vídeo / placeholder com swipe */}
+          {/* Suite number chips */}
+          {hasMultiple && (
+            <div className="px-5 pt-5 pb-3">
+              <p className="text-[9px] uppercase tracking-widest mb-2" style={{ color: t.labelColor }}>
+                Suítes disponíveis
+              </p>
+              <div className="flex gap-2 overflow-x-auto pb-0.5 scrollbar-hide">
+                {allSuites.map((s, i) => {
+                  const occ = occupiedIds.has(s.id) || RESERVED_SUITE_IDS.has(s.id)
+                  const isActive = i === currentIdx
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => setCurrentIdx(i)}
+                      className="shrink-0 w-11 h-11 rounded-full font-bold text-sm transition-all duration-200 active:scale-95 relative"
+                      style={{
+                        background: isActive
+                          ? (occ ? 'rgba(90,8,22,0.9)' : t.accent)
+                          : (occ ? 'rgba(80,20,30,0.3)' : `${t.accent}12`),
+                        border: `1.5px solid ${isActive
+                          ? (occ ? 'rgba(200,80,80,0.6)' : t.accent)
+                          : (occ ? 'rgba(180,40,60,0.3)' : t.priceBorder)}`,
+                        color: isActive
+                          ? (occ ? 'rgba(240,160,160,0.9)' : '#080502')
+                          : (occ ? 'rgba(200,80,80,0.5)' : t.accentBright),
+                        transform: isActive ? 'scale(1.08)' : 'scale(1)',
+                        textDecoration: occ ? 'line-through' : 'none',
+                      }}
+                    >
+                      {s.room_number ?? '?'}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Photo area */}
           <div
-            className="relative bg-black select-none"
-            style={{ minHeight: '220px', touchAction: 'pan-y' }}
+            className="relative bg-black select-none overflow-hidden"
+            style={{ aspectRatio: '4/3', touchAction: 'pan-y' }}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
           >
-            {/* Número da suíte — placeholder sempre visível abaixo do vídeo */}
+            {/* Room number placeholder */}
             <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 0 }}>
               {currentSuite && (
                 <span
@@ -277,35 +304,16 @@ export default function StepSuite() {
               )}
             </div>
 
-            {/* Vídeo — mesmo elemento DOM, src atualizado via ref */}
-            <video
-              ref={videoRef}
-              loop playsInline controls
-              onLoadedData={() => setVideoReady(true)}
-              onWaiting={() => setVideoReady(false)}
-              className="block w-full pointer-events-auto"
-              style={{
-                maxHeight: '52vh',
-                position: 'relative',
-                zIndex: 1,
-                opacity: videoReady ? 1 : 0,
-                pointerEvents: videoReady ? 'auto' : 'none',
-                transition: 'opacity 0.3s ease',
-              }}
-            />
-
-            {/* Spinner sutil enquanto o vídeo carrega */}
-            {videoUrl && !videoReady && (
-              <div className="absolute inset-0 flex items-end justify-center pb-3 z-20 pointer-events-none">
-                <div className="w-5 h-5 rounded-full border-[1.5px] animate-spin"
-                     style={{ borderColor: 'rgba(255,255,255,0.12)', borderTopColor: 'rgba(255,255,255,0.65)' }} />
-              </div>
+            {/* Current photo */}
+            {currentPhoto && (
+              <img
+                key={currentPhoto}
+                src={currentPhoto}
+                alt=""
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{ zIndex: 1 }}
+              />
             )}
-
-            {/* Pré-carrega todos os vídeos em background para troca instantânea */}
-            {Object.entries(videoUrls).filter(([id]) => id !== currentSuite?.id).map(([id, url]) => (
-              <video key={`pre-${id}`} src={url} preload="auto" muted playsInline style={{ display: 'none' }} />
-            ))}
 
             {/* Ribbon reservado */}
             {isOccupied && (
@@ -325,10 +333,8 @@ export default function StepSuite() {
                     padding: '6px 0',
                   }}
                 >
-                  <span
-                    className="font-bold tracking-[0.3em] uppercase"
-                    style={{ fontSize: '0.65rem', color: 'rgba(240,200,100,0.95)' }}
-                  >
+                  <span className="font-bold tracking-[0.3em] uppercase"
+                        style={{ fontSize: '0.65rem', color: 'rgba(240,200,100,0.95)' }}>
                     Reservado
                   </span>
                   {slotLabel && (
@@ -340,128 +346,79 @@ export default function StepSuite() {
               </div>
             )}
 
-            {/* Setas de navegação sobre o vídeo */}
-            {hasMultiple && (
+            {/* Photo counter */}
+            {currentPhotos.length > 1 && (
+              <div
+                className="absolute top-2.5 right-2.5 z-20 pointer-events-none"
+                style={{
+                  background: 'rgba(0,0,0,0.62)',
+                  border: '1px solid rgba(255,255,255,0.14)',
+                  borderRadius: '999px',
+                  padding: '3px 9px',
+                }}
+              >
+                <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.82)', fontVariantNumeric: 'tabular-nums' }}>
+                  {photoIdx + 1} / {currentPhotos.length}
+                </span>
+              </div>
+            )}
+
+            {/* Photo navigation arrows */}
+            {currentPhotos.length > 1 && (
               <>
                 <button
-                  onClick={() => navigate(-1)}
-                  disabled={currentIdx === 0}
-                  className="absolute left-0 top-0 bottom-0 flex items-center justify-center transition-all z-20"
+                  onClick={() => navigatePhoto(-1)}
+                  disabled={photoIdx === 0}
+                  className="absolute left-0 top-0 bottom-0 z-20 flex items-center justify-center transition-all"
                   style={{
-                    width: '22%',
-                    background: 'linear-gradient(to right, rgba(0,0,0,0.65), transparent)',
-                    opacity: currentIdx === 0 ? 0.15 : 1,
+                    width: '20%',
+                    background: 'linear-gradient(to right, rgba(0,0,0,0.55), transparent)',
+                    opacity: photoIdx === 0 ? 0.15 : 1,
                   }}
                 >
                   <span style={{ fontSize: '2.2rem', color: 'rgba(255,255,255,0.95)', textShadow: '0 2px 12px rgba(0,0,0,0.9)' }}>‹</span>
                 </button>
                 <button
-                  onClick={() => navigate(1)}
-                  disabled={currentIdx === allSuites.length - 1}
-                  className="absolute right-0 top-0 bottom-0 flex items-center justify-center transition-all z-20"
+                  onClick={() => navigatePhoto(1)}
+                  disabled={photoIdx === currentPhotos.length - 1}
+                  className="absolute right-0 top-0 bottom-0 z-20 flex items-center justify-center transition-all"
                   style={{
-                    width: '22%',
-                    background: 'linear-gradient(to left, rgba(0,0,0,0.65), transparent)',
-                    opacity: currentIdx === allSuites.length - 1 ? 0.15 : 1,
+                    width: '20%',
+                    background: 'linear-gradient(to left, rgba(0,0,0,0.55), transparent)',
+                    opacity: photoIdx === currentPhotos.length - 1 ? 0.15 : 1,
                   }}
                 >
                   <span style={{ fontSize: '2.2rem', color: 'rgba(255,255,255,0.95)', textShadow: '0 2px 12px rgba(0,0,0,0.9)' }}>›</span>
                 </button>
-
-                {/* Contador de suítes — canto superior direito */}
-                <div
-                  className="absolute top-2.5 right-2.5 z-30 pointer-events-none"
-                  style={{
-                    background: 'rgba(0,0,0,0.62)',
-                    border: '1px solid rgba(255,255,255,0.14)',
-                    borderRadius: '999px',
-                    padding: '3px 9px',
-                  }}
-                >
-                  <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.82)', fontVariantNumeric: 'tabular-nums', letterSpacing: '0.04em' }}>
-                    {currentIdx + 1} / {allSuites.length}
-                  </span>
-                </div>
-
-                {/* Banner de swipe — sempre visível, indica total de suítes */}
-                <div
-                  className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none flex items-center justify-center gap-2 py-2.5"
-                  style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.82) 0%, transparent 100%)' }}
-                >
-                  <span style={{ fontSize: '1.1rem', color: currentIdx === 0 ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.75)', transition: 'color 0.2s' }}>‹</span>
-                  <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.90)', letterSpacing: '0.07em', textShadow: '0 1px 8px rgba(0,0,0,0.9)' }}>
-                    deslize para ver outras {allSuites.length} suítes disponíveis
-                  </span>
-                  <span style={{ fontSize: '1.1rem', color: currentIdx === allSuites.length - 1 ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.75)', transition: 'color 0.2s' }}>›</span>
-                </div>
               </>
+            )}
+
+            {/* Photo dots */}
+            {currentPhotos.length > 1 && (
+              <div className="absolute bottom-2.5 left-0 right-0 z-20 flex justify-center gap-1 pointer-events-none">
+                {currentPhotos.map((_, i) => (
+                  <div
+                    key={i}
+                    className="rounded-full transition-all duration-200"
+                    style={{
+                      width: i === photoIdx ? '14px' : '5px',
+                      height: '5px',
+                      background: i === photoIdx ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.3)',
+                    }}
+                  />
+                ))}
+              </div>
             )}
           </div>
 
-          {/* Info da suíte + setas abaixo do vídeo */}
+          {/* Suite info */}
           <div className="px-6 pt-4 pb-2">
-            <div className="flex items-center gap-3 mb-0.5">
-              {hasMultiple && (
-                <button
-                  onClick={() => navigate(-1)}
-                  disabled={currentIdx === 0}
-                  className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-95"
-                  style={{
-                    background: currentIdx === 0 ? `${t.accent}10` : `${t.accent}22`,
-                    border: `1px solid ${currentIdx === 0 ? t.priceBorder : t.accent + '55'}`,
-                    color: currentIdx === 0 ? 'rgba(200,188,168,0.2)' : t.accentBright,
-                    fontSize: '1.2rem',
-                  }}
-                >‹</button>
-              )}
-
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate" style={{ color: 'rgba(228,218,198,0.88)' }}>
-                  {currentSuite?.name ?? ''}
-                </p>
-                {hasMultiple && (
-                  <div className="flex items-center gap-1 mt-1">
-                    {allSuites.map((_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setCurrentIdx(i)}
-                        className="rounded-full transition-all duration-200"
-                        style={{
-                          width:  i === currentIdx ? '16px' : '5px',
-                          height: '5px',
-                          background: i === currentIdx ? t.accentBright : `${t.accent}40`,
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {hasMultiple && (
-                <button
-                  onClick={() => navigate(1)}
-                  disabled={currentIdx === allSuites.length - 1}
-                  className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-95"
-                  style={{
-                    background: currentIdx === allSuites.length - 1 ? `${t.accent}10` : `${t.accent}22`,
-                    border: `1px solid ${currentIdx === allSuites.length - 1 ? t.priceBorder : t.accent + '55'}`,
-                    color: currentIdx === allSuites.length - 1 ? 'rgba(200,188,168,0.2)' : t.accentBright,
-                    fontSize: '1.2rem',
-                  }}
-                >›</button>
-              )}
-            </div>
-
-            <p className="text-[11px] mt-1" style={{ color: t.labelColor }}>
+            <p className="text-sm font-semibold" style={{ color: 'rgba(228,218,198,0.88)' }}>
+              {currentSuite?.name ?? ''}
+            </p>
+            <p className="text-[11px] mt-0.5" style={{ color: t.labelColor }}>
               {currentSuite?.description ?? ''}
             </p>
-
-            {hasMultiple && (
-              <p className="text-[10px] mt-2 flex items-center gap-1.5" style={{ color: 'rgba(200,188,168,0.55)' }}>
-                <span style={{ color: t.accentBright, opacity: 0.6 }}>✦</span>
-                {allSuites.length} suítes disponíveis — deslize para o lado ou use as setas para navegar
-              </p>
-            )}
           </div>
 
           {/* Divider */}

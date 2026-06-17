@@ -4,29 +4,26 @@ import { supabase } from '../../lib/supabase'
 type Suite = {
   id: string
   name: string
-  description: string
   category: string | null
   room_number: number | null
   active: boolean
   photo_url: string | null
-  video_url: string | null
+  photos: string[] | null
 }
-
-type Uploading = { id: string; kind: 'photo' | 'video' } | null
 
 export default function SuitesTab() {
   const [suites, setSuites] = useState<Suite[]>([])
   const [loading, setLoading] = useState(true)
-  const [uploading, setUploading] = useState<Uploading>(null)
-  const photoRefs = useRef<Record<string, HTMLInputElement | null>>({})
-  const videoRefs = useRef<Record<string, HTMLInputElement | null>>({})
+  const [uploading, setUploading] = useState<{ id: string; count: number } | null>(null)
+  const [deleting, setDeleting] = useState<{ id: string; url: string } | null>(null)
+  const fileRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
   useEffect(() => { load() }, [])
 
   async function load() {
     const { data } = await supabase
       .from('suites')
-      .select('id, name, description, category, room_number, active, photo_url, video_url')
+      .select('id, name, category, room_number, active, photo_url, photos')
       .order('sort_order')
     setSuites(data ?? [])
     setLoading(false)
@@ -37,54 +34,66 @@ export default function SuitesTab() {
     setSuites(prev => prev.map(s => s.id === id ? { ...s, active: !current } : s))
   }
 
-  async function uploadPhoto(suiteId: string, file: File) {
-    setUploading({ id: suiteId, kind: 'photo' })
-    const ext = file.name.split('.').pop() ?? 'jpg'
-    const path = `${suiteId}.${ext}`
+  async function uploadPhotos(suiteId: string, files: FileList) {
+    const suite = suites.find(s => s.id === suiteId)
+    const current = suite?.photos ?? []
+    const slots = 15 - current.length
+    if (slots <= 0) { alert('Limite de 15 fotos já atingido.'); return }
 
-    const { error } = await supabase.storage
-      .from('suite-photos')
-      .upload(path, file, { upsert: true, contentType: file.type })
+    const toUpload = Array.from(files).slice(0, slots)
+    setUploading({ id: suiteId, count: toUpload.length })
 
-    if (error) {
-      alert(`Erro no upload: ${error.message}`)
-      setUploading(null)
-      return
+    const newUrls: string[] = []
+    for (const file of toUpload) {
+      const ext = file.name.split('.').pop() ?? 'jpg'
+      const path = `gallery/${suiteId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
+      const { error } = await supabase.storage
+        .from('suite-photos')
+        .upload(path, file, { contentType: file.type })
+      if (error) { console.error(error); continue }
+      const { data: { publicUrl } } = supabase.storage.from('suite-photos').getPublicUrl(path)
+      newUrls.push(publicUrl)
     }
 
-    const { data: { publicUrl } } = supabase.storage.from('suite-photos').getPublicUrl(path)
-    await supabase.from('suites').update({ photo_url: publicUrl }).eq('id', suiteId)
-    setSuites(prev => prev.map(s => s.id === suiteId ? { ...s, photo_url: publicUrl } : s))
+    if (newUrls.length > 0) {
+      const updated = [...current, ...newUrls]
+      const coverUpdate = suite?.photo_url ? {} : { photo_url: newUrls[0] }
+      await supabase.from('suites').update({ photos: updated, ...coverUpdate }).eq('id', suiteId)
+      setSuites(prev => prev.map(s => s.id === suiteId
+        ? { ...s, photos: updated, ...(s.photo_url ? {} : { photo_url: newUrls[0] }) }
+        : s))
+    }
     setUploading(null)
   }
 
-  async function uploadVideo(suiteId: string, file: File) {
-    setUploading({ id: suiteId, kind: 'video' })
-    const ext = file.name.split('.').pop() ?? 'mp4'
-    const path = `${suiteId}.${ext}`
+  async function deletePhoto(suiteId: string, photoUrl: string) {
+    if (!confirm('Remover esta foto?')) return
+    setDeleting({ id: suiteId, url: photoUrl })
 
-    const { error } = await supabase.storage
-      .from('suite-videos')
-      .upload(path, file, { upsert: true, contentType: file.type })
+    // Remove from storage (extract path after bucket name)
+    try {
+      const url = new URL(photoUrl)
+      const marker = '/suite-photos/'
+      const idx = url.pathname.indexOf(marker)
+      if (idx !== -1) {
+        const storagePath = decodeURIComponent(url.pathname.slice(idx + marker.length).split('?')[0])
+        await supabase.storage.from('suite-photos').remove([storagePath])
+      }
+    } catch { /* noop */ }
 
-    if (error) {
-      alert(`Erro no upload: ${error.message}`)
-      setUploading(null)
-      return
-    }
-
-    const { data: { publicUrl } } = supabase.storage.from('suite-videos').getPublicUrl(path)
-    await supabase.from('suites').update({ video_url: publicUrl }).eq('id', suiteId)
-    setSuites(prev => prev.map(s => s.id === suiteId ? { ...s, video_url: publicUrl } : s))
-    setUploading(null)
+    const suite = suites.find(s => s.id === suiteId)
+    const updated = (suite?.photos ?? []).filter(u => u !== photoUrl)
+    const newCover = suite?.photo_url === photoUrl ? (updated[0] ?? null) : suite?.photo_url ?? null
+    await supabase.from('suites').update({ photos: updated, photo_url: newCover }).eq('id', suiteId)
+    setSuites(prev => prev.map(s => s.id === suiteId
+      ? { ...s, photos: updated, photo_url: newCover }
+      : s))
+    setDeleting(null)
   }
 
-  async function deleteVideo(suiteId: string, videoUrl: string) {
-    if (!confirm('Remover o vídeo desta suíte?')) return
-    const fileName = videoUrl.split('/').pop()?.split('?')[0] ?? ''
-    await supabase.storage.from('suite-videos').remove([fileName])
-    await supabase.from('suites').update({ video_url: null }).eq('id', suiteId)
-    setSuites(prev => prev.map(s => s.id === suiteId ? { ...s, video_url: null } : s))
+  async function setAsCover(suiteId: string, photoUrl: string) {
+    await supabase.from('suites').update({ photo_url: photoUrl }).eq('id', suiteId)
+    setSuites(prev => prev.map(s => s.id === suiteId ? { ...s, photo_url: photoUrl } : s))
   }
 
   if (loading) return <div className="text-white/30 py-16 text-center text-sm">Carregando...</div>
@@ -92,131 +101,143 @@ export default function SuitesTab() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-white/80 text-sm">{suites.length} suítes</h2>
-        <p className="text-white/25 text-xs hidden sm:block">Foto (capa) + vídeo por suíte</p>
+        <h2 className="text-white/80 text-sm">{suites.length} suítes cadastradas</h2>
+        <p className="text-white/25 text-xs hidden sm:block">Até 15 fotos por suíte · primeira foto = capa</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="space-y-4">
         {suites.map(suite => {
-          const uploadingPhoto = uploading?.id === suite.id && uploading.kind === 'photo'
-          const uploadingVideo = uploading?.id === suite.id && uploading.kind === 'video'
-          const busy = uploadingPhoto || uploadingVideo
+          const photos = suite.photos ?? []
+          const isUploading = uploading?.id === suite.id
+          const canAdd = photos.length < 15
 
           return (
-            <div key={suite.id} className="bg-white/[0.03] border border-white/8 rounded-xl overflow-hidden">
+            <div key={suite.id} className="bg-white/[0.03] border border-white/[0.08] rounded-xl overflow-hidden">
 
-              {/* ── Foto de capa ── */}
-              <div className="relative bg-white/5">
-                {suite.photo_url ? (
-                  <img src={suite.photo_url} alt={suite.name} className="w-full block" />
+              {/* Suite header */}
+              <div className="px-4 py-3 flex items-center justify-between gap-3 border-b border-white/[0.06]">
+                <div className="flex items-center gap-3 min-w-0">
+                  {suite.photo_url ? (
+                    <img
+                      src={suite.photo_url}
+                      alt=""
+                      className="w-10 h-10 rounded-lg object-cover shrink-0 border border-white/10"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center shrink-0 border border-white/[0.08]">
+                      <span className="text-white/25 text-xs font-bold">{suite.room_number ?? '?'}</span>
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-white/90 text-sm font-medium truncate">{suite.name}</p>
+                    <p className="text-white/35 text-xs">
+                      {suite.category ?? '—'}
+                      {suite.room_number ? ` · nº ${suite.room_number}` : ''}
+                      <span className="ml-2 text-white/20">{photos.length}/15 fotos</span>
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => toggleActive(suite.id, suite.active)}
+                  className={`text-xs px-2.5 py-1 rounded-lg border shrink-0 transition-colors ${
+                    suite.active
+                      ? 'text-green-400 border-green-400/30 hover:text-red-400 hover:border-red-400/30'
+                      : 'text-red-400 border-red-400/30 hover:text-green-400 hover:border-green-400/30'
+                  }`}
+                >
+                  {suite.active ? 'Ativa' : 'Inativa'}
+                </button>
+              </div>
+
+              {/* Photo gallery */}
+              <div className="p-4">
+                {photos.length > 0 ? (
+                  <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-1.5 mb-3">
+                    {photos.map((url, idx) => {
+                      const isCover = suite.photo_url === url
+                      const isDeleting = deleting?.id === suite.id && deleting.url === url
+                      return (
+                        <div key={url} className="relative group aspect-square">
+                          <img
+                            src={url}
+                            className="w-full h-full object-cover rounded-lg border border-white/10"
+                            loading="lazy"
+                          />
+                          {/* Cover badge */}
+                          <span className={`absolute bottom-0.5 left-0.5 text-[8px] px-1 py-px rounded leading-tight font-medium ${
+                            isCover
+                              ? 'bg-amber-700/90 text-amber-200'
+                              : 'bg-black/60 text-white/40 opacity-0 group-hover:opacity-100'
+                          } transition-opacity`}>
+                            {isCover ? 'capa' : `${idx + 1}`}
+                          </span>
+
+                          {/* Action overlay */}
+                          {!isDeleting && (
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors rounded-lg flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto">
+                              {!isCover && (
+                                <button
+                                  onClick={() => setAsCover(suite.id, url)}
+                                  className="w-6 h-6 rounded-full bg-amber-700/80 hover:bg-amber-600 flex items-center justify-center text-[8px] text-amber-100 font-bold transition-colors"
+                                  title="Definir como capa"
+                                >
+                                  ★
+                                </button>
+                              )}
+                              <button
+                                onClick={() => deletePhoto(suite.id, url)}
+                                className="w-6 h-6 rounded-full bg-red-900/80 hover:bg-red-700 flex items-center justify-center text-[10px] text-white font-bold transition-colors"
+                                title="Remover foto"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Deleting spinner */}
+                          {isDeleting && (
+                            <div className="absolute inset-0 rounded-lg bg-black/60 flex items-center justify-center">
+                              <div className="w-4 h-4 rounded-full border border-white/20 border-t-white/70 animate-spin" />
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
                 ) : (
-                  <div className="aspect-video flex flex-col items-center justify-center gap-1">
-                    <span className="text-white/15 text-3xl">🖼️</span>
-                    <span className="text-white/20 text-xs">Sem foto de capa</span>
-                  </div>
+                  <p className="text-white/20 text-xs mb-3">Nenhuma foto adicionada ainda.</p>
                 )}
-                {!suite.active && (
-                  <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
-                    <span className="text-red-400 text-xs font-medium border border-red-400/40 px-3 py-1 rounded-full">
-                      Inativa
-                    </span>
-                  </div>
-                )}
+
+                {/* Add photos button */}
+                <input
+                  ref={el => { fileRefs.current[suite.id] = el }}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  className="hidden"
+                  onChange={e => {
+                    const files = e.target.files
+                    if (files && files.length > 0) uploadPhotos(suite.id, files)
+                    e.target.value = ''
+                  }}
+                />
+                <button
+                  onClick={() => canAdd && fileRefs.current[suite.id]?.click()}
+                  disabled={!canAdd || isUploading}
+                  className="text-xs px-4 py-2 rounded-lg border transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{
+                    border: canAdd ? '1px solid rgba(201,168,76,0.30)' : '1px solid rgba(255,255,255,0.08)',
+                    color: canAdd ? 'rgba(201,168,76,0.80)' : 'rgba(255,255,255,0.25)',
+                    background: 'transparent',
+                  }}
+                >
+                  {isUploading
+                    ? `↑ Enviando ${uploading!.count} foto${uploading!.count !== 1 ? 's' : ''}...`
+                    : canAdd
+                    ? `+ Adicionar fotos  ${photos.length}/15`
+                    : '✓ Limite atingido (15/15)'}
+                </button>
               </div>
-
-              {/* ── Vídeo preview ── */}
-              {suite.video_url && (
-                <div className="relative bg-black">
-                  <video
-                    src={suite.video_url}
-                    controls
-                    muted
-                    playsInline
-                    className="w-full block"
-                  />
-                  <span className="absolute top-1.5 left-2 text-[10px] text-white/40 tracking-widest uppercase">vídeo</span>
-                </div>
-              )}
-
-              {/* ── Indicador de upload de vídeo ── */}
-              {uploadingVideo && (
-                <div className="px-3 pt-2">
-                  <p className="text-[10px] text-blue-400/70 text-center">Enviando vídeo...</p>
-                </div>
-              )}
-
-              {/* ── Info + botões ── */}
-              <div className="p-3">
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  <div>
-                    <p className="text-white text-sm font-medium">{suite.name}</p>
-                    <p className="text-white/40 text-xs">{suite.category ?? '—'}</p>
-                  </div>
-                  <button
-                    onClick={() => toggleActive(suite.id, suite.active)}
-                    className={`text-xs px-2.5 py-1 rounded-lg border shrink-0 transition-colors ${
-                      suite.active
-                        ? 'text-green-400 border-green-400/30 hover:text-red-400 hover:border-red-400/30'
-                        : 'text-red-400 border-red-400/30 hover:text-green-400 hover:border-green-400/30'
-                    }`}
-                  >
-                    {suite.active ? 'Ativa' : 'Inativa'}
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  {/* Foto */}
-                  <input
-                    ref={el => { photoRefs.current[suite.id] = el }}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="hidden"
-                    onChange={e => {
-                      const file = e.target.files?.[0]
-                      if (file) uploadPhoto(suite.id, file)
-                      e.target.value = ''
-                    }}
-                  />
-                  <button
-                    onClick={() => photoRefs.current[suite.id]?.click()}
-                    disabled={busy}
-                    className="py-2 rounded-lg text-xs font-medium border border-gold-500/30 text-gold-400/80 hover:bg-gold-500/10 hover:text-gold-400 transition-colors disabled:opacity-40"
-                  >
-                    {uploadingPhoto ? '↑ Enviando...' : suite.photo_url ? '🖼 Trocar foto' : '🖼 + Foto'}
-                  </button>
-
-                  {/* Vídeo */}
-                  <input
-                    ref={el => { videoRefs.current[suite.id] = el }}
-                    type="file"
-                    accept="video/mp4,video/webm,video/quicktime,video/x-msvideo"
-                    className="hidden"
-                    onChange={e => {
-                      const file = e.target.files?.[0]
-                      if (file) uploadVideo(suite.id, file)
-                      e.target.value = ''
-                    }}
-                  />
-                  <button
-                    onClick={() => videoRefs.current[suite.id]?.click()}
-                    disabled={busy}
-                    className="py-2 rounded-lg text-xs font-medium border border-blue-500/30 text-blue-400/80 hover:bg-blue-500/10 hover:text-blue-400 transition-colors disabled:opacity-40"
-                  >
-                    {uploadingVideo ? '↑ Enviando...' : suite.video_url ? '▶ Trocar vídeo' : '▶ + Vídeo'}
-                  </button>
-                </div>
-
-                {/* Apagar vídeo */}
-                {suite.video_url && !busy && (
-                  <button
-                    onClick={() => deleteVideo(suite.id, suite.video_url!)}
-                    className="mt-2 w-full py-2 rounded-lg text-xs font-medium border border-red-500/25 text-red-400/60 hover:bg-red-500/10 hover:text-red-400 transition-colors"
-                  >
-                    ✕ Remover vídeo
-                  </button>
-                )}
-              </div>
-
             </div>
           )
         })}

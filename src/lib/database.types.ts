@@ -201,6 +201,7 @@ export type Database = {
           name: string
           package_ids: string[] | null
           photo_url: string | null
+          photos: string[] | null
           price_overnight_alacarte: number | null
           price_period_alacarte: number | null
           room_number: number | null
@@ -217,6 +218,7 @@ export type Database = {
           name: string
           package_ids?: string[] | null
           photo_url?: string | null
+          photos?: string[] | null
           price_overnight_alacarte?: number | null
           price_period_alacarte?: number | null
           room_number?: number | null
@@ -233,6 +235,7 @@ export type Database = {
           name?: string
           package_ids?: string[] | null
           photo_url?: string | null
+          photos?: string[] | null
           price_overnight_alacarte?: number | null
           price_period_alacarte?: number | null
           room_number?: number | null

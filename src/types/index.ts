@@ -26,6 +26,8 @@ export interface Suite {
   /** Preço base oculto quando o cliente está montando a Experiência (modo a la carte). */
   price_period_alacarte?:    number | null
   price_overnight_alacarte?: number | null
+  /** Galeria de fotos (URLs públicas do Supabase Storage) */
+  photos?: string[] | null
 }
 
 export type ReservationMode = 'package' | 'experience' | 'suite'
