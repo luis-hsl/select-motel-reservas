@@ -15,6 +15,7 @@ type Promo = {
   photo_url: string | null
   button_text: string
   button_url: string
+  button_step: number | null
 }
 
 /* ── helpers ── */
@@ -112,7 +113,7 @@ export default function StepEscolha() {
     if (!promosFetched) {
       const { data } = await supabase
         .from('promotions')
-        .select('id, title, description, photo_url, button_text, button_url')
+        .select('id, title, description, photo_url, button_text, button_url, button_step')
         .eq('active', true)
         .order('sort_order')
         .order('created_at')
@@ -449,6 +450,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 // ── Promos Bottom Sheet ───────────────────────────────────────────────────────
 
 function PromosSheet({ promos, onClose }: { promos: Promo[]; onClose: () => void }) {
+  const { setStep } = useStore()
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
@@ -460,6 +462,11 @@ function PromosSheet({ promos, onClose }: { promos: Promo[]; onClose: () => void
   function close() {
     setVisible(false)
     setTimeout(onClose, 380)
+  }
+
+  function navigateToStep(step: number) {
+    setVisible(false)
+    setTimeout(() => { onClose(); setStep(step) }, 380)
   }
 
   return (
@@ -522,7 +529,7 @@ function PromosSheet({ promos, onClose }: { promos: Promo[]; onClose: () => void
             <p className="text-center text-white/25 text-sm py-8">Nenhuma promoção disponível no momento.</p>
           ) : (
             promos.map(p => (
-              <PromoCard key={p.id} promo={p} />
+              <PromoCard key={p.id} promo={p} onNavigate={navigateToStep} />
             ))
           )}
         </div>
@@ -531,7 +538,9 @@ function PromosSheet({ promos, onClose }: { promos: Promo[]; onClose: () => void
   )
 }
 
-function PromoCard({ promo }: { promo: Promo }) {
+function PromoCard({ promo, onNavigate }: { promo: Promo; onNavigate: (step: number) => void }) {
+  const hasAction = promo.button_step !== null || !!promo.button_url
+
   return (
     <div
       className="rounded-2xl overflow-hidden"
@@ -540,17 +549,10 @@ function PromoCard({ promo }: { promo: Promo }) {
       {/* Photo */}
       {promo.photo_url ? (
         <div style={{ aspectRatio: '16/9' }}>
-          <img
-            src={promo.photo_url}
-            alt={promo.title}
-            className="w-full h-full object-cover"
-          />
+          <img src={promo.photo_url} alt={promo.title} className="w-full h-full object-cover" />
         </div>
       ) : (
-        <div
-          className="flex items-center justify-center"
-          style={{ aspectRatio: '16/9', background: 'rgba(201,168,76,0.05)' }}
-        >
+        <div className="flex items-center justify-center" style={{ aspectRatio: '16/9', background: 'rgba(201,168,76,0.05)' }}>
           <span style={{ fontSize: '2.5rem', opacity: 0.2 }}>✦</span>
         </div>
       )}
@@ -565,19 +567,28 @@ function PromoCard({ promo }: { promo: Promo }) {
             {promo.description}
           </p>
         )}
-        {promo.button_url && (
-          <a
-            href={promo.button_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block mt-2 w-full text-center py-3 rounded-xl text-sm font-semibold transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
-            style={{
-              background: 'linear-gradient(135deg, #c8a035, #e8c060)',
-              color: '#080502',
-            }}
-          >
-            {promo.button_text || 'Saiba mais'}
-          </a>
+        {hasAction && (
+          promo.button_step !== null ? (
+            /* Navega para etapa do app — fecha o sheet e vai para o step */
+            <button
+              onClick={() => onNavigate(promo.button_step!)}
+              className="mt-2 w-full py-3 rounded-xl text-sm font-semibold transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
+              style={{ background: 'linear-gradient(135deg, #c8a035, #e8c060)', color: '#080502' }}
+            >
+              {promo.button_text || 'Aproveitar'}
+            </button>
+          ) : (
+            /* Link externo — abre em nova aba */
+            <a
+              href={promo.button_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block mt-2 w-full text-center py-3 rounded-xl text-sm font-semibold transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
+              style={{ background: 'linear-gradient(135deg, #c8a035, #e8c060)', color: '#080502' }}
+            >
+              {promo.button_text || 'Saiba mais'}
+            </a>
+          )
         )}
       </div>
     </div>

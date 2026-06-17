@@ -22,6 +22,7 @@ export type Database = {
           photo_url: string | null
           button_text: string
           button_url: string
+          button_step: number | null
           active: boolean
           sort_order: number
           created_at: string
@@ -33,6 +34,7 @@ export type Database = {
           photo_url?: string | null
           button_text?: string
           button_url?: string
+          button_step?: number | null
           active?: boolean
           sort_order?: number
           created_at?: string
@@ -44,6 +46,7 @@ export type Database = {
           photo_url?: string | null
           button_text?: string
           button_url?: string
+          button_step?: number | null
           active?: boolean
           sort_order?: number
           created_at?: string

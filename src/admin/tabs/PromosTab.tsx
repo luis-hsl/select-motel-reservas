@@ -8,6 +8,7 @@ type Promo = {
   photo_url: string | null
   button_text: string
   button_url: string
+  button_step: number | null
   active: boolean
   sort_order: number
   created_at: string
@@ -18,6 +19,7 @@ type EditDraft = {
   description: string
   button_text: string
   button_url: string
+  button_step: number | null   // null = link externo; número = navega para etapa
   active: boolean
 }
 
@@ -26,18 +28,30 @@ const EMPTY_DRAFT: EditDraft = {
   description: '',
   button_text: 'Saiba mais',
   button_url: '',
+  button_step: null,
   active: true,
 }
+
+// Rótulos das etapas conforme App.tsx
+export const STEP_OPTIONS: { value: number; label: string }[] = [
+  { value: 1, label: 'Etapa 1 — Início da reserva' },
+  { value: 2, label: 'Etapa 2 — Pacote / Categoria / Tipo' },
+  { value: 3, label: 'Etapa 3 — Tipo / Suíte / Data' },
+  { value: 4, label: 'Etapa 4 — Data / Suíte' },
+  { value: 5, label: 'Etapa 5 — Suíte / Extras' },
+  { value: 6, label: 'Etapa 6 — Extras / Pagamento' },
+  { value: 7, label: 'Etapa 7 — Pagamento (modo Pacote)' },
+]
 
 export default function PromosTab() {
   const [promos, setPromos]         = useState<Promo[]>([])
   const [loading, setLoading]       = useState(true)
   const [loadError, setLoadError]   = useState<string | null>(null)
-  const [editingId, setEditingId]   = useState<string | null>(null)   // null = none, 'new' = new card
+  const [editingId, setEditingId]   = useState<string | null>(null)
   const [draft, setDraft]           = useState<EditDraft>(EMPTY_DRAFT)
   const [saving, setSaving]         = useState(false)
   const [uploading, setUploading]   = useState(false)
-  const [pendingPhoto, setPendingPhoto] = useState<string | null>(null) // temp publicUrl before save
+  const [pendingPhoto, setPendingPhoto] = useState<string | null>(null)
   const fileRef        = useRef<HTMLInputElement | null>(null)
   const pendingFileRef = useRef<File | null>(null)
 
@@ -58,6 +72,7 @@ export default function PromosTab() {
   function startNew() {
     setDraft(EMPTY_DRAFT)
     setPendingPhoto(null)
+    pendingFileRef.current = null
     setEditingId('new')
   }
 
@@ -67,15 +82,18 @@ export default function PromosTab() {
       description: p.description,
       button_text: p.button_text,
       button_url:  p.button_url,
+      button_step: p.button_step,
       active:      p.active,
     })
     setPendingPhoto(null)
+    pendingFileRef.current = null
     setEditingId(p.id)
   }
 
   function cancelEdit() {
     setEditingId(null)
     setPendingPhoto(null)
+    pendingFileRef.current = null
   }
 
   async function uploadPhoto(promoId: string, file: File): Promise<string | null> {
@@ -95,7 +113,6 @@ export default function PromosTab() {
     e.target.value = ''
     setUploading(true)
 
-    // If editing an existing promo, upload immediately; for new, we'll upload on save
     if (editingId && editingId !== 'new') {
       const url = await uploadPhoto(editingId, file)
       if (url) {
@@ -104,7 +121,6 @@ export default function PromosTab() {
         setPendingPhoto(url)
       }
     } else {
-      // For new promo, store the file temporarily as a data URL for preview
       const reader = new FileReader()
       reader.onload = ev => setPendingPhoto(ev.target?.result as string)
       reader.readAsDataURL(file)
@@ -117,23 +133,28 @@ export default function PromosTab() {
     if (!draft.title.trim()) { alert('Informe o título da promoção.'); return }
     setSaving(true)
 
+    const payload = {
+      title:       draft.title.trim(),
+      description: draft.description.trim(),
+      button_text: draft.button_text.trim() || 'Saiba mais',
+      button_url:  draft.button_step !== null ? '' : draft.button_url.trim(),
+      button_step: draft.button_step,
+      active:      draft.active,
+    }
+
     if (editingId === 'new') {
       const { data, error } = await supabase
         .from('promotions')
-        .insert({
-          title:       draft.title.trim(),
-          description: draft.description.trim(),
-          button_text: draft.button_text.trim() || 'Saiba mais',
-          button_url:  draft.button_url.trim(),
-          active:      draft.active,
-          sort_order:  promos.length,
-        })
+        .insert({ ...payload, sort_order: promos.length })
         .select()
         .single()
 
-      if (error || !data) { alert('Erro ao criar promoção.'); setSaving(false); return }
+      if (error || !data) {
+        alert(`Erro ao criar promoção: ${error?.message ?? 'resposta vazia'}`)
+        setSaving(false)
+        return
+      }
 
-      // Upload pending file if any
       if (pendingFileRef.current) {
         const url = await uploadPhoto(data.id, pendingFileRef.current)
         if (url) {
@@ -147,18 +168,16 @@ export default function PromosTab() {
     } else {
       const { error } = await supabase
         .from('promotions')
-        .update({
-          title:       draft.title.trim(),
-          description: draft.description.trim(),
-          button_text: draft.button_text.trim() || 'Saiba mais',
-          button_url:  draft.button_url.trim(),
-          active:      draft.active,
-        })
+        .update(payload)
         .eq('id', editingId!)
 
-      if (error) { alert('Erro ao salvar promoção.'); setSaving(false); return }
+      if (error) {
+        alert(`Erro ao salvar promoção: ${error.message}`)
+        setSaving(false)
+        return
+      }
       setPromos(prev => prev.map(p => p.id === editingId
-        ? { ...p, ...draft, photo_url: pendingPhoto ?? p.photo_url }
+        ? { ...p, ...payload, photo_url: pendingPhoto ?? p.photo_url }
         : p))
     }
 
@@ -190,7 +209,9 @@ export default function PromosTab() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-white/80 text-sm">{promos.length} promoção{promos.length !== 1 ? 'ões' : ''} cadastrada{promos.length !== 1 ? 's' : ''}</h2>
+        <h2 className="text-white/80 text-sm">
+          {promos.length} promoção{promos.length !== 1 ? 'ões' : ''} cadastrada{promos.length !== 1 ? 's' : ''}
+        </h2>
         {editingId !== 'new' && (
           <button
             onClick={startNew}
@@ -203,7 +224,6 @@ export default function PromosTab() {
       </div>
 
       <div className="space-y-4">
-        {/* New promo card */}
         {editingId === 'new' && (
           <PromoEditCard
             draft={draft}
@@ -242,7 +262,6 @@ export default function PromosTab() {
         ))}
       </div>
 
-      {/* Hidden file input */}
       <input
         ref={fileRef as React.RefObject<HTMLInputElement>}
         type="file"
@@ -264,30 +283,27 @@ function PromoViewCard({
   onDelete: () => void
   onToggle: () => void
 }) {
+  const destination = promo.button_step !== null
+    ? (STEP_OPTIONS.find(o => o.value === promo.button_step)?.label ?? `Etapa ${promo.button_step}`)
+    : promo.button_url || '—'
+
   return (
     <div className="bg-white/[0.03] border border-white/[0.08] rounded-xl overflow-hidden flex items-center gap-4 px-4 py-3">
-      {/* Thumbnail */}
       {promo.photo_url ? (
-        <img
-          src={promo.photo_url}
-          alt=""
-          className="w-16 h-10 object-cover rounded-lg border border-white/10 shrink-0"
-        />
+        <img src={promo.photo_url} alt="" className="w-16 h-10 object-cover rounded-lg border border-white/10 shrink-0" />
       ) : (
         <div className="w-16 h-10 rounded-lg bg-white/5 border border-white/[0.08] flex items-center justify-center shrink-0">
           <span className="text-white/20 text-xs">foto</span>
         </div>
       )}
 
-      {/* Info */}
       <div className="min-w-0 flex-1">
         <p className="text-white/90 text-sm font-medium truncate">{promo.title}</p>
-        {promo.description && (
-          <p className="text-white/35 text-xs truncate">{promo.description}</p>
-        )}
+        <p className="text-white/30 text-xs truncate">
+          {promo.button_text} → {destination}
+        </p>
       </div>
 
-      {/* Status + actions */}
       <div className="flex items-center gap-2 shrink-0">
         <button
           onClick={onToggle}
@@ -330,13 +346,15 @@ function PromoEditCard({
   onSave: () => void
   onCancel: () => void
 }) {
-  function set(field: keyof EditDraft, value: string | boolean) {
+  function set<K extends keyof EditDraft>(field: K, value: EditDraft[K]) {
     onChange({ ...draft, [field]: value })
   }
 
+  const useUrl = draft.button_step === null
+
   return (
     <div className="bg-white/[0.03] border border-white/[0.12] rounded-xl overflow-hidden">
-      {/* Photo area */}
+      {/* Photo */}
       <div
         className="relative cursor-pointer group"
         style={{ aspectRatio: '16/9', background: '#0a0a0a' }}
@@ -359,6 +377,7 @@ function PromoEditCard({
 
       {/* Fields */}
       <div className="p-4 space-y-3">
+        {/* Título */}
         <div>
           <label className="block text-[10px] tracking-widest uppercase text-white/35 mb-1.5">Título *</label>
           <input
@@ -370,6 +389,7 @@ function PromoEditCard({
           />
         </div>
 
+        {/* Descrição */}
         <div>
           <label className="block text-[10px] tracking-widest uppercase text-white/35 mb-1.5">Descrição</label>
           <textarea
@@ -381,17 +401,38 @@ function PromoEditCard({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-[10px] tracking-widest uppercase text-white/35 mb-1.5">Texto do botão</label>
-            <input
-              type="text"
-              value={draft.button_text}
-              onChange={e => set('button_text', e.target.value)}
-              placeholder="Saiba mais"
-              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white/90 placeholder-white/20 outline-none focus:border-white/25 transition-colors"
-            />
-          </div>
+        {/* Texto do botão */}
+        <div>
+          <label className="block text-[10px] tracking-widest uppercase text-white/35 mb-1.5">Texto do botão</label>
+          <input
+            type="text"
+            value={draft.button_text}
+            onChange={e => set('button_text', e.target.value)}
+            placeholder="Saiba mais"
+            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white/90 placeholder-white/20 outline-none focus:border-white/25 transition-colors"
+          />
+        </div>
+
+        {/* Destino do botão */}
+        <div>
+          <label className="block text-[10px] tracking-widest uppercase text-white/35 mb-1.5">Destino do botão</label>
+          <select
+            value={draft.button_step !== null ? String(draft.button_step) : 'url'}
+            onChange={e => {
+              const v = e.target.value
+              set('button_step', v === 'url' ? null : Number(v))
+            }}
+            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white/80 outline-none focus:border-white/25 transition-colors cursor-pointer"
+          >
+            <option value="url">Link externo (URL)</option>
+            {STEP_OPTIONS.map(o => (
+              <option key={o.value} value={String(o.value)}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* URL — visível só quando "Link externo" */}
+        {useUrl && (
           <div>
             <label className="block text-[10px] tracking-widest uppercase text-white/35 mb-1.5">URL do botão</label>
             <input
@@ -402,7 +443,7 @@ function PromoEditCard({
               className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white/90 placeholder-white/20 outline-none focus:border-white/25 transition-colors"
             />
           </div>
-        </div>
+        )}
 
         {/* Active toggle */}
         <label className="flex items-center gap-3 cursor-pointer select-none pt-1">
@@ -418,7 +459,7 @@ function PromoEditCard({
           <span className="text-sm text-white/60">{draft.active ? 'Ativa' : 'Inativa'}</span>
         </label>
 
-        {/* Buttons */}
+        {/* Actions */}
         <div className="flex gap-2 pt-1">
           <button
             onClick={onSave}
