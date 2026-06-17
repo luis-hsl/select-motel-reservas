@@ -243,27 +243,6 @@ export default function StepEscolha() {
           Fazer uma reserva
         </button>
 
-        {/* Botão secundário — Monte sua experiência */}
-        <button
-          type="button"
-          onClick={() => pick('experience')}
-          aria-pressed={picked === 'experience'}
-          className={[
-            'w-full text-center text-sm transition-all duration-300 py-2 rounded-lg',
-            picked === 'experience'
-              ? 'text-gold-400 underline underline-offset-4'
-              : 'text-gold-700/60 hover:text-gold-600/80',
-          ].join(' ')}
-        >
-          {picked === 'experience' && (
-            <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-gold-500/60 mr-1.5 align-middle">
-              <svg className="w-2 h-2" fill="none" viewBox="0 0 12 12">
-                <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.8" />
-              </svg>
-            </span>
-          )}
-          Monte sua experiência do seu jeito
-        </button>
       </div>
 
       {/* Social proof */}
