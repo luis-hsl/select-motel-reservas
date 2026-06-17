@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { getSessionToken } from '../lib/tracking'
 import Reviews from '../components/Reviews'
 import { metaEvents } from '../lib/metaPixel'
+import { SUITE_CATEGORIES } from '../data/suiteCategories'
 
 function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -67,9 +68,20 @@ export default function StepPagamento() {
     mode, package: pkg, type, suite, checkIn, checkOut,
     customerName, customerPhone, customerEmail, customerTaxId,
     totalAmount, prevStep, drink, food, jantarPrato, jantarHorario,
-    fondueHorario,
+    fondueHorario, suiteCategory,
     observations, setObservations, consentAt, selectedItems,
   } = useStore()
+
+  // Label da categoria da suíte (Suíte Tradicional, Hidro Light, VIP Piscina…)
+  const catDef = suite
+    ? SUITE_CATEGORIES.find(c => c.dbCategory === suite.category)
+    : suiteCategory
+    ? SUITE_CATEGORIES.find(c => c.dbCategory === suiteCategory)
+    : null
+  const catLabel = catDef?.label ?? suite?.category ?? ''
+  const suiteDisplay = suite
+    ? `${catLabel} · nº ${suite.room_number}`
+    : catLabel || '—'
   // Snapshot do que o cliente escolheu — vai na coluna extras (jsonb) da reserva
   // e é usado pra montar a mensagem que o motel recebe quando o pagamento confirma.
   const fondueInCart = selectedItems.some(i => i.id === 'food-fondue')
@@ -316,9 +328,12 @@ export default function StepPagamento() {
             )}
           </div>
 
+          {/* Aviso de chegada */}
+          <ArrivalNotice name={customerName} roomNumber={suite?.room_number} />
+
           <div className="px-6 py-5 space-y-3">
             <SummaryRow label="Código" value={reservationId.slice(0, 8).toUpperCase()} mono />
-            <SummaryRow label="Suíte" value={suite ? `${suite.name} + Decoração` : ''} />
+            <SummaryRow label="Suíte" value={suiteDisplay} />
             {foodLabel(food) && <SummaryRow label="Refeição" value={foodLabel(food)!} />}
             {pratoLabel(jantarPrato) && <SummaryRow label="Prato" value={pratoLabel(jantarPrato)!} />}
             {jantarHorario && foodTimeLabel(food) && <SummaryRow label={foodTimeLabel(food)!} value={jantarHorario} />}
@@ -399,11 +414,15 @@ export default function StepPagamento() {
         {/* Left: Summary */}
         <div>
           {/* Mobile: resumo compacto */}
-          <div className="lg:hidden border border-gold-800/40 rounded-xl p-3 mb-4">
-            <p className="text-[9px] tracking-widests uppercase text-gold-500/60 mb-2">Resumo</p>
+          <div className="lg:hidden border border-gold-800/40 rounded-xl overflow-hidden mb-4">
+            {/* Aviso de chegada mobile */}
+            <ArrivalNotice name={customerName} roomNumber={suite?.room_number} />
+
+            <div className="p-3">
+            <p className="text-[9px] tracking-widests uppercase text-gold-500/60 mb-2">Itens do pedido</p>
             <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-xs text-gold-400/80 mb-2">
-              {suite && <span>{suite.name}</span>}
-              {type && <span>· {type === 'period' ? 'Período' : 'Pernoite'}</span>}
+              {suite && <span>{suiteDisplay}</span>}
+              {type && <span>· {type === 'period' ? 'Período' : type === 'overnight' ? 'Pernoite' : type === 'oneHour' ? '1 hora' : 'Diária'}</span>}
               {pkg && <span>· {pkg.label}</span>}
               {foodLabel(food) && <span>· {foodLabel(food)}</span>}
               {pratoLabel(jantarPrato) && <span>· {pratoLabel(jantarPrato)}</span>}
@@ -437,6 +456,7 @@ export default function StepPagamento() {
                 </span>
               </div>
             </div>
+            </div>{/* close p-3 */}
           </div>
 
           {/* Desktop: resumo completo */}
@@ -444,10 +464,14 @@ export default function StepPagamento() {
             <div className="bg-gold-900/20 px-5 py-3 border-b border-gold-800/30">
               <p className="text-[10px] tracking-widest uppercase text-gold-500/60">Resumo da reserva</p>
             </div>
+
+            {/* Aviso de chegada */}
+            <ArrivalNotice name={customerName} roomNumber={suite?.room_number} />
+
             <div className="px-5 py-4 space-y-2.5">
               <SummaryRow label="Cliente" value={customerName} />
-              <SummaryRow label="Suíte" value={suite ? `${suite.name} + Decoração` : '—'} />
-              <SummaryRow label="Pacote" value={pkg?.label ?? '—'} />
+              <SummaryRow label="Suíte" value={suiteDisplay} />
+              {pkg && <SummaryRow label="Pacote" value={pkg.label} />}
               {foodLabel(food) && <SummaryRow label="Refeição" value={foodLabel(food)!} />}
               {pratoLabel(jantarPrato) && <SummaryRow label="Prato" value={pratoLabel(jantarPrato)!} />}
               {jantarHorario && foodTimeLabel(food) && <SummaryRow label={foodTimeLabel(food)!} value={jantarHorario} />}
@@ -456,7 +480,7 @@ export default function StepPagamento() {
               {mode !== 'package' && selectedItems.length > 0 && selectedItems.map(item => (
                 <SummaryRow key={item.id} label={item.label} value={Number(item.price) > 0 ? fmt(Number(item.price)) : 'Incluído'} />
               ))}
-              <SummaryRow label="Modalidade" value={type === 'period' ? 'Período' : 'Pernoite'} />
+              <SummaryRow label="Modalidade" value={type === 'period' ? 'Período' : type === 'overnight' ? 'Pernoite' : type === 'oneHour' ? '1 hora' : 'Diária'} />
               <SummaryRow label="Check-in" value={checkIn ? fmtDt(checkIn) : '—'} />
               <SummaryRow label="Check-out" value={checkout ? fmtDt(checkout) : '—'} highlight />
               {type === 'period' && (
@@ -729,6 +753,57 @@ export default function StepPagamento() {
 }
 
 // ── Sub-components ─────────────────────────────────────────
+
+function ArrivalNotice({ name, roomNumber }: { name: string; roomNumber?: number }) {
+  return (
+    <div
+      className="border-b border-gold-900/30 px-5 py-5"
+      style={{ background: 'linear-gradient(135deg, rgba(201,168,76,0.07) 0%, rgba(201,168,76,0.03) 100%)' }}
+    >
+      <p className="text-[9px] tracking-[0.2em] uppercase text-gold-600/50 text-center mb-4">
+        Como funciona na chegada
+      </p>
+      <div className="flex items-center justify-center gap-5">
+        <div className="text-center">
+          <p className="text-[9px] tracking-widest uppercase text-gold-700/45 mb-1">Nome</p>
+          <p
+            className="font-semibold leading-tight"
+            style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: '1.15rem',
+              color: 'rgba(245,220,150,0.95)',
+              letterSpacing: '0.01em',
+            }}
+          >
+            {name || '—'}
+          </p>
+        </div>
+        {roomNumber !== undefined && (
+          <>
+            <div className="w-px h-10 bg-gold-800/40 shrink-0" />
+            <div className="text-center">
+              <p className="text-[9px] tracking-widest uppercase text-gold-700/45 mb-1">Suíte</p>
+              <p
+                className="font-semibold leading-tight"
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: '1.15rem',
+                  color: 'rgba(245,220,150,0.95)',
+                  letterSpacing: '0.02em',
+                }}
+              >
+                nº {roomNumber}
+              </p>
+            </div>
+          </>
+        )}
+      </div>
+      <p className="text-center text-[10px] text-gold-700/50 mt-4 leading-relaxed">
+        Ao chegar, só confirme seu nome e o número da suíte na recepção.
+      </p>
+    </div>
+  )
+}
 
 function SummaryRow({ label, value, highlight, mono }: {
   label: string; value: string; highlight?: boolean; mono?: boolean
