@@ -324,6 +324,9 @@ export default function StepPagamento() {
             {jantarHorario && foodTimeLabel(food) && <SummaryRow label={foodTimeLabel(food)!} value={jantarHorario} />}
             {drinkLabel(drink) && <SummaryRow label="Bebida" value={drinkLabel(drink)!} />}
             {fondueInCart && <SummaryRow label="Fondue" value={fondueHorario ? `às ${fondueHorario}` : 'Selecionado'} />}
+            {mode !== 'package' && selectedItems.length > 0 && selectedItems.map(item => (
+              <SummaryRow key={item.id} label={item.label} value={Number(item.price) > 0 ? fmt(Number(item.price)) : 'Incluído'} />
+            ))}
             <SummaryRow label="Check-in" value={checkIn ? fmtDt(checkIn) : ''} />
             <SummaryRow label="Check-out" value={checkout ? fmtDt(checkout) : ''} highlight />
             {type === 'period' && checkout && (
@@ -407,6 +410,9 @@ export default function StepPagamento() {
               {jantarHorario && foodTimeLabel(food) && <span>· {foodTimeLabel(food)} {jantarHorario}</span>}
               {drinkLabel(drink) && <span>· {drinkLabel(drink)}</span>}
               {fondueInCart && <span>· Fondue{fondueHorario ? ` às ${fondueHorario}` : ''}</span>}
+              {mode !== 'package' && selectedItems.map(item => (
+                <span key={item.id}>· {item.label}</span>
+              ))}
             </div>
             {checkIn && <p className="text-[11px] text-gold-600/60">Check-in: {fmtDt(checkIn)}</p>}
             {checkout && <p className="text-[11px] text-gold-600/60">Check-out: {fmtDt(checkout)}</p>}
@@ -447,6 +453,9 @@ export default function StepPagamento() {
               {jantarHorario && foodTimeLabel(food) && <SummaryRow label={foodTimeLabel(food)!} value={jantarHorario} />}
               {drinkLabel(drink) && <SummaryRow label="Bebida" value={drinkLabel(drink)!} />}
               {fondueInCart && <SummaryRow label="Fondue" value={fondueHorario ? `às ${fondueHorario}` : 'Selecionado'} />}
+              {mode !== 'package' && selectedItems.length > 0 && selectedItems.map(item => (
+                <SummaryRow key={item.id} label={item.label} value={Number(item.price) > 0 ? fmt(Number(item.price)) : 'Incluído'} />
+              ))}
               <SummaryRow label="Modalidade" value={type === 'period' ? 'Período' : 'Pernoite'} />
               <SummaryRow label="Check-in" value={checkIn ? fmtDt(checkIn) : '—'} />
               <SummaryRow label="Check-out" value={checkout ? fmtDt(checkout) : '—'} highlight />
