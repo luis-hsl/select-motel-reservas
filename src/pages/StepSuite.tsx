@@ -58,12 +58,16 @@ const RESERVED_SUITES: Suite[] = [
 export default function StepSuite() {
   const { mode, package: pkg, suiteCategory, suite: selected, setSuite, nextStep, prevStep, checkIn, checkOut } = useStore()
 
-  const [loading, setLoading]       = useState(true)
+  const [loading, setLoading]         = useState(true)
   const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set())
-  const [videoUrls, setVideoUrls]   = useState<Record<string, string>>({})
+  const [videoUrls, setVideoUrls]     = useState<Record<string, string>>({})
   const [alacarteMap, setAlacarteMap] = useState<Record<string, { period: number | null; overnight: number | null }>>({})
-  const [currentIdx, setCurrentIdx] = useState(0)
-  const touchStartX                 = useRef<number | null>(null)
+  const [currentIdx, setCurrentIdx]   = useState(0)
+  const [videoLoading, setVideoLoading] = useState(true)
+  const touchStartX                   = useRef<number | null>(null)
+
+  // Reset loading spinner ao trocar de suíte
+  useEffect(() => { setVideoLoading(true) }, [currentIdx])
 
   const packageSuites = mode === 'suite' && suiteCategory
     ? SUITES.filter(s => s.category === suiteCategory)
@@ -137,8 +141,10 @@ export default function StepSuite() {
     Promise.all(promises).finally(() => setLoading(false))
   }, [checkIn, checkOut])
 
-  const currentSuite = allSuites[currentIdx] ?? null
-  const isOccupied   = currentSuite
+  const currentSuite  = allSuites[currentIdx] ?? null
+  const nextSuite     = allSuites[currentIdx + 1] ?? null
+  const nextVideoUrl  = nextSuite ? videoUrls[nextSuite.id] : undefined
+  const isOccupied    = currentSuite
     ? (occupiedIds.has(currentSuite.id) || RESERVED_SUITE_IDS.has(currentSuite.id))
     : false
   const videoUrl   = currentSuite ? videoUrls[currentSuite.id] : undefined
@@ -241,25 +247,42 @@ export default function StepSuite() {
             onTouchEnd={handleTouchEnd}
           >
             {videoUrl ? (
-              <video
-                key={videoUrl}
-                src={videoUrl}
-                autoPlay
-                loop
-                playsInline
-                controls
-                ref={(el) => {
-                  if (!el) return
-                  el.muted = false
-                  el.volume = 1
-                  el.play().catch(() => {
-                    el.muted = true
-                    el.play().catch(() => {})
-                  })
-                }}
-                className="block w-full pointer-events-auto"
-                style={{ maxHeight: '52vh' }}
-              />
+              <>
+                <video
+                  key={videoUrl}
+                  src={videoUrl}
+                  autoPlay
+                  loop
+                  playsInline
+                  controls
+                  preload="auto"
+                  onCanPlay={() => setVideoLoading(false)}
+                  onWaiting={() => setVideoLoading(true)}
+                  ref={(el) => {
+                    if (!el) return
+                    el.muted = false
+                    el.volume = 1
+                    el.play().catch(() => {
+                      el.muted = true
+                      el.play().catch(() => {})
+                    })
+                  }}
+                  className="block w-full pointer-events-auto"
+                  style={{ maxHeight: '52vh' }}
+                />
+                {/* Spinner enquanto o vídeo carrega */}
+                {videoLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none"
+                    style={{ background: 'rgba(0,0,0,0.45)' }}>
+                    <div className="w-9 h-9 rounded-full border-2 animate-spin"
+                      style={{ borderColor: 'rgba(255,255,255,0.15)', borderTopColor: 'rgba(255,255,255,0.80)' }} />
+                  </div>
+                )}
+                {/* Pré-carrega o próximo vídeo em background */}
+                {nextVideoUrl && (
+                  <video key={`pre-${nextVideoUrl}`} src={nextVideoUrl} preload="auto" muted playsInline style={{ display: 'none' }} />
+                )}
+              </>
             ) : (
               <div className="flex flex-col items-center justify-center" style={{ height: '220px' }}>
                 {currentSuite && (
@@ -358,19 +381,17 @@ export default function StepSuite() {
                   </span>
                 </div>
 
-                {/* Banner de swipe — base do vídeo, some na última suíte */}
-                {currentIdx < allSuites.length - 1 && (
-                  <div
-                    className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none flex items-center justify-center gap-2 py-2"
-                    style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 100%)' }}
-                  >
-                    <span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.55)' }}>‹</span>
-                    <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.80)', letterSpacing: '0.06em', textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>
-                      deslize para ver mais suítes
-                    </span>
-                    <span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.55)' }}>›</span>
-                  </div>
-                )}
+                {/* Banner de swipe — sempre visível, indica total de suítes */}
+                <div
+                  className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none flex items-center justify-center gap-2 py-2.5"
+                  style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.82) 0%, transparent 100%)' }}
+                >
+                  <span style={{ fontSize: '1.1rem', color: currentIdx === 0 ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.75)', transition: 'color 0.2s' }}>‹</span>
+                  <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.90)', letterSpacing: '0.07em', textShadow: '0 1px 8px rgba(0,0,0,0.9)' }}>
+                    deslize para ver outras {allSuites.length} suítes disponíveis
+                  </span>
+                  <span style={{ fontSize: '1.1rem', color: currentIdx === allSuites.length - 1 ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.75)', transition: 'color 0.2s' }}>›</span>
+                </div>
               </>
             )}
           </div>
@@ -434,8 +455,9 @@ export default function StepSuite() {
             </p>
 
             {hasMultiple && (
-              <p className="text-[10px] mt-2" style={{ color: 'rgba(200,188,168,0.45)' }}>
-                ← toque nas setas ou deslize o vídeo para navegar entre suítes
+              <p className="text-[10px] mt-2 flex items-center gap-1.5" style={{ color: 'rgba(200,188,168,0.55)' }}>
+                <span style={{ color: t.accentBright, opacity: 0.6 }}>✦</span>
+                {allSuites.length} suítes disponíveis — deslize para o lado ou use as setas para navegar
               </p>
             )}
           </div>

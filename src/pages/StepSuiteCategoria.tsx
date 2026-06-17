@@ -356,11 +356,14 @@ function SuiteVideoModal({
   onSelectSuite: (suite: Suite) => void
 }) {
   const suites = getSuitesForCategory(cat)
-  const [videoUrls, setVideoUrls] = useState<Record<string, string>>({})
-  const [visible, setVisible] = useState(false)
-  const [currentIdx, setCurrentIdx] = useState(0)
+  const [videoUrls, setVideoUrls]     = useState<Record<string, string>>({})
+  const [visible, setVisible]         = useState(false)
+  const [currentIdx, setCurrentIdx]   = useState(0)
   const [showWarning, setShowWarning] = useState(false)
+  const [videoLoading, setVideoLoading] = useState(true)
   const touchStartX = useRef<number | null>(null)
+
+  useEffect(() => { setVideoLoading(true) }, [currentIdx])
 
   // Animação de entrada (mesmo padrão do SuiteGallery)
   useEffect(() => {
@@ -421,8 +424,10 @@ function SuiteVideoModal({
   }
 
   const currentSuite = suites[currentIdx] ?? null
-  const videoUrl = currentSuite ? videoUrls[currentSuite.id] : undefined
-  const hasMultiple = suites.length > 1
+  const nextSuiteM   = suites[currentIdx + 1] ?? null
+  const videoUrl     = currentSuite ? videoUrls[currentSuite.id] : undefined
+  const nextVideoUrlM = nextSuiteM ? videoUrls[nextSuiteM.id] : undefined
+  const hasMultiple  = suites.length > 1
 
   return (
     <div
@@ -489,25 +494,40 @@ function SuiteVideoModal({
           onTouchEnd={handleTouchEnd}
         >
           {videoUrl ? (
-            <video
-              key={videoUrl}
-              src={videoUrl}
-              autoPlay
-              loop
-              playsInline
-              controls
-              ref={(el) => {
-                if (!el) return
-                el.muted = false
-                el.volume = 1
-                el.play().catch(() => {
-                  el.muted = true
-                  el.play().catch(() => {})
-                })
-              }}
-              className="block w-full pointer-events-auto"
-              style={{ maxHeight: '52vh' }}
-            />
+            <>
+              <video
+                key={videoUrl}
+                src={videoUrl}
+                autoPlay
+                loop
+                playsInline
+                controls
+                preload="auto"
+                onCanPlay={() => setVideoLoading(false)}
+                onWaiting={() => setVideoLoading(true)}
+                ref={(el) => {
+                  if (!el) return
+                  el.muted = false
+                  el.volume = 1
+                  el.play().catch(() => {
+                    el.muted = true
+                    el.play().catch(() => {})
+                  })
+                }}
+                className="block w-full pointer-events-auto"
+                style={{ maxHeight: '52vh' }}
+              />
+              {videoLoading && (
+                <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none"
+                  style={{ background: 'rgba(0,0,0,0.45)' }}>
+                  <div className="w-9 h-9 rounded-full border-2 animate-spin"
+                    style={{ borderColor: 'rgba(255,255,255,0.15)', borderTopColor: 'rgba(255,255,255,0.80)' }} />
+                </div>
+              )}
+              {nextVideoUrlM && (
+                <video key={`pre-${nextVideoUrlM}`} src={nextVideoUrlM} preload="auto" muted playsInline style={{ display: 'none' }} />
+              )}
+            </>
           ) : (
             <div className="flex flex-col items-center justify-center gap-2" style={{ height: '200px' }}>
               {currentSuite ? (
@@ -575,19 +595,17 @@ function SuiteVideoModal({
                 </span>
               </div>
 
-              {/* Banner de swipe — base do vídeo, some na última suíte */}
-              {currentIdx < suites.length - 1 && (
-                <div
-                  className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none flex items-center justify-center gap-2 py-2"
-                  style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 100%)' }}
-                >
-                  <span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.55)' }}>‹</span>
-                  <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.80)', letterSpacing: '0.06em', textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>
-                    deslize para ver mais suítes
-                  </span>
-                  <span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.55)' }}>›</span>
-                </div>
-              )}
+              {/* Banner de swipe — sempre visível */}
+              <div
+                className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none flex items-center justify-center gap-2 py-2.5"
+                style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.82) 0%, transparent 100%)' }}
+              >
+                <span style={{ fontSize: '1.1rem', color: currentIdx === 0 ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.75)', transition: 'color 0.2s' }}>‹</span>
+                <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.90)', letterSpacing: '0.07em', textShadow: '0 1px 8px rgba(0,0,0,0.9)' }}>
+                  deslize para ver outras {suites.length} suítes disponíveis
+                </span>
+                <span style={{ fontSize: '1.1rem', color: currentIdx === suites.length - 1 ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.75)', transition: 'color 0.2s' }}>›</span>
+              </div>
             </>
           )}
 
