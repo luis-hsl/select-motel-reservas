@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
+import { SUITE_CATEGORIES } from '../data/suiteCategories'
 import type { ExperienceItem, ItemCategory } from '../types'
 
 function fmtBRL(v: number): string {
@@ -37,11 +38,12 @@ const PRATOS = [
 
 export default function StepExtras() {
   const {
-    mode, package: pkg, suite, selectedItems, toggleItem, clearItems,
+    mode, package: pkg, suite, suiteCategory, selectedItems, toggleItem, clearItems,
     setFood, setDrink, food, drink,
     jantarPrato, jantarHorario, setJantarPrato, setJantarHorario,
     fondueHorario, setFondueHorario,
     checkIn, type,
+    totalAmount,
     nextStep, prevStep,
   } = useStore()
 
@@ -450,21 +452,77 @@ export default function StepExtras() {
         </Section>
       )}
 
-      {/* Subtotal */}
-      {!isPackage && (
-        <div
-          className="mt-6 sm:mt-8 rounded-2xl px-5 py-4 flex items-center justify-between gap-4"
-          style={{ background: 'rgba(201,168,76,0.05)', border: '1px solid rgba(201,168,76,0.14)' }}
-        >
-          <div>
-            <p className="text-[10px] uppercase tracking-widest" style={{ color: 'rgba(201,168,76,0.45)' }}>Subtotal de itens</p>
-            <p className="text-[10px] mt-0.5" style={{ color: 'rgba(200,168,100,0.30)' }}>A suíte é cobrada à parte.</p>
+      {/* Subtotal completo: suíte + itens */}
+      {!isPackage && (() => {
+        const catDef = suiteCategory ? SUITE_CATEGORIES.find(c => c.dbCategory === suiteCategory) : null
+        const suitePrice = (() => {
+          if (mode === 'suite' && catDef) {
+            return type === 'oneHour'   ? (catDef.prices.oneHour   ?? 0) :
+                   type === 'period'    ? catDef.prices.period :
+                   type === 'overnight' ? catDef.prices.overnight :
+                   type === 'diaria'    ? catDef.prices.diaria : 0
+          }
+          if (mode === 'experience' && suite) {
+            return type === 'period'
+              ? Number(suite.price_period_alacarte ?? 0)
+              : Number(suite.price_overnight_alacarte ?? 0)
+          }
+          return 0
+        })()
+        const grandTotal = totalAmount()
+        const typeLabel = type === 'oneHour' ? '1h' : type === 'period' ? 'Período' : type === 'overnight' ? 'Pernoite' : type === 'diaria' ? 'Diária' : ''
+
+        return (
+          <div
+            className="mt-6 sm:mt-8 rounded-2xl px-5 py-4"
+            style={{ background: 'rgba(201,168,76,0.05)', border: '1px solid rgba(201,168,76,0.14)' }}
+          >
+            {/* Linha suíte */}
+            {suitePrice > 0 && (
+              <div className="flex items-center justify-between gap-4 mb-2">
+                <span className="text-xs" style={{ color: 'rgba(200,168,100,0.55)' }}>
+                  Suíte{typeLabel ? ` · ${typeLabel}` : ''}
+                </span>
+                <span className="text-xs tabular-nums" style={{ color: 'rgba(200,168,100,0.55)', fontVariantNumeric: 'tabular-nums' }}>
+                  {fmtBRL(suitePrice)}
+                </span>
+              </div>
+            )}
+            {/* Linha itens */}
+            {itemsTotal > 0 && (
+              <div className="flex items-center justify-between gap-4 mb-2">
+                <span className="text-xs" style={{ color: 'rgba(200,168,100,0.55)' }}>
+                  {selectedItems.length} {selectedItems.length === 1 ? 'item' : 'itens'} selecionados
+                </span>
+                <span className="text-xs tabular-nums" style={{ color: 'rgba(200,168,100,0.55)', fontVariantNumeric: 'tabular-nums' }}>
+                  + {fmtBRL(itemsTotal)}
+                </span>
+              </div>
+            )}
+            {/* Divider */}
+            {suitePrice > 0 && (
+              <div className="mb-3" style={{ height: '1px', background: 'rgba(201,168,76,0.12)' }} />
+            )}
+            {/* Total */}
+            <div className="flex items-baseline justify-between gap-4">
+              <p className="text-[10px] uppercase tracking-widest" style={{ color: 'rgba(201,168,76,0.45)' }}>Total</p>
+              <span
+                className="gold-gradient shrink-0"
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: '1.65rem',
+                  fontWeight: 600,
+                  letterSpacing: '-0.02em',
+                  fontVariantNumeric: 'tabular-nums',
+                  lineHeight: 1,
+                }}
+              >
+                {fmtBRL(grandTotal)}
+              </span>
+            </div>
           </div>
-          <span className="font-serif text-2xl font-semibold gold-gradient tabular-nums shrink-0">
-            {fmtBRL(itemsTotal)}
-          </span>
-        </div>
-      )}
+        )
+      })()}
 
       {/* Ações */}
       <div className="mt-6 flex gap-3">
