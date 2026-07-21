@@ -19,7 +19,7 @@ const THEMES: Record<SuiteCategory, { accent: string; accentBright: string; bg: 
     priceBorder: 'rgba(184,151,90,0.13)',
     labelColor:  'rgba(223,192,122,0.38)',
   },
-  'Hidro Light': {
+  'Hidrolite': {
     accent:      '#4aafc0',
     accentBright:'#78d0e4',
     bg:          'linear-gradient(160deg, #050c11 0%, #030810 100%)',

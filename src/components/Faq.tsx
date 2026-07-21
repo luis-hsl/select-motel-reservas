@@ -31,7 +31,7 @@ const FAQ: Array<{ q: string; a: string }> = [
   {
     q: 'Posso escolher qual suíte quero?',
     a:
-      'Sim. Após escolher o pacote, você vê todas as suítes daquela categoria — VIP com piscina, Hidro, Hidro Light ou Standard — com fotos e vídeo de cada uma para escolher a sua favorita.',
+      'Sim. Após escolher o pacote, você vê todas as suítes daquela categoria — VIP com piscina, Suíte Hidro, Hidrolite ou Standard — com fotos e vídeo de cada uma para escolher a sua favorita.',
   },
   {
     q: 'Como funciona o cancelamento ou alteração?',
