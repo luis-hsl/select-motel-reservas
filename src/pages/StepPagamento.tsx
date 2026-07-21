@@ -116,6 +116,7 @@ export default function StepPagamento() {
   const [reservationId, setReservationId] = useState<string | null>(null)
   const [whatsappNum, setWhatsappNum] = useState('5511999999999')
   const [paymentSource, setPaymentSource] = useState<'pix' | 'card' | null>(null)
+  const [verifyingPix, setVerifyingPix] = useState(false)
 
   useEffect(() => {
     supabase
@@ -181,6 +182,29 @@ export default function StepPagamento() {
         setPixCharge(null)
       }
     }, 3000)
+    return () => clearInterval(interval)
+  }, [pixCharge?.reservationId])
+
+  // Secondary poll: call verify-pix-payment every 8s to check AbacatePay directly.
+  // This catches payments even when the webhook is not configured in AbacatePay dashboard.
+  useEffect(() => {
+    if (!pixCharge?.reservationId) return
+    const id = pixCharge.reservationId
+    const interval = setInterval(async () => {
+      try {
+        const { data } = await supabase.functions.invoke('verify-pix-payment', {
+          body: { reservationId: id },
+        })
+        if (data?.paid) {
+          clearInterval(interval)
+          setPaymentSource('pix')
+          setReservationId(id)
+          setPixCharge(null)
+        }
+      } catch {
+        // silent — primary DB poll is still running
+      }
+    }, 8000)
     return () => clearInterval(interval)
   }, [pixCharge?.reservationId])
 
@@ -273,6 +297,25 @@ export default function StepPagamento() {
       window.location.href = data.billingUrl
     } else {
       setError('Link de pagamento não recebido. Tente novamente.')
+    }
+  }
+
+  async function verifyPixNow() {
+    if (!pixCharge?.reservationId || verifyingPix) return
+    setVerifyingPix(true)
+    try {
+      const { data } = await supabase.functions.invoke('verify-pix-payment', {
+        body: { reservationId: pixCharge.reservationId },
+      })
+      if (data?.paid) {
+        setPaymentSource('pix')
+        setReservationId(pixCharge.reservationId)
+        setPixCharge(null)
+      }
+    } catch {
+      // silent
+    } finally {
+      setVerifyingPix(false)
     }
   }
 
@@ -638,6 +681,26 @@ export default function StepPagamento() {
                   <><span className="text-green-400">✓</span> Copiado!</>
                 ) : (
                   'Copiar código Pix'
+                )}
+              </button>
+
+              <button
+                onClick={verifyPixNow}
+                disabled={verifyingPix}
+                className="w-full py-3 rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-60 flex items-center justify-center gap-2"
+                style={{
+                  background: 'rgba(201,168,76,0.10)',
+                  border: '1px solid rgba(201,168,76,0.30)',
+                  color: 'rgba(230,195,100,0.9)',
+                }}
+              >
+                {verifyingPix ? (
+                  <>
+                    <span className="w-4 h-4 rounded-full border-2 border-gold-600/30 border-t-gold-400 animate-spin" />
+                    Verificando…
+                  </>
+                ) : (
+                  'Já paguei — confirmar pagamento'
                 )}
               </button>
 
