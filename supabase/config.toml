@@ -1,0 +1,14 @@
+[functions.verify-pix-payment]
+verify_jwt = false
+
+[functions.abacatepay-webhook]
+verify_jwt = false
+
+[functions.abacatepay-create-charge]
+verify_jwt = false
+
+[functions.send-reservation-whatsapp]
+verify_jwt = false
+
+[functions.verify-payment]
+verify_jwt = false
