@@ -83,7 +83,7 @@ const DETAIL: Record<PkgId, PackageDetail> = {
       ],
     },
     suites: [
-      { category: 'Suíte VIP', rooms: 'Quarto 14', desc: 'Suíte exclusiva com estrutura VIP' },
+      { category: 'Suíte VIP', rooms: 'Quartos 14 ou 16', desc: 'Suíte exclusiva com estrutura VIP' },
     ],
     dates: '8 a 14 de junho de 2026',
     notes: [
@@ -102,7 +102,7 @@ const DETAIL: Record<PkgId, PackageDetail> = {
       { item: 'Pizza artesanal ou pratos — à escolha do casal' },
     ],
     suites: [
-      { category: 'Suíte Hidro', rooms: 'Quartos 15, 16, 17 ou 18', desc: 'Suíte com hidromassagem e 2 quartos' },
+      { category: 'Suíte Hidro', rooms: 'Quartos 15 ou 18', desc: 'Suíte com hidromassagem e 2 quartos' },
     ],
     dates: '8 a 14 de junho de 2026',
     notes: [

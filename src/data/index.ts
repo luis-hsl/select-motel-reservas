@@ -47,11 +47,10 @@ export const PACKAGES: Package[] = [
 export const SUITES: Suite[] = [
   // ── Pacote Ouro ─────────────────────────────────────────
   { id: 'suite-14', name: 'Suíte 14', category: 'VIP Piscina', description: 'Suíte VIP com piscina privativa', room_number: 14, size: 'large', cleaning_buffer_h: 1, packageIds: ['ouro'] },
+  { id: 'suite-16', name: 'Suíte 16', category: 'VIP Piscina', description: 'Suíte VIP com piscina privativa', room_number: 16, size: 'large', cleaning_buffer_h: 1, packageIds: ['ouro'] },
 
   // ── Pacote Prata · Suíte Hidro ───────────────────────────
   { id: 'suite-15', name: 'Suíte 15', category: 'Hidro', description: 'Suíte Hidro com hidromassagem e 2 quartos', room_number: 15, size: 'large', cleaning_buffer_h: 1, packageIds: ['prata'] },
-  { id: 'suite-16', name: 'Suíte 16', category: 'Hidro', description: 'Suíte Hidro com hidromassagem e 2 quartos', room_number: 16, size: 'large', cleaning_buffer_h: 1, packageIds: ['prata'] },
-  { id: 'suite-17', name: 'Suíte 17', category: 'Hidro', description: 'Suíte Hidro com hidromassagem e 2 quartos', room_number: 17, size: 'large', cleaning_buffer_h: 1, packageIds: ['prata'] },
   { id: 'suite-18', name: 'Suíte 18', category: 'Hidro', description: 'Suíte Hidro com hidromassagem e 2 quartos', room_number: 18, size: 'large', cleaning_buffer_h: 1, packageIds: ['prata'] },
 
   // ── Pacote Bronze · Hidrolite ─────────────────────────────
@@ -59,6 +58,7 @@ export const SUITES: Suite[] = [
   { id: 'suite-13', name: 'Suíte 13', category: 'Hidrolite', description: 'Suíte com hidromassagem compacta', room_number: 13, size: 'small', cleaning_buffer_h: 1, packageIds: ['bronze'] },
 
   // ── Pacote Bronze · Standard ─────────────────────────────
+  { id: 'suite-17', name: 'Suíte 17', category: 'Standard', description: 'Suíte confortável e aconchegante', room_number: 17, size: 'small', cleaning_buffer_h: 1, packageIds: ['bronze'] },
   { id: 'suite-11', name: 'Suíte 11', category: 'Standard', description: 'Suíte confortável e aconchegante', room_number: 11, size: 'small', cleaning_buffer_h: 1, packageIds: ['bronze'] },
   { id: 'suite-22', name: 'Suíte 22', category: 'Standard', description: 'Suíte confortável e aconchegante', room_number: 22, size: 'small', cleaning_buffer_h: 1, packageIds: ['bronze'] },
   { id: 'suite-23', name: 'Suíte 23', category: 'Standard', description: 'Suíte confortável e aconchegante', room_number: 23, size: 'small', cleaning_buffer_h: 1, packageIds: ['bronze'] },
