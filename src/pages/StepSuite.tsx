@@ -21,8 +21,8 @@ function buildSlotLabel(cin: Date, cout: Date): string {
 
 const CATEGORY_LABEL: Record<SuiteCategory, string> = {
   'VIP Piscina': 'VIP · Piscina',
-  'Hidro': 'Hidro',
-  'Hidro Light': 'Hidro Light',
+  'Hidro': 'Suíte Hidro',
+  'Hidrolite': 'Hidrolite',
   'Standard': 'Standard',
 }
 
