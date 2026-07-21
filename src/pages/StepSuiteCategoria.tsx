@@ -11,41 +11,16 @@ function fmt(v: number) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 })
 }
 
-const THEMES = [
-  {
-    accent:      '#b8975a',
-    accentBright:'#dfc07a',
-    bg:          'linear-gradient(160deg, #0d0b08 0%, #080602 100%)',
-    border:      'rgba(184,151,90,0.18)',
-    glow:        '0 2px 20px rgba(184,151,90,0.04)',
-    priceBg:     'rgba(184,151,90,0.05)',
-    priceBorder: 'rgba(184,151,90,0.13)',
-    labelColor:  'rgba(223,192,122,0.38)',
-    tag:         null,
-  },
-  {
-    accent:      '#4aafc0',
-    accentBright:'#78d0e4',
-    bg:          'linear-gradient(160deg, #050c11 0%, #030810 100%)',
-    border:      'rgba(74,175,192,0.18)',
-    glow:        '0 2px 20px rgba(74,175,192,0.04)',
-    priceBg:     'rgba(74,175,192,0.05)',
-    priceBorder: 'rgba(74,175,192,0.13)',
-    labelColor:  'rgba(120,208,228,0.38)',
-    tag:         null,
-  },
-  {
-    accent:      '#c07260',
-    accentBright:'#e49a84',
-    bg:          'linear-gradient(160deg, #100807 0%, #0c0503 100%)',
-    border:      'rgba(192,114,96,0.18)',
-    glow:        '0 2px 20px rgba(192,114,96,0.04)',
-    priceBg:     'rgba(192,114,96,0.05)',
-    priceBorder: 'rgba(192,114,96,0.13)',
-    labelColor:  'rgba(228,154,132,0.38)',
-    tag:         'Premium',
-  },
-]
+const THEME = {
+  accent:      '#c9a84c',
+  accentBright:'#f0d070',
+  bg:          'linear-gradient(160deg, #0d0b07 0%, #080602 100%)',
+  border:      'rgba(201,168,76,0.18)',
+  glow:        '0 2px 24px rgba(201,168,76,0.04)',
+  priceBg:     'rgba(201,168,76,0.05)',
+  priceBorder: 'rgba(201,168,76,0.12)',
+  labelColor:  'rgba(220,188,110,0.40)',
+}
 
 const PRICE_ROWS: { key: ReservationType; label: string; sublabel: string }[] = [
   { key: 'oneHour',   label: '1 Hora',   sublabel: '1h' },
@@ -60,7 +35,7 @@ function getSuitesForCategory(cat: SuiteCategoryDef): Suite[] {
 
 export default function StepSuiteCategoria() {
   const { setSuiteCategory, setSuite, setType, setStep, nextStep, prevStep } = useStore()
-  const [modalCat, setModalCat] = useState<{ cat: SuiteCategoryDef; themeIdx: number } | null>(null)
+  const [modalCat, setModalCat] = useState<{ cat: SuiteCategoryDef } | null>(null)
   const [selectedType, setSelectedType] = useState<ReservationType | null>(null)
 
 
@@ -101,16 +76,16 @@ export default function StepSuiteCategoria() {
         Escolha a categoria, selecione a duração e continue.
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 max-w-3xl xl:max-w-4xl">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl xl:max-w-3xl">
         {SUITE_CATEGORIES.map((cat, i) => (
           <Card
             key={cat.id}
             cat={cat}
-            theme={THEMES[i]}
+            index={i}
             selectedType={selectedType}
             onSelectType={handleSelectType}
             onChoose={() => choose(cat)}
-            onViewVideos={() => setModalCat({ cat, themeIdx: i })}
+            onViewVideos={() => setModalCat({ cat })}
           />
         ))}
       </div>
@@ -118,7 +93,6 @@ export default function StepSuiteCategoria() {
       {modalCat && createPortal(
         <SuiteVideoModal
           cat={modalCat.cat}
-          theme={THEMES[modalCat.themeIdx]}
           selectedType={selectedType}
           onSelectType={handleSelectType}
           onClose={() => setModalCat(null)}
@@ -132,21 +106,24 @@ export default function StepSuiteCategoria() {
 
 // ── Card ─────────────────────────────────────────────────────────────────────
 
+const ORDINALS = ['01', '02', '03', '04', '05']
+
 function Card({
   cat,
-  theme: t,
+  index,
   selectedType,
   onSelectType,
   onChoose,
   onViewVideos,
 }: {
   cat: SuiteCategoryDef
-  theme: typeof THEMES[number]
+  index: number
   selectedType: ReservationType | null
   onSelectType: (type: ReservationType) => void
   onChoose: () => void
   onViewVideos: () => void
 }) {
+  const t = THEME
   const [showWarning, setShowWarning] = useState(false)
 
   useEffect(() => {
@@ -154,63 +131,49 @@ function Card({
   }, [selectedType])
 
   function handleChoose() {
-    if (!selectedType) {
-      setShowWarning(true)
-      return
-    }
+    if (!selectedType) { setShowWarning(true); return }
     onChoose()
   }
 
   return (
     <div
-      className="relative flex flex-col rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.012]"
-      style={{
-        background: t.bg,
-        border: `1px solid ${t.border}`,
-        boxShadow: t.glow,
-      }}
+      className="relative flex flex-col rounded-2xl overflow-hidden transition-all duration-300"
+      style={{ background: t.bg, border: `1px solid ${t.border}`, boxShadow: t.glow }}
     >
-      {/* Tag Premium */}
-      {t.tag && (
-        <div className="absolute top-4 right-4">
-          <span
-            className="text-[10px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full"
-            style={{
-              background: `${t.accent}15`,
-              border: `1px solid ${t.accent}40`,
-              color: t.accentBright,
-            }}
-          >
-            {t.tag}
-          </span>
-        </div>
-      )}
-
       {/* Header */}
-      <div className="px-6 pt-7 pb-5">
-        <div className="w-6 h-px mb-5" style={{ background: t.accent }} />
-        <h2
-          className="font-serif font-semibold uppercase leading-tight mb-3"
+      <div className="px-6 pt-6 pb-4 flex items-start gap-4">
+        {/* Ordinal number */}
+        <span
+          className="font-serif font-bold leading-none select-none shrink-0"
           style={{
-            fontSize: 'clamp(1rem, 2.8vw, 1.3rem)',
-            letterSpacing: '0.06em',
-            color: t.accentBright,
+            fontSize: '2rem',
+            color: 'rgba(201,168,76,0.15)',
+            letterSpacing: '-0.02em',
+            lineHeight: 1,
           }}
         >
-          {cat.label}
-        </h2>
-        <p className="text-xs leading-relaxed" style={{ color: 'rgba(205,195,178,0.5)' }}>
-          {cat.description}
-        </p>
+          {ORDINALS[index] ?? String(index + 1).padStart(2, '0')}
+        </span>
+        <div className="pt-1">
+          <h2
+            className="font-serif font-semibold leading-tight mb-1.5"
+            style={{ fontSize: 'clamp(0.95rem, 2.5vw, 1.15rem)', letterSpacing: '0.03em', color: t.accentBright }}
+          >
+            {cat.label}
+          </h2>
+          <p className="text-xs leading-relaxed" style={{ color: 'rgba(205,195,178,0.48)' }}>
+            {cat.description}
+          </p>
+        </div>
       </div>
 
       {/* Divider */}
-      <div className="mx-6" style={{ height: '1px', background: `${t.accent}15` }} />
+      <div className="mx-6" style={{ height: '1px', background: `${t.accent}14` }} />
 
-      {/* Preços — clicáveis para selecionar duração */}
-      <div className="px-6 py-5 flex-1 space-y-1.5">
-        <p className="text-xs font-semibold uppercase tracking-wider mb-2.5" style={{ color: t.accentBright }}>
-          Selecione a duração
+      {/* Preços */}
+      <div className="px-6 py-4 flex-1 space-y-1.5">
+        <p className="text-[9px] font-semibold uppercase tracking-widest mb-2" style={{ color: t.labelColor }}>
+          Duração
         </p>
         {PRICE_ROWS.map(row => {
           const price = cat.prices[row.key]
@@ -222,36 +185,25 @@ function Card({
               onClick={() => onSelectType(row.key)}
               className="w-full flex items-center justify-between rounded-lg px-3.5 py-2.5 text-left transition-all duration-150 active:scale-[0.98]"
               style={{
-                background: isSel ? `${t.accent}18` : t.priceBg,
-                border: `1px solid ${isSel ? t.accent + '70' : t.priceBorder}`,
+                background: isSel ? `${t.accent}16` : t.priceBg,
+                border: `1px solid ${isSel ? t.accent + '60' : t.priceBorder}`,
               }}
             >
               <div>
-                <p
-                  className="text-[13px] font-medium"
-                  style={{ color: isSel ? 'rgba(235,225,205,0.92)' : 'rgba(228,218,198,0.75)' }}
-                >
+                <p className="text-[13px] font-medium" style={{ color: isSel ? 'rgba(240,225,195,0.92)' : 'rgba(220,210,190,0.68)' }}>
                   {row.label}
                 </p>
-                <p className="text-[10px]" style={{ color: t.labelColor }}>
-                  {row.sublabel}
-                </p>
+                <p className="text-[10px]" style={{ color: t.labelColor }}>{row.sublabel}</p>
               </div>
               <div className="flex items-center gap-2">
                 {isSel && (
-                  <div
-                    className="w-4 h-4 rounded-full flex items-center justify-center shrink-0"
-                    style={{ background: t.accent }}
-                  >
+                  <div className="w-4 h-4 rounded-full flex items-center justify-center shrink-0" style={{ background: t.accent }}>
                     <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 12 12">
-                      <path d="M2 6l3 3 5-5" stroke="#080502" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M2 6l3 3 5-5" stroke="#060401" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </div>
                 )}
-                <p
-                  className="font-sans font-bold tabular-nums text-lg tracking-tight"
-                  style={{ color: t.accentBright }}
-                >
+                <p className="font-sans font-bold tabular-nums text-base tracking-tight" style={{ color: t.accentBright }}>
                   {fmt(price)}
                 </p>
               </div>
@@ -262,31 +214,10 @@ function Card({
 
       {/* CTAs */}
       <div className="px-6 pb-6 pt-1 space-y-2">
-        {/* Aviso: sem duração selecionada */}
         {showWarning && !selectedType && (
-          <p
-            className="text-[10px] text-center py-1 px-2 rounded-lg"
-            style={{
-              color: t.accentBright,
-              background: `${t.accent}12`,
-              border: `1px solid ${t.accent}30`,
-            }}
-          >
-            Selecione 1 hora, período, pernoite ou diária acima
-          </p>
-        )}
-
-        {/* Dica: duração selecionada — instrui a clicar em continuar */}
-        {selectedType && (
-          <p
-            className="text-[10px] text-center py-1.5 px-2 rounded-lg"
-            style={{
-              color: t.accentBright,
-              background: `${t.accent}10`,
-              border: `1px solid ${t.accent}28`,
-            }}
-          >
-            Clique em <strong>continuar reserva</strong> para escolher sua suíte
+          <p className="text-[10px] text-center py-1 px-2 rounded-lg"
+             style={{ color: t.accentBright, background: `${t.accent}10`, border: `1px solid ${t.accent}28` }}>
+            Selecione uma duração acima
           </p>
         )}
 
@@ -295,46 +226,26 @@ function Card({
           className="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition-all duration-200 active:scale-[0.98]"
           style={{
             background: selectedType
-              ? `linear-gradient(135deg, ${t.accent}cc, ${t.accentBright}cc, ${t.accent}cc)`
-              : `${t.accent}30`,
-            color: selectedType ? '#080502' : t.labelColor,
-            cursor: selectedType ? 'pointer' : 'default',
-          }}
-          onMouseEnter={e => {
-            if (selectedType) (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.1)'
-          }}
-          onMouseLeave={e => {
-            (e.currentTarget as HTMLButtonElement).style.filter = ''
+              ? 'linear-gradient(135deg, #a07820, #d4a017, #8b6010)'
+              : `${t.accent}22`,
+            color: selectedType ? '#060401' : t.labelColor,
           }}
         >
           Continuar reserva →
         </button>
 
-        {/* Hint + botão de fotos */}
-        <div>
-          <p className="text-xs text-center font-medium mb-1.5" style={{ color: t.accentBright, opacity: 0.65 }}>
-            Quer ver como são as suítes por dentro?
-          </p>
-          <button
-            onClick={onViewVideos}
-            className="w-full py-2.5 rounded-xl text-xs font-semibold tracking-widest uppercase transition-all duration-200 hover:opacity-100 active:scale-[0.98]"
-            style={{
-              background: 'transparent',
-              border: `1px solid ${t.border}`,
-              color: t.accentBright,
-              opacity: 0.75,
-            }}
-          >
-            Ver fotos das suítes
-          </button>
-        </div>
+        <button
+          onClick={onViewVideos}
+          className="w-full py-2.5 rounded-xl text-xs font-semibold tracking-widest uppercase transition-all duration-200 hover:opacity-90 active:scale-[0.98]"
+          style={{ background: 'transparent', border: `1px solid ${t.border}`, color: t.accentBright, opacity: 0.6 }}
+        >
+          Ver fotos das suítes
+        </button>
       </div>
 
       {/* Bottom accent */}
-      <div
-        className="absolute bottom-0 left-0 right-0 h-px pointer-events-none"
-        style={{ background: `linear-gradient(to right, transparent, ${t.accent}50, transparent)` }}
-      />
+      <div className="absolute bottom-0 left-0 right-0 h-px pointer-events-none"
+           style={{ background: `linear-gradient(to right, transparent, ${t.accent}40, transparent)` }} />
     </div>
   )
 }
@@ -343,19 +254,18 @@ function Card({
 
 function SuiteVideoModal({
   cat,
-  theme: t,
   selectedType,
   onSelectType,
   onClose,
   onSelectSuite,
 }: {
   cat: SuiteCategoryDef
-  theme: typeof THEMES[number]
   selectedType: ReservationType | null
   onSelectType: (type: ReservationType) => void
   onClose: () => void
   onSelectSuite: (suite: Suite) => void
 }) {
+  const t = THEME
   const suites = getSuitesForCategory(cat)
   const [photosMap, setPhotosMap]   = useState<Record<string, string[]>>({})
   const [visible, setVisible]       = useState(false)
