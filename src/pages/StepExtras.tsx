@@ -19,11 +19,6 @@ const PACKAGE_DRINK_IDS: Record<string, string[]> = {
   bronze: ['drink-drinque'],
 }
 
-const DECOR_BY_SUITE_TIER: Record<string, string[]> = {
-  bronze: ['extra-deco-bronze', 'extra-deco-prata'],
-  prata:  ['extra-deco-prata', 'extra-deco-ouro'],
-  ouro:   ['extra-deco-ouro'],
-}
 
 const FOOD_NOTA: Record<string, string> = {
   jantar: 'O jantar inclui entrada com tábua de frios: salame, lombo, queijo, amendoim e azeitonas.',
@@ -118,27 +113,17 @@ export default function StepExtras() {
     [selectedItems],
   )
 
-  const allowedDecorIds = useMemo(() => {
-    if (isPackage || !suite) return null
-    const allowed = new Set<string>()
-    ;(suite.packageIds ?? []).forEach(tier => {
-      (DECOR_BY_SUITE_TIER[tier] ?? []).forEach(id => allowed.add(id))
-    })
-    return allowed
-  }, [isPackage, suite])
+  // Decoração Ouro: R$200 no período (2h), R$290 nos demais
+  const decoPrice = type === 'period' ? 200 : 290
 
-  const decoItems = useMemo(
-    () => grouped.extra
-      .filter(i => i.id.startsWith('extra-deco-'))
-      .filter(i => !allowedDecorIds || allowedDecorIds.has(i.id)),
-    [grouped.extra, allowedDecorIds],
+  const decoOuroBase = useMemo(
+    () => grouped.extra.find(i => i.id === 'extra-deco-ouro') ?? null,
+    [grouped.extra],
   )
-
-  useEffect(() => {
-    if (!allowedDecorIds) return
-    const sel = selectedItems.find(i => i.category === 'extra' && i.id.startsWith('extra-deco-'))
-    if (sel && !allowedDecorIds.has(sel.id)) toggleItem(sel)
-  }, [allowedDecorIds, selectedItems, toggleItem])
+  const decoItem = useMemo(
+    () => decoOuroBase ? { ...decoOuroBase, price: decoPrice } : null,
+    [decoOuroBase, decoPrice],
+  )
 
   const jantarSelected = isPackage && food === 'jantar' && (pkg?.id === 'ouro' || pkg?.id === 'prata')
   const sushiSelected  = isPackage && food === 'sushi'
@@ -438,17 +423,14 @@ export default function StepExtras() {
       )}
 
       {/* Decoração */}
-      {!isPackage && decoItems.length > 0 && (
+      {!isPackage && decoItem && (
         <Section title="Decoração" hint="opcional" kicker="03">
-          {decoItems.map(deco => (
-            <MenuCard
-              key={deco.id}
-              item={deco}
-              selected={selectedDecor?.id === deco.id}
-              showPrice={true}
-              onClick={() => pickDecor(deco)}
-            />
-          ))}
+          <MenuCard
+            item={decoItem}
+            selected={selectedDecor?.id === decoItem.id}
+            showPrice={true}
+            onClick={() => pickDecor(decoItem)}
+          />
         </Section>
       )}
 
