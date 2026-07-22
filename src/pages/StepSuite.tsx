@@ -49,6 +49,8 @@ const DEFAULT_THEME = THEMES['Standard']
 
 // Suítes decorativas — aparecem sempre como reservadas para criar escassez percebida
 const RESERVED_SUITE_IDS = new Set(['suite-19', 'suite-20', 'suite-21'])
+
+const SMOKER_ROOM_NUMBERS = new Set([13, 23])
 const RESERVED_SUITES: Suite[] = [
   { id: 'suite-19', name: 'Suíte 19', category: 'Hidro',    description: 'Suíte com banheira de hidromassagem', room_number: 19, size: 'large', cleaning_buffer_h: 2, packageIds: [] },
   { id: 'suite-20', name: 'Suíte 20', category: 'Standard', description: 'Suíte confortável e aconchegante',   room_number: 20, size: 'small', cleaning_buffer_h: 1, packageIds: [] },
@@ -148,6 +150,7 @@ export default function StepSuite() {
   const isOccupied  = currentSuite
     ? (occupiedIds.has(currentSuite.id) || RESERVED_SUITE_IDS.has(currentSuite.id))
     : false
+  const isSmoker = currentSuite ? SMOKER_ROOM_NUMBERS.has(currentSuite.room_number ?? -1) : false
   const hasMultiple = allSuites.length > 1
   const allRealOccupied = packageSuites.length > 0 && packageSuites.every(s => occupiedIds.has(s.id))
 
@@ -249,6 +252,7 @@ export default function StepSuite() {
                 {allSuites.map((s, i) => {
                   const occ = occupiedIds.has(s.id) || RESERVED_SUITE_IDS.has(s.id)
                   const isActive = i === currentIdx
+                  const smoker = SMOKER_ROOM_NUMBERS.has(s.room_number ?? -1)
                   return (
                     <button
                       key={s.id}
@@ -269,6 +273,14 @@ export default function StepSuite() {
                       }}
                     >
                       {s.room_number ?? '?'}
+                      {smoker && (
+                        <span
+                          className="absolute -top-1 -right-1 text-[8px] leading-none"
+                          title="Suíte para fumantes"
+                        >
+                          🚬
+                        </span>
+                      )}
                     </button>
                   )
                 })}
@@ -419,6 +431,19 @@ export default function StepSuite() {
             <p className="text-[11px] mt-0.5" style={{ color: t.labelColor }}>
               {currentSuite?.description ?? ''}
             </p>
+            {isSmoker && (
+              <div
+                className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+                style={{
+                  background: 'rgba(160,130,60,0.10)',
+                  border: '1px solid rgba(180,150,60,0.28)',
+                  color: 'rgba(215,185,100,0.80)',
+                }}
+              >
+                <span style={{ fontSize: '0.7rem' }}>🚬</span>
+                <span className="text-[10px] font-medium tracking-wide">Suíte para fumantes</span>
+              </div>
+            )}
           </div>
 
           {/* Divider */}
