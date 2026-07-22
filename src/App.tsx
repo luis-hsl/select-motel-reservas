@@ -35,9 +35,9 @@ const STEPS_PACKAGE: Record<number, React.ComponentType> = {
 
 const STEPS_SUITE: Record<number, React.ComponentType> = {
   1: StepEscolha,
-  2: StepSuiteCategoria,
-  3: StepSuite,
-  4: StepData,
+  2: StepData,
+  3: StepSuiteCategoria,
+  4: StepSuite,
   5: StepExtras,
   6: StepPagamento,
 }

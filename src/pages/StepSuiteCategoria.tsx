@@ -33,29 +33,36 @@ function getSuitesForCategory(cat: SuiteCategoryDef): Suite[] {
   return SUITES.filter(s => s.category === cat.dbCategory)
 }
 
+const WEEKEND_DAYS = new Set([0, 5, 6]) // domingo, sexta, sábado
+
 export default function StepSuiteCategoria() {
-  const { setSuiteCategory, setSuite, setType, setStep, nextStep, prevStep } = useStore()
+  const { setSuiteCategory, setSuite, setType, setStep, nextStep, prevStep, checkIn } = useStore()
   const [modalCat, setModalCat] = useState<{ cat: SuiteCategoryDef } | null>(null)
   const [selectedType, setSelectedType] = useState<ReservationType | null>(null)
 
+  const isWeekend = checkIn ? WEEKEND_DAYS.has(checkIn.getDay()) : false
+
+  // Se a duração selecionada virou inválida por mudança de dia, limpa
+  const availableRows = PRICE_ROWS.filter(row =>
+    !isWeekend || (row.key !== 'period' && row.key !== 'oneHour')
+  )
 
   function handleSelectType(t: ReservationType) {
     setSelectedType(prev => (prev === t ? null : t))
   }
 
   function choose(cat: SuiteCategoryDef) {
-    if (!selectedType) return // bloqueado sem duração
+    if (!selectedType) return
     setSuiteCategory(cat.dbCategory)
     setType(selectedType)
     nextStep()
   }
 
   function chooseSuiteFromModal(cat: SuiteCategoryDef, suite: Suite) {
-    // selectedType garantido pelo modal antes de chamar esta função
     setSuiteCategory(cat.dbCategory)
     setSuite(suite)
     setType(selectedType!)
-    setStep(4) // pula StepSuite — suíte já escolhida no modal
+    setStep(5) // pula StepSuite — suíte já escolhida no modal
     setModalCat(null)
   }
 
@@ -72,9 +79,25 @@ export default function StepSuiteCategoria() {
         Qual suíte<br />
         <span className="gold-gradient font-semibold italic pr-1 lg:pr-3">vocês preferem?</span>
       </h1>
-      <p className="text-gold-700/70 text-sm mb-8 sm:mb-10">
+      <p className="text-gold-700/70 text-sm mb-6 sm:mb-8">
         Escolha a categoria, selecione a duração e continue.
       </p>
+
+      {isWeekend && (
+        <div
+          className="mb-6 flex items-start gap-2.5 px-4 py-3 rounded-xl max-w-2xl xl:max-w-3xl"
+          style={{ background: 'rgba(201,168,76,0.05)', border: '1px solid rgba(201,168,76,0.18)' }}
+        >
+          <svg className="w-3.5 h-3.5 shrink-0 mt-[2px]" viewBox="0 0 14 14" fill="none" style={{ color: 'rgba(201,168,76,0.55)' }}>
+            <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1" />
+            <path d="M7 4v3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+            <circle cx="7" cy="10" r="0.65" fill="currentColor" />
+          </svg>
+          <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(210,195,165,0.60)' }}>
+            Em <strong style={{ color: 'rgba(230,205,145,0.80)' }}>sextas, sábados e domingos</strong> apenas Pernoite e Diária estão disponíveis.
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl xl:max-w-3xl">
         {SUITE_CATEGORIES.map((cat, i) => (
@@ -83,6 +106,7 @@ export default function StepSuiteCategoria() {
             cat={cat}
             index={i}
             selectedType={selectedType}
+            availableRows={availableRows}
             onSelectType={handleSelectType}
             onChoose={() => choose(cat)}
             onViewVideos={() => setModalCat({ cat })}
@@ -94,6 +118,7 @@ export default function StepSuiteCategoria() {
         <SuiteVideoModal
           cat={modalCat.cat}
           selectedType={selectedType}
+          availableRows={availableRows}
           onSelectType={handleSelectType}
           onClose={() => setModalCat(null)}
           onSelectSuite={(suite) => chooseSuiteFromModal(modalCat.cat, suite)}
@@ -112,6 +137,7 @@ function Card({
   cat,
   index,
   selectedType,
+  availableRows,
   onSelectType,
   onChoose,
   onViewVideos,
@@ -119,6 +145,7 @@ function Card({
   cat: SuiteCategoryDef
   index: number
   selectedType: ReservationType | null
+  availableRows: typeof PRICE_ROWS
   onSelectType: (type: ReservationType) => void
   onChoose: () => void
   onViewVideos: () => void
@@ -175,7 +202,7 @@ function Card({
         <p className="text-[9px] font-semibold uppercase tracking-widest mb-2" style={{ color: t.labelColor }}>
           Duração
         </p>
-        {PRICE_ROWS.map(row => {
+        {availableRows.map(row => {
           const price = cat.prices[row.key]
           if (price === undefined) return null
           const isSel = selectedType === row.key
@@ -255,12 +282,14 @@ function Card({
 function SuiteVideoModal({
   cat,
   selectedType,
+  availableRows,
   onSelectType,
   onClose,
   onSelectSuite,
 }: {
   cat: SuiteCategoryDef
   selectedType: ReservationType | null
+  availableRows: typeof PRICE_ROWS
   onSelectType: (type: ReservationType) => void
   onClose: () => void
   onSelectSuite: (suite: Suite) => void
@@ -534,7 +563,7 @@ function SuiteVideoModal({
             Selecione a duração
           </p>
           <div className="flex flex-wrap gap-1.5">
-            {PRICE_ROWS.map(row => {
+            {availableRows.map(row => {
               const price = cat.prices[row.key]
               if (price === undefined) return null
               const isSel = selectedType === row.key
