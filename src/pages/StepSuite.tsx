@@ -66,6 +66,7 @@ export default function StepSuite() {
   const [alacarteMap, setAlacarteMap] = useState<Record<string, { period: number | null; overnight: number | null }>>({})
   const [currentIdx, setCurrentIdx]   = useState(0)
   const [photoIdx, setPhotoIdx]       = useState(0)
+  const [photoLoading, setPhotoLoading] = useState(false)
   const touchStartX                   = useRef<number | null>(null)
 
   const packageSuites = mode === 'suite' && suiteCategory
@@ -146,6 +147,12 @@ export default function StepSuite() {
 
   // Reset foto ao trocar de suíte
   useEffect(() => { setPhotoIdx(0) }, [currentIdx])
+
+  // Marca carregando ao trocar de foto ou suíte
+  useEffect(() => {
+    if (currentPhoto) setPhotoLoading(true)
+    else setPhotoLoading(false)
+  }, [currentPhoto])
 
   const isOccupied  = currentSuite
     ? (occupiedIds.has(currentSuite.id) || RESERVED_SUITE_IDS.has(currentSuite.id))
@@ -295,25 +302,29 @@ export default function StepSuite() {
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
           >
-            {/* Room number placeholder */}
+            {/* Placeholder: spinner enquanto carrega, ícone quando não há foto */}
             <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 0 }}>
-              {currentSuite && (
-                <span
-                  className="font-serif font-bold text-transparent bg-clip-text select-none"
-                  style={{
-                    fontSize: 'clamp(4rem, 18vw, 7rem)',
-                    backgroundImage: isOccupied
-                      ? 'linear-gradient(160deg, #a08060 0%, #7a5a30 35%, #5a3a10 70%, #8a6030 100%)'
-                      : 'linear-gradient(160deg, #fce8a8 0%, #d4a017 35%, #8b6010 70%, #c9a84c 100%)',
-                    lineHeight: 1,
-                    filter: isOccupied
-                      ? 'drop-shadow(0 2px 8px rgba(80,50,20,0.3))'
-                      : 'drop-shadow(0 4px 20px rgba(200,150,30,0.5))',
-                  }}
+              {currentPhoto && photoLoading ? (
+                <svg
+                  className="animate-spin"
+                  style={{ width: '2rem', height: '2rem', color: `${t.accent}90` }}
+                  viewBox="0 0 24 24"
+                  fill="none"
                 >
-                  {currentSuite.room_number}
-                </span>
-              )}
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeOpacity="0.25" />
+                  <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              ) : !currentPhoto && currentSuite ? (
+                <svg
+                  style={{ width: '2.5rem', height: '2.5rem', color: `${t.accent}40` }}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.5" />
+                  <circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" strokeWidth="1.2" />
+                  <path d="M3 16l5-5 4 4 3-3 6 6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              ) : null}
             </div>
 
             {/* Current photo */}
@@ -322,8 +333,10 @@ export default function StepSuite() {
                 key={currentPhoto}
                 src={currentPhoto}
                 alt=""
-                className="absolute inset-0 w-full h-full object-cover"
-                style={{ zIndex: 1 }}
+                className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
+                style={{ zIndex: 1, opacity: photoLoading ? 0 : 1 }}
+                onLoad={() => setPhotoLoading(false)}
+                onError={() => setPhotoLoading(false)}
               />
             )}
 
