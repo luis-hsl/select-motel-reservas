@@ -123,7 +123,7 @@ function Calendar({
 // ── Main step ───────────────────────────────────────────────
 
 export default function StepData() {
-  const { type, setType, setCheckIn, nextStep, prevStep } = useStore()
+  const { type, setCheckIn, nextStep, prevStep } = useStore()
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
   const slotsRef = useRef<HTMLDivElement>(null)
@@ -145,9 +145,8 @@ export default function StepData() {
     return (h * 60 + (m ?? 0)) <= nowTotalMin
   }
 
-  // Sexta (5), sábado (6) e domingo (0) — período e 1h não disponíveis
+  // Sexta (5), sábado (6) e domingo (0) — aviso informativo (bloqueio acontece no StepTipo)
   const isWeekend = selectedDate ? [0, 5, 6].includes(selectedDate.getDay()) : false
-  const isBlockedByWeekend = isWeekend && (type === 'period' || type === 'oneHour')
 
   // Todos os horários do dia selecionado já passaram?
   const allSlotsPast = isToday && slots.every(slot => isSlotPast(slot))
@@ -183,7 +182,7 @@ export default function StepData() {
     nextStep()
   }
 
-  const canContinue = !!(selectedDate && selectedSlot && !isBlockedByWeekend)
+  const canContinue = !!(selectedDate && selectedSlot)
 
   useEffect(() => {
     if (!selectedDate) return
@@ -306,45 +305,26 @@ export default function StepData() {
                 </div>
               )}
 
-              {/* Aviso: período/1h bloqueado em fins de semana */}
-              {isBlockedByWeekend && (
+              {/* Aviso informativo: fim de semana — período não disponível */}
+              {isWeekend && (
                 <div
-                  className="mt-4 flex flex-col gap-3 px-4 py-4 rounded-xl"
-                  style={{ background: 'rgba(201,168,76,0.05)', border: '1px solid rgba(201,168,76,0.20)' }}
+                  className="mt-4 flex items-start gap-2.5 px-4 py-3 rounded-xl"
+                  style={{ background: 'rgba(201,168,76,0.05)', border: '1px solid rgba(201,168,76,0.18)' }}
                 >
-                  <div className="flex items-start gap-2.5">
-                    <svg className="w-3.5 h-3.5 shrink-0 mt-[2px]" viewBox="0 0 14 14" fill="none"
-                         style={{ color: 'rgba(201,168,76,0.60)' }}>
-                      <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1" />
-                      <path d="M7 4v3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-                      <circle cx="7" cy="10" r="0.65" fill="currentColor" />
-                    </svg>
-                    <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(210,195,165,0.65)' }}>
-                      <strong style={{ color: 'rgba(230,205,145,0.85)' }}>Período não disponível</strong> em sextas, sábados e domingos.
-                      Neste dia, apenas <strong style={{ color: 'rgba(230,205,145,0.85)' }}>Pernoite</strong> ou <strong style={{ color: 'rgba(230,205,145,0.85)' }}>Diária</strong> estão disponíveis.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => { setType('overnight'); nextStep() }}
-                    className="w-full py-2.5 rounded-lg text-sm font-semibold transition-all active:scale-[0.98]"
-                    style={{
-                      background: 'linear-gradient(135deg,#c9a84c,#f5d87a,#a07820)',
-                      color: '#080502',
-                    }}
-                  >
-                    Mudar para Pernoite e continuar →
-                  </button>
-                  <button
-                    onClick={() => { setSelectedDate(null); setSelectedSlot(null) }}
-                    className="w-full py-2 rounded-lg text-xs font-medium transition-all hover:opacity-80"
-                    style={{ color: 'rgba(201,168,76,0.60)', border: '1px solid rgba(201,168,76,0.15)' }}
-                  >
-                    Escolher outra data
-                  </button>
+                  <svg className="w-3.5 h-3.5 shrink-0 mt-[2px]" viewBox="0 0 14 14" fill="none"
+                       style={{ color: 'rgba(201,168,76,0.55)' }}>
+                    <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1" />
+                    <path d="M7 4v3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                    <circle cx="7" cy="10" r="0.65" fill="currentColor" />
+                  </svg>
+                  <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(210,195,165,0.60)' }}>
+                    <strong style={{ color: 'rgba(230,205,145,0.80)' }}>Período não disponível</strong> em sextas, sábados e domingos.
+                    No próximo passo você poderá escolher <strong style={{ color: 'rgba(230,205,145,0.80)' }}>Pernoite</strong> ou <strong style={{ color: 'rgba(230,205,145,0.80)' }}>Diária</strong>.
+                  </p>
                 </div>
               )}
 
-              {selectedCheckOut && selectedSlot && !isBlockedByWeekend && (
+              {selectedCheckOut && selectedSlot && type && (
                 <div className="mt-4 px-4 py-3 rounded-xl border border-gold-800/30 bg-gold-900/10">
                   <p className="text-[10px] tracking-widest uppercase text-gold-600/50 mb-1">
                     Resumo do período
