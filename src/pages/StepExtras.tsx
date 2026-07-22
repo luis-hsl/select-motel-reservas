@@ -113,17 +113,15 @@ export default function StepExtras() {
     [selectedItems],
   )
 
-  // Decoração Ouro: R$200 no período (2h), R$290 nos demais
-  const decoPrice = type === 'period' ? 200 : 290
-
-  const decoOuroBase = useMemo(
-    () => grouped.extra.find(i => i.id === 'extra-deco-ouro') ?? null,
-    [grouped.extra],
-  )
-  const decoItem = useMemo(
-    () => decoOuroBase ? { ...decoOuroBase, price: decoPrice } : null,
-    [decoOuroBase, decoPrice],
-  )
+  const decoItem = useMemo(() => {
+    const base = grouped.extra.find(i => i.id === 'extra-deco-ouro') ?? null
+    if (!base) return null
+    return {
+      ...base,
+      price: 290,
+      description: 'Decoração completa com balões, pétalas, velas, uma pizza e um vinho.',
+    }
+  }, [grouped.extra])
 
   const jantarSelected = isPackage && food === 'jantar' && (pkg?.id === 'ouro' || pkg?.id === 'prata')
   const sushiSelected  = isPackage && food === 'sushi'
