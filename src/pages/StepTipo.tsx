@@ -229,7 +229,10 @@ function TipoCard({
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 export default function StepTipo() {
-  const { mode, package: pkg, type, suiteCategory, setType, nextStep, prevStep } = useStore()
+  const { mode, package: pkg, type, suiteCategory, checkIn, setType, nextStep, prevStep } = useStore()
+
+  // Sexta (5), sábado (6), domingo (0) — período e 1h não disponíveis
+  const isWeekend = checkIn ? [0, 5, 6].includes(checkIn.getDay()) : false
 
   function choose(t: ReservationType) {
     setType(t)
@@ -275,7 +278,9 @@ export default function StepTipo() {
         theme:    THEME_DIARIA,
         price:    catDef?.prices.diaria ?? null,
       },
-    ].filter(o => !(o.id === 'oneHour' && o.price === null))
+    ]
+      .filter(o => !(o.id === 'oneHour' && o.price === null))
+      .filter(o => !isWeekend || (o.id !== 'period' && o.id !== 'oneHour'))
 
     return (
       <div>
@@ -333,7 +338,7 @@ export default function StepTipo() {
       notice:   '2 horas',
       theme:    THEME_PERIOD,
     },
-  ]
+  ].filter(o => !isWeekend || o.id !== 'period')
 
   return (
     <div>
@@ -353,6 +358,21 @@ export default function StepTipo() {
           ? <>Cada minuto importa — quanto tempo vocês querem ter?</>
           : <>Escolha a duração da experiência no <strong className="text-gold-500 font-medium">{pkg.label}</strong>.</>}
       </p>
+      {isWeekend && (
+        <div
+          className="mb-6 flex items-start gap-2.5 px-4 py-3 rounded-xl"
+          style={{ background: 'rgba(201,168,76,0.05)', border: '1px solid rgba(201,168,76,0.18)' }}
+        >
+          <svg className="w-3.5 h-3.5 shrink-0 mt-[2px]" viewBox="0 0 14 14" fill="none" style={{ color: 'rgba(201,168,76,0.55)' }}>
+            <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1" />
+            <path d="M7 4v3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+            <circle cx="7" cy="10" r="0.65" fill="currentColor" />
+          </svg>
+          <p className="text-[11px] leading-relaxed" style={{ color: 'rgba(210,195,165,0.60)' }}>
+            Em <strong style={{ color: 'rgba(230,205,145,0.80)' }}>sextas, sábados e domingos</strong> apenas Pernoite está disponível.
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
         {tiposPkg.map(opt => {
