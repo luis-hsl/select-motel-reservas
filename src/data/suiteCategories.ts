@@ -30,7 +30,7 @@ export const SUITE_CATEGORIES: SuiteCategoryDef[] = [
   },
   {
     id: 'hidrolite',
-    label: 'Hidrolite',
+    label: 'Hidro Light',
     dbCategory: 'Hidrolite',
     description: 'Banheira de hidromassagem para relaxar juntos.',
     prices: { period: 130, overnight: 220, diaria: 310 },

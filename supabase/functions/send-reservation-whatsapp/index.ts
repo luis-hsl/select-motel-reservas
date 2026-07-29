@@ -71,6 +71,27 @@ const PAY_LABEL: Record<string, string> = {
   card: 'Cartão de crédito',
 }
 
+// Rótulo exibido de cada categoria de suíte.
+// As chaves são os valores internos gravados em suites.category — o banco usa
+// 'Hidro Light' e o front usa 'Hidrolite' para a mesma categoria, então as duas
+// caem no mesmo rótulo. "Standard" é chave interna e nunca vai para o cliente.
+//   14, 16 → VIP Piscina · 15, 18 → Hidro · 12, 13 → Hidro Light · resto → Tradicional
+const CATEGORY_LABEL: Record<string, string> = {
+  'Standard':    'Tradicional',
+  'Hidro Light': 'Hidro Light',
+  'Hidrolite':   'Hidro Light',
+  'Hidro':       'Hidro',
+  'VIP Piscina': 'VIP Piscina',
+}
+
+// Fallback para quando a suíte não tem room_number: limpa os nomes internos
+// que ainda possam estar gravados em suites.name.
+function sanitizeSuiteName(raw: string): string {
+  return raw
+    .replace(/Hidrolite/gi, 'Hidro Light')
+    .replace(/Standard/gi, 'Tradicional')
+}
+
 function normalizePhoneBR(raw: string): string {
   const digits = raw.replace(/\D/g, '')
   return digits.startsWith('55') ? digits : '55' + digits
@@ -129,9 +150,15 @@ Deno.serve(async (req: Request) => {
   const mode       = ex.mode ?? 'package'
   const firstName  = (r.customer_name ?? '').split(' ')[0]
   const codigo     = r.id.slice(0, 8).toUpperCase()
-  const suiteNome  = suite?.name ?? r.suite_id
-  const suiteNum   = suite?.room_number ? ` · nº ${suite.room_number}` : ''
-  const suiteCat   = suite?.category ? ` (${suite.category})` : ''
+  // Nome exibido ao cliente: "Suíte 24 Tradicional". Montado a partir do número
+  // do quarto + rótulo da categoria, e não de suites.name, que ainda guarda
+  // "Standard" — chave interna que não deve aparecer para o cliente.
+  const catLabel = suite?.category
+    ? (CATEGORY_LABEL[suite.category] ?? suite.category)
+    : ''
+  const suiteNome = suite?.room_number
+    ? `Suíte ${suite.room_number}${catLabel ? ` ${catLabel}` : ''}`
+    : sanitizeSuiteName(suite?.name ?? r.suite_id)
   const tipoLabel  = TYPE_LABEL[ex.type ?? r.type] ?? (ex.type ?? r.type ?? '')
   const payLabel   = PAY_LABEL[r.payment_method ?? ''] ?? (r.payment_method?.toUpperCase() ?? '')
 
@@ -147,7 +174,7 @@ Deno.serve(async (req: Request) => {
   clientLines.push(`━━━━━━━━━━━━━━━━━━━━`)
   clientLines.push(``)
   clientLines.push(`🛏 *Suíte*`)
-  clientLines.push(`${suiteNome}${suiteNum}`)
+  clientLines.push(suiteNome)
   clientLines.push(``)
   clientLines.push(`📅 *Check-in:*   ${fmtDateTime(r.check_in)}`)
   clientLines.push(`📅 *Check-out:* ${fmtDateTime(r.check_out)}`)
@@ -219,7 +246,7 @@ Deno.serve(async (req: Request) => {
   motelLines.push(`📱 *Telefone:* ${r.customer_phone}`)
   if (r.customer_email) motelLines.push(`✉️ *E-mail:* ${r.customer_email}`)
   motelLines.push(``)
-  motelLines.push(`🛏 *Suíte:* ${suiteNome}${suiteNum}${suiteCat}`)
+  motelLines.push(`🛏 *Suíte:* ${suiteNome}`)
   motelLines.push(`📅 *Check-in:*   ${fmtDateTime(r.check_in)}`)
   motelLines.push(`📅 *Check-out:* ${fmtDateTime(r.check_out)}`)
   motelLines.push(`⏱ *Tipo:* ${tipoLabel}`)

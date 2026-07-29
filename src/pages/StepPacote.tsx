@@ -120,8 +120,8 @@ const DETAIL: Record<PkgId, PackageDetail> = {
       { item: 'Drink especial' },
     ],
     suites: [
-      { category: 'Suíte Hidrolite', rooms: 'Quartos 12 ou 13', desc: 'Suíte com hidromassagem compacta' },
-      { category: 'Suíte Standard', rooms: 'Quartos 11, 17, 22, 23, 24, 25 ou 26', desc: 'Suítes confortáveis e aconchegantes' },
+      { category: 'Suíte Hidro Light', rooms: 'Quartos 12 ou 13', desc: 'Suíte com hidromassagem compacta' },
+      { category: 'Suíte Tradicional', rooms: 'Quartos 11, 17, 22, 23, 24, 25 ou 26', desc: 'Suítes confortáveis e aconchegantes' },
     ],
     dates: '8 a 14 de junho de 2026',
     notes: [
