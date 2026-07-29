@@ -8,6 +8,9 @@ services:
     environment:
       WUZAPI_URL: ${WUZAPI_URL}
       WUZAPI_USER_TOKEN: ${WUZAPI_USER_TOKEN}
+      # Autentica o webhook de entrada do Wuzapi (wuzapi-webhook). Vazio =
+      # endpoint aceita qualquer POST — configure antes de apontar o Wuzapi.
+      WUZAPI_WEBHOOK_SECRET: ${WUZAPI_WEBHOOK_SECRET:-}
       ABACATEPAY_API_KEY: ${ABACATEPAY_API_KEY}
       ABACATEPAY_WEBHOOK_SECRET: ${ABACATEPAY_WEBHOOK_SECRET}
       META_PIXEL_ID:         ${META_PIXEL_ID}
