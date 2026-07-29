@@ -1,18 +1,29 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 
-// Pacote (7 steps):     Escolha→Pacote→Tipo→Data→Suíte→Extras→Pagamento
-// Experiência (6 steps):Escolha→Tipo→Data→Suíte→Extras→Pagamento
+// Ordem espelhada de App.tsx (STEPS_PACKAGE / STEPS_SUITE / STEPS_EXPERIENCE).
+// Se mudar lá, mudar aqui — o funil atribui abandono pelo índice.
+//   Pacote (7):      Escolha→Pacote→Data→Tipo→Suíte→Extras→Pagamento
+//   Suíte (6):       Escolha→Data→Categoria→Suíte→Extras→Pagamento
+//   Experiência (6): Escolha→Data→Tipo→Suíte→Extras→Pagamento
 // (StepDados foi fundido inline no StepEscolha)
-const STEP_NAMES_PKG = ['Escolha','Pacote','Tipo','Data','Suíte','Extras','Pagamento']
-const STEP_NAMES_EXP = ['Escolha','Tipo','Data','Suíte','Extras','Pagamento']
-const MAX_STEPS_PKG  = STEP_NAMES_PKG.length      // 7
+const STEP_NAMES_PKG   = ['Escolha','Pacote','Data','Tipo','Suíte','Extras','Pagamento']
+const STEP_NAMES_SUITE = ['Escolha','Data','Categoria','Suíte','Extras','Pagamento']
+const STEP_NAMES_EXP   = ['Escolha','Data','Tipo','Suíte','Extras','Pagamento']
+const MAX_STEPS_PKG    = STEP_NAMES_PKG.length      // 7
 
-// Heurística: experiência tem 1 step a menos (sem StepPacote).
-// max_step ≥ 7 → garantidamente pacote. Abaixo disso, presume experiência
-// (mapeamento errado só afeta usuários pacote que abandonaram cedo).
-function getStepName(step: number, maxStep?: number): string {
-  const names = (maxStep ?? MAX_STEPS_PKG) >= MAX_STEPS_PKG ? STEP_NAMES_PKG : STEP_NAMES_EXP
+function stepNamesFor(mode: SessionMode): string[] {
+  if (mode === 'package') return STEP_NAMES_PKG
+  if (mode === 'suite')   return STEP_NAMES_SUITE
+  return STEP_NAMES_EXP
+}
+
+// Nomeia a step pelo modo real da sessão. Para modo desconhecido cai na
+// heurística de tamanho: max_step ≥ 7 só é alcançável no pacote.
+function getStepName(step: number, mode: SessionMode, maxStep?: number): string {
+  const names = mode === 'unknown'
+    ? ((maxStep ?? MAX_STEPS_PKG) >= MAX_STEPS_PKG ? STEP_NAMES_PKG : STEP_NAMES_EXP)
+    : stepNamesFor(mode)
   return names[(step - 1)] ?? `Step ${step}`
 }
 const ACTIVE_WINDOW_MS = 2 * 60 * 1000           // < 2min = "ativo agora"
@@ -25,7 +36,7 @@ interface Session {
   last_active_at:  string
   current_step:    number
   max_step:        number
-  mode:            'package' | 'experience' | null
+  mode:            'package' | 'experience' | 'suite' | null
   steps_history:   Array<{ step: number; at: string }> | null
   user_agent:      string | null
   device:          string | null
@@ -41,10 +52,12 @@ interface Session {
   reservation_id:  string | null
 }
 
-function sessionMode(s: Session): 'package' | 'experience' | 'unknown' {
-  if (s.mode === 'package' || s.mode === 'experience') return s.mode
-  // Sessões antigas sem mode: heurística por max_step.
-  // ≥ 7 só é alcançável no pacote (experiência tem 6 steps).
+type SessionMode = 'package' | 'experience' | 'suite' | 'unknown'
+
+function sessionMode(s: Session): SessionMode {
+  if (s.mode === 'package' || s.mode === 'experience' || s.mode === 'suite') return s.mode
+  // Sessões sem mode persistido: heurística por max_step.
+  // ≥ 7 só é alcançável no pacote (suíte e experiência têm 6 steps).
   if ((s.max_step ?? 0) >= MAX_STEPS_PKG) return 'package'
   return 'unknown'
 }
@@ -136,11 +149,13 @@ export default function AoVivoTab() {
 
     let active = 0, todayCount = 0, converted = 0
     const funnelPkg     = new Array(STEP_NAMES_PKG.length).fill(0)
+    const funnelSuite   = new Array(STEP_NAMES_SUITE.length).fill(0)
     const funnelExp     = new Array(STEP_NAMES_EXP.length).fill(0)
     let totalPkg     = 0
+    let totalSuite   = 0
     let totalExp     = 0
     let totalUnknown = 0
-    let convPkg = 0, convExp = 0
+    let convPkg = 0, convSuite = 0, convExp = 0
 
     sessions.forEach(s => {
       if (nowMs - new Date(s.last_active_at).getTime() < ACTIVE_WINDOW_MS) active++
@@ -155,6 +170,11 @@ export default function AoVivoTab() {
         if (s.converted) convPkg++
         const cap = Math.min(max, funnelPkg.length)
         for (let i = 0; i < cap; i++) funnelPkg[i]++
+      } else if (m === 'suite') {
+        totalSuite++
+        if (s.converted) convSuite++
+        const cap = Math.min(max, funnelSuite.length)
+        for (let i = 0; i < cap; i++) funnelSuite[i]++
       } else if (m === 'experience') {
         totalExp++
         if (s.converted) convExp++
@@ -166,9 +186,9 @@ export default function AoVivoTab() {
     })
     return {
       active, todayCount, converted,
-      funnelPkg, funnelExp,
-      totalPkg, totalExp, totalUnknown,
-      convPkg, convExp,
+      funnelPkg, funnelSuite, funnelExp,
+      totalPkg, totalSuite, totalExp, totalUnknown,
+      convPkg, convSuite, convExp,
     }
   }, [sessions])
 
@@ -231,8 +251,8 @@ export default function AoVivoTab() {
         <StatCard label="Total visto"  value={sessions.length}   hint="todas as sessões" />
       </div>
 
-      {/* ───── Funis (Pacote + Experiência separados) ───── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+      {/* ───── Funis (Pacote + Suíte + Experiência separados) ───── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <FunnelCard
           title="Pacote"
           subtitle={`${stats.totalPkg} sessão${stats.totalPkg === 1 ? '' : 'ões'} · ${stats.convPkg} convertida${stats.convPkg === 1 ? '' : 's'}`}
@@ -240,6 +260,14 @@ export default function AoVivoTab() {
           steps={STEP_NAMES_PKG}
           funnel={stats.funnelPkg}
           total={stats.totalPkg}
+        />
+        <FunnelCard
+          title="Suíte"
+          subtitle={`${stats.totalSuite} sessão${stats.totalSuite === 1 ? '' : 'ões'} · ${stats.convSuite} convertida${stats.convSuite === 1 ? '' : 's'}`}
+          accent="teal"
+          steps={STEP_NAMES_SUITE}
+          funnel={stats.funnelSuite}
+          total={stats.totalSuite}
         />
         <FunnelCard
           title="Experiência"
@@ -252,7 +280,7 @@ export default function AoVivoTab() {
       </div>
       {stats.totalUnknown > 0 && (
         <p className="text-white/25 text-[10px] -mt-2">
-          {stats.totalUnknown} sessão{stats.totalUnknown === 1 ? '' : 'ões'} sem modo definido (sessões antigas, pré-tracking de modo)
+          {stats.totalUnknown} sessão{stats.totalUnknown === 1 ? '' : 'ões'} sem modo definido (abandonadas antes de escolher o modo)
         </p>
       )}
 
@@ -315,7 +343,7 @@ export default function AoVivoTab() {
                     </td>
                     <td className="px-3 py-2.5 text-white/70">
                       <span className="text-gold-400">{s.current_step}</span>
-                      <span className="text-white/30"> · {getStepName(s.current_step, s.max_step)}</span>
+                      <span className="text-white/30"> · {getStepName(s.current_step, sessionMode(s), s.max_step)}</span>
                     </td>
                     <td className="px-3 py-2.5 text-white/50 hidden sm:table-cell truncate max-w-[180px]">
                       {utmLabel}
@@ -351,15 +379,19 @@ export default function AoVivoTab() {
 function FunnelCard({ title, subtitle, accent, steps, funnel, total }: {
   title: string
   subtitle: string
-  accent: 'gold' | 'purple'
+  accent: 'gold' | 'purple' | 'teal'
   steps: string[]
   funnel: number[]
   total: number
 }) {
   const grad = accent === 'gold'
     ? 'linear-gradient(to right, #c8a035, #e8c060)'
-    : 'linear-gradient(to right, #8b5cf6, #c4b5fd)'
-  const titleColor = accent === 'gold' ? 'text-gold-300' : 'text-purple-300'
+    : accent === 'teal'
+      ? 'linear-gradient(to right, #0d9488, #5eead4)'
+      : 'linear-gradient(to right, #8b5cf6, #c4b5fd)'
+  const titleColor = accent === 'gold'
+    ? 'text-gold-300'
+    : accent === 'teal' ? 'text-teal-300' : 'text-purple-300'
   return (
     <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
       <div className="flex items-baseline justify-between mb-3 gap-3">
@@ -439,8 +471,8 @@ function SessionDetailModal({ session, onClose }: { session: Session; onClose: (
           <Row label="Início"        value={fmtDt(session.started_at)} />
           <Row label="Último ping"   value={`${fmtDt(session.last_active_at)} (${timeAgo(session.last_active_at)})`} />
           <Row label="Duração"       value={fmtDuration(session.started_at, session.last_active_at)} />
-          <Row label="Step atual"    value={`${session.current_step} · ${getStepName(session.current_step, session.max_step)}`} />
-          <Row label="Máx atingido"  value={`${session.max_step} · ${getStepName(session.max_step, session.max_step)}`} />
+          <Row label="Step atual"    value={`${session.current_step} · ${getStepName(session.current_step, sessionMode(session), session.max_step)}`} />
+          <Row label="Máx atingido"  value={`${session.max_step} · ${getStepName(session.max_step, sessionMode(session), session.max_step)}`} />
           <Row label="Dispositivo"   value={session.device ?? '—'} />
           <Row label="Origem"        value={session.utm_source ?? '(direto)'} />
           {session.utm_campaign && <Row label="Campanha" value={session.utm_campaign} />}
@@ -457,7 +489,7 @@ function SessionDetailModal({ session, onClose }: { session: Session; onClose: (
               {(session.steps_history ?? []).map((s, i) => (
                 <li key={i} className="flex items-center gap-3 text-xs">
                   <span className="font-mono text-gold-500 w-6">{s.step}</span>
-                  <span className="text-white/70 flex-1">{getStepName(s.step, session.max_step)}</span>
+                  <span className="text-white/70 flex-1">{getStepName(s.step, sessionMode(session), session.max_step)}</span>
                   <span className="text-white/40 tabular-nums">{fmtDt(s.at)}</span>
                 </li>
               ))}

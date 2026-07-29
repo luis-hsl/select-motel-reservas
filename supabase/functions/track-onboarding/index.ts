@@ -47,7 +47,7 @@ Deno.serve(async (req: Request) => {
   let body: {
     session_token?: string
     step?: number
-    mode?: 'package' | 'experience' | null
+    mode?: 'package' | 'experience' | 'suite' | null
     user_agent?: string
     referrer?: string
     landing_path?: string
@@ -60,7 +60,12 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'invalid session_token' }, 422)
   }
   const step = Math.max(1, Math.min(9, Number(body.step ?? 1) | 0))
-  const mode = body.mode === 'package' || body.mode === 'experience' ? body.mode : null
+  // 'suite' é o terceiro modo do app (App.tsx STEPS_SUITE). Sem ele aqui, toda
+  // sessão de suíte gravava mode=NULL e desaparecia do funil do admin.
+  const MODES = ['package', 'experience', 'suite'] as const
+  const mode = MODES.includes(body.mode as typeof MODES[number])
+    ? (body.mode as typeof MODES[number])
+    : null
 
   // Hash do IP
   const xff = (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'unknown'

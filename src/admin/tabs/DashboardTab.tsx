@@ -17,7 +17,7 @@ type Suite = { id: string; name: string }
 type SessionRow = {
   started_at: string
   max_step: number | null
-  mode: 'package' | 'experience' | null
+  mode: 'package' | 'experience' | 'suite' | null
   converted: boolean
   reservation_id: string | null
   utm_source: string | null
@@ -29,9 +29,11 @@ type SessionRow = {
 }
 
 // Funil — Pacote tem 7 steps, Experiência 6 (sem StepPacote). Igual à aba Ao Vivo.
-const STEP_NAMES_PKG = ['Escolha', 'Pacote', 'Tipo', 'Data', 'Suíte', 'Extras', 'Pagamento']
-const STEP_NAMES_EXP = ['Escolha', 'Tipo', 'Data', 'Suíte', 'Extras', 'Pagamento']
-const MAX_STEPS_PKG  = STEP_NAMES_PKG.length
+// Ordem espelhada de App.tsx (STEPS_PACKAGE / STEPS_SUITE / STEPS_EXPERIENCE).
+const STEP_NAMES_PKG   = ['Escolha', 'Pacote', 'Data', 'Tipo', 'Suíte', 'Extras', 'Pagamento']
+const STEP_NAMES_SUITE = ['Escolha', 'Data', 'Categoria', 'Suíte', 'Extras', 'Pagamento']
+const STEP_NAMES_EXP   = ['Escolha', 'Data', 'Tipo', 'Suíte', 'Extras', 'Pagamento']
+const MAX_STEPS_PKG    = STEP_NAMES_PKG.length
 
 const RES_STATUS_LABEL: Record<string, string> = {
   pending: 'Pendente', confirmed: 'Confirmada', paid: 'Paga', cancelled: 'Cancelada',
@@ -54,9 +56,10 @@ function inMonth(date: Date, ref: Date, offset: number) {
   return date.getMonth() === d.getMonth() && date.getFullYear() === d.getFullYear()
 }
 
-// Modo da sessão (com heurística pra sessões antigas sem mode: max_step ≥ 7 só é pacote).
-function sessionMode(s: SessionRow): 'package' | 'experience' | 'unknown' {
-  if (s.mode === 'package' || s.mode === 'experience') return s.mode
+// Modo da sessão (com heurística pra sessões sem mode: max_step ≥ 7 só é pacote,
+// já que suíte e experiência têm 6 steps).
+function sessionMode(s: SessionRow): 'package' | 'experience' | 'suite' | 'unknown' {
+  if (s.mode === 'package' || s.mode === 'experience' || s.mode === 'suite') return s.mode
   if ((s.max_step ?? 0) >= MAX_STEPS_PKG) return 'package'
   return 'unknown'
 }
@@ -174,7 +177,7 @@ export default function DashboardTab() {
       }
 
       // ───── 2 e 3. Funis por modo ─────
-      function funnelSection(title: string, steps: string[], mode: 'package' | 'experience'): CsvSection {
+      function funnelSection(title: string, steps: string[], mode: 'package' | 'experience' | 'suite'): CsvSection {
         const subset = sessions.filter(s => sessionMode(s) === mode)
         const total = subset.length
         const conv = subset.filter(s => s.converted).length
@@ -198,8 +201,9 @@ export default function DashboardTab() {
           }),
         }
       }
-      const funilPkg = funnelSection('FUNIL — PACOTE', STEP_NAMES_PKG, 'package')
-      const funilExp = funnelSection('FUNIL — EXPERIÊNCIA', STEP_NAMES_EXP, 'experience')
+      const funilPkg   = funnelSection('FUNIL — PACOTE', STEP_NAMES_PKG, 'package')
+      const funilSuite = funnelSection('FUNIL — SUÍTE', STEP_NAMES_SUITE, 'suite')
+      const funilExp   = funnelSection('FUNIL — EXPERIÊNCIA', STEP_NAMES_EXP, 'experience')
 
       // ───── 4. Origem do tráfego (quem veio de onde) ─────
       const bySource = new Map<string, { sessions: number; converted: number; revenue: number }>()
@@ -309,7 +313,7 @@ export default function DashboardTab() {
       const linhaTempo: CsvSection = { title: 'LINHA DO TEMPO — ÚLTIMOS 30 DIAS', rows: timelineRows }
 
       downloadCsvSections(
-        [visaoGeral, funilPkg, funilExp, origem, campanhas, dispositivos, reservasStatus, linhaTempo],
+        [visaoGeral, funilPkg, funilSuite, funilExp, origem, campanhas, dispositivos, reservasStatus, linhaTempo],
         `panorama-select-motel-${stamp}.csv`,
       )
     } finally {
