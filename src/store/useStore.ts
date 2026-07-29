@@ -4,7 +4,7 @@ import { SUITE_CATEGORIES } from '../data/suiteCategories'
 
 interface StoreState {
   currentStep: number
-  mode: ReservationMode | null      // 'package' | 'experience' (set no StepEscolha)
+  mode: ReservationMode | null      // 'package' | 'experience' | 'suite' (set no StepEscolha)
 
   // ────── PACKAGE MODE ──────
   package: Package | null
