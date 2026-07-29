@@ -1,5 +1,10 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import {
+  disponibilidadePorSuite,
+  isConfigured as isPlugPlayConfigured,
+  toPmsDateTime,
+} from '../_shared/plugplay.ts';
 const API_KEY = Deno.env.get('ABACATEPAY_API_KEY');
 const BASE_V2 = 'https://api.abacatepay.com/v2';
 const CORS = {
@@ -63,6 +68,39 @@ Deno.serve(async (req)=>{
         }
       }
     }
+    // -------- Disponibilidade real no PMS --------
+    // A trava local (constraint de overlap + get_occupied_suite_ids) só conhece
+    // as reservas feitas pelo site. Walk-in, manutenção e reserva por telefone
+    // vivem só no MotelMais. Este é o último ponto antes de cobrar o cliente,
+    // então é aqui que a checagem vale.
+    //
+    // PMS indisponível ou suíte não mapeada não bloqueia a venda: perder uma
+    // reserva por instabilidade do ERP é pior que o overbooking ocasional, que
+    // a recepção já sabe contornar.
+    if (isPlugPlayConfigured() && suiteId && checkIn && checkOut) {
+      try {
+        const { data: suiteRow } = await supabase
+          .from('suites').select('pms_suite_id').eq('id', suiteId).maybeSingle();
+        if (suiteRow?.pms_suite_id) {
+          // Janela real, sem buffer nosso: o PMS já aplica a interdição dele
+          // (2h antes da entrada) ao avaliar. Somar os dois rejeitaria venda boa.
+          const disp = await disponibilidadePorSuite(
+            suiteRow.pms_suite_id,
+            toPmsDateTime(checkIn),
+            toPmsDateTime(checkOut),
+          );
+          if (disp?.disponivel === false) {
+            console.warn('PMS recusou disponibilidade', suiteId, disp?.mensagem);
+            return json({
+              error: 'Esta suíte acabou de ser ocupada. Escolha outro horário ou outra suíte.',
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Checagem de disponibilidade no PMS falhou (seguindo):', e?.message ?? e);
+      }
+    }
+
     const holdExpiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
     const now = new Date().toISOString();
     // Busca reserva pending ativa do mesmo usuário na mesma suíte

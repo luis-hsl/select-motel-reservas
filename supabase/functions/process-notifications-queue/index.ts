@@ -61,10 +61,18 @@ Deno.serve(async (req: Request) => {
   for (const item of items) {
     const attempts = (item.attempts ?? 0) + 1
     try {
+      // kind → função que resolve o item. Ambas são idempotentes por
+      // reservationId, então reprocessar não duplica nada.
+      const TARGET: Record<string, string> = {
+        reservation_whatsapp: 'send-reservation-whatsapp',
+        pms_reserva:          'plugplay-sync-reserva',
+      }
+
       let invokeError: unknown = null
-      if (item.kind === 'reservation_whatsapp') {
+      const target = TARGET[item.kind]
+      if (target) {
         const { error: invErr } = await supabase.functions.invoke(
-          'send-reservation-whatsapp',
+          target,
           { body: item.payload },
         )
         invokeError = invErr

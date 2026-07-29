@@ -13,6 +13,12 @@ services:
       META_PIXEL_ID:         ${META_PIXEL_ID}
       META_ACCESS_TOKEN:     ${META_ACCESS_TOKEN}
       META_TEST_EVENT_CODE:  ${META_TEST_EVENT_CODE:-}
+      # MotelMais PlugPlay (PMS). Vazio = integração inerte: o site segue
+      # vendendo e as funções devolvem "not_configured" em vez de quebrar.
+      PLUGPLAY_ID:           ${PLUGPLAY_ID:-}
+      PLUGPLAY_TOKEN:        ${PLUGPLAY_TOKEN:-}
+      PLUGPLAY_BASE_URL:     ${PLUGPLAY_BASE_URL:-https://oxpi.com.br/api/PlugPlay}
+      PLUGPLAY_MODO_MAP:     ${PLUGPLAY_MODO_MAP:-}
   storage:
     environment:
       FILE_SIZE_LIMIT: ${FILE_SIZE_LIMIT:-524288000}

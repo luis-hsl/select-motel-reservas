@@ -236,17 +236,19 @@ Deno.serve(async (req: Request) => {
 
   // Enfileira notificação (garantia de entrega via process-notifications-queue + cron).
   // O worker processa de 1 em 1 minuto com backoff exponencial e até 10 tentativas.
+  // Junto vai o push da reserva para o PMS (MotelMais PlugPlay) — mesma fila,
+  // mesmo retry. Se o PMS estiver fora do ar, a reserva do cliente continua
+  // válida aqui e entra lá quando o worker conseguir.
   const { error: queueErr } = await supabase
     .from('notification_queue')
-    .insert({
-      kind:    'reservation_whatsapp',
-      payload: { reservationId },
-      status:  'pending',
-    })
+    .insert([
+      { kind: 'reservation_whatsapp', payload: { reservationId }, status: 'pending' },
+      { kind: 'pms_reserva',          payload: { reservationId }, status: 'pending' },
+    ])
   if (queueErr) {
     console.error('Failed to enqueue notification (non-fatal):', queueErr)
   } else {
-    console.log('Notification enqueued for', reservationId)
+    console.log('Notification + PMS sync enqueued for', reservationId)
   }
 
   return new Response(JSON.stringify({ received: true, reservationId }), {

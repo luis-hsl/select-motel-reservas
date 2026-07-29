@@ -66,6 +66,19 @@ export default function ReservasTab() {
   async function updateStatus(id: string, status: string) {
     await supabase.from('reservations').update({ status }).eq('id', id)
     setReservations(prev => prev.map(r => r.id === id ? { ...r, status } : r))
+
+    // Cancelar aqui tem que refletir no PMS, senão a suíte segue bloqueada na
+    // recepção. Best-effort: se falhar, a reserva local já foi cancelada e o
+    // motel resolve na tela deles.
+    if (status === 'cancelled') {
+      try {
+        await supabase.functions.invoke('plugplay-sync-reserva', {
+          body: { reservationId: id, cancel: true },
+        })
+      } catch (e) {
+        console.warn('Falha ao cancelar no PMS:', e)
+      }
+    }
   }
 
   function exportCsv() {

@@ -12,3 +12,9 @@ verify_jwt = false
 
 [functions.verify-payment]
 verify_jwt = false
+
+[functions.plugplay-sync-reserva]
+verify_jwt = false
+
+[functions.plugplay-disponibilidade]
+verify_jwt = false

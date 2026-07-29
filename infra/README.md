@@ -107,6 +107,10 @@ Edite `/opt/supabase/app/.env` e adicione:
 WUZAPI_URL=http://wuzapi:8080
 WUZAPI_USER_TOKEN=<o USER_TOKEN gerado acima>
 ABACATEPAY_WEBHOOK_SECRET=<seu secret atual>
+
+# MotelMais PlugPlay (PMS) — ver supabase/functions/_shared/PLUGPLAY.md
+PLUGPLAY_ID=252
+PLUGPLAY_TOKEN=<token do integrador 252>
 ```
 
 Reinicie o container de functions pra reler os envs:

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { SUITES } from '../data'
 import { useStore } from '../store/useStore'
 import { supabase } from '../lib/supabase'
+import { fetchPmsUnavailableSuites } from '../lib/plugplay'
 import type { Suite, SuiteCategory } from '../types'
 import { metaEvents } from '../lib/metaPixel'
 
@@ -61,7 +62,10 @@ export default function StepSuite() {
   const { mode, package: pkg, suiteCategory, suite: selected, setSuite, nextStep, prevStep, checkIn, checkOut } = useStore()
 
   const [loading, setLoading]         = useState(true)
-  const [occupiedIds, setOccupiedIds] = useState<Set<string>>(new Set())
+  const [localOccupied, setLocalOccupied] = useState<Set<string>>(new Set())
+  // Ocupação vinda do PMS (walk-in, manutenção, reserva por telefone) — o
+  // banco do site não enxerga nada disso.
+  const [pmsOccupied, setPmsOccupied]     = useState<Set<string>>(new Set())
   const [photosMap, setPhotosMap]     = useState<Record<string, string[]>>({})
   const [alacarteMap, setAlacarteMap] = useState<Record<string, { period: number | null; overnight: number | null }>>({})
   const [currentIdx, setCurrentIdx]   = useState(0)
@@ -80,6 +84,12 @@ export default function StepSuite() {
     ...packageSuites,
     ...RESERVED_SUITES.filter(r => !packageSuites.find(s => s.id === r.id)),
   ]
+
+  // As duas fontes se somam: ocupada em qualquer uma, ocupada de fato.
+  const occupiedIds = useMemo(
+    () => new Set([...localOccupied, ...pmsOccupied]),
+    [localOccupied, pmsOccupied],
+  )
 
   const availableCount = packageSuites.filter(s => !occupiedIds.has(s.id)).length
 
@@ -124,7 +134,7 @@ export default function StepSuite() {
           .rpc('get_occupied_suite_ids', { p_check_in: cinBufIso, p_check_out: coutIso })
           .then(async ({ data, error }: { data: { suite_id: string }[] | null; error: unknown }) => {
             if (!error && data) {
-              setOccupiedIds(new Set(data.map((r: { suite_id: string }) => r.suite_id)))
+              setLocalOccupied(new Set(data.map((r: { suite_id: string }) => r.suite_id)))
               return
             }
             const { data: rows } = await supabase
@@ -133,8 +143,15 @@ export default function StepSuite() {
               .in('status', ['paid', 'pending'])
               .lt('check_in', coutIso)
               .gt('check_out', cinBufIso)
-            if (rows) setOccupiedIds(new Set(rows.map(r => r.suite_id as string)))
+            if (rows) setLocalOccupied(new Set(rows.map(r => r.suite_id as string)))
           })
+      )
+
+      // Cruza com o PMS. Vai a janela real, sem o buffer local: o PMS já
+      // desconta a interdição dele (2h antes da entrada) ao responder. Mandar
+      // cinBuf somaria os dois e esconderia suítes que estão livres.
+      promises.push(
+        fetchPmsUnavailableSuites(cin, cout).then(setPmsOccupied)
       )
     }
 
