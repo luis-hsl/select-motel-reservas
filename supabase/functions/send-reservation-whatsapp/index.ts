@@ -291,17 +291,27 @@ Deno.serve(async (req: Request) => {
     return { ok: res.ok, status: res.status, body: await res.text() }
   }
 
-  // 1) Cliente
-  const phone = normalizePhoneBR(r.customer_phone)
-  const clientRes = await sendText(phone, clientMsg)
-  if (!clientRes.ok) {
-    console.error('Wuzapi (cliente) error', clientRes.status, clientRes.body)
-    return new Response(
-      JSON.stringify({ error: 'wuzapi failed', detail: clientRes.body }),
-      { status: 502, headers: { 'Content-Type': 'application/json' } },
-    )
+  // 1) Cliente — só se o telefone for utilizável. Sem esta guarda, uma reserva
+  // sem telefone vira um envio pro número "55" e a fila retenta 10x à toa.
+  // Telefone inválido não é erro transitório: seguimos pro aviso ao motel.
+  const phone = normalizePhoneBR(r.customer_phone ?? '')
+  const phoneUsable = (r.customer_phone ?? '').replace(/\D/g, '').length >= 10
+  let clientSent = false
+
+  if (!phoneUsable) {
+    console.error('Telefone inválido/ausente na reserva', reservationId, '— pulando cliente')
+  } else {
+    const clientRes = await sendText(phone, clientMsg)
+    if (!clientRes.ok) {
+      console.error('Wuzapi (cliente) error', clientRes.status, clientRes.body)
+      return new Response(
+        JSON.stringify({ error: 'wuzapi failed', detail: clientRes.body }),
+        { status: 502, headers: { 'Content-Type': 'application/json' } },
+      )
+    }
+    clientSent = true
+    console.log('WhatsApp enviado ao cliente', phone, 'reserva', reservationId)
   }
-  console.log('WhatsApp enviado ao cliente', phone, 'reserva', reservationId)
 
   // 2) Motel (best-effort)
   let motelSent = false
@@ -321,7 +331,7 @@ Deno.serve(async (req: Request) => {
   }
 
   return new Response(
-    JSON.stringify({ sent: true, phone, motelNotified: motelSent }),
+    JSON.stringify({ sent: clientSent, phone, motelNotified: motelSent }),
     { headers: { 'Content-Type': 'application/json' } },
   )
 })

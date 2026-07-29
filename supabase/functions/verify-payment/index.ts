@@ -42,21 +42,33 @@ Deno.serve(async (req) => {
     if (fromReturn === true) {
       console.log('Confirming payment via completionUrl redirect for:', reservationId)
 
-      const { error: updateError } = await supabase
+      const { data: transitioned, error: updateError } = await supabase
         .from('reservations')
         .update({ status: 'paid' })
         .eq('id', reservationId)
         .eq('status', 'pending')
+        .select('id')
 
       if (updateError) {
         console.error('DB update failed:', updateError)
         return json({ error: 'db update failed' }, 500)
       }
 
-      // Fire WhatsApp (fire-and-forget)
-      supabase.functions.invoke('send-reservation-whatsapp', {
-        body: { reservationId },
-      }).catch((err: unknown) => console.error('WhatsApp send failed:', err))
+      // Enfileira em vez de fire-and-forget, igual ao verify-pix-payment: se a
+      // Wuzapi estiver fora do ar a mensagem era perdida em silêncio. A fila
+      // reenvia com backoff. Só enfileira se ESTA chamada fez a transição,
+      // pra não duplicar com o webhook.
+      if (transitioned && transitioned.length > 0) {
+        const { error: queueErr } = await supabase
+          .from('notification_queue')
+          .insert({
+            kind:    'reservation_whatsapp',
+            payload: { reservationId },
+            status:  'pending',
+          })
+        if (queueErr) console.error('Failed to enqueue notification:', queueErr)
+        else console.log('Notification enqueued for', reservationId)
+      }
 
       return json({ status: 'paid' })
     }

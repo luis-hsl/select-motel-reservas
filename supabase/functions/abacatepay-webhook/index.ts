@@ -21,6 +21,47 @@ const PAID_STATUSES = new Set([
   'APPROVED', 'approved', 'ACTIVE', 'active',
 ])
 
+// UUID puro, ou UUID com sufixo "-<timestamp>" (o externalId do /products/create
+// no fluxo de cartão é `${reservationId}-${Date.now()}`).
+const UUID_RE = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:-\d+)?$/i
+
+// Prefixos de id de cobrança da AbacatePay — guardados em reservations.payment_id.
+const CHARGE_ID_RE = /^(pix_char_|bill_|char_|chk_|checkout_)/
+
+interface Candidates {
+  reservationIds: string[]
+  chargeIds:      string[]
+  statuses:       string[]
+}
+
+// A AbacatePay aninha o objeto de forma diferente em cada evento
+// (data.billing, data.pixQrCode, data.transparent, data.checkout, ...).
+// Em vez de adivinhar o formato, varremos o payload inteiro atrás dos campos
+// que interessam. Isso torna o webhook imune a mudanças de shape.
+function collectCandidates(node: unknown, out: Candidates, depth = 0): void {
+  if (!node || typeof node !== 'object' || depth > 8) return
+
+  if (Array.isArray(node)) {
+    for (const item of node) collectCandidates(item, out, depth + 1)
+    return
+  }
+
+  for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+    if (typeof value === 'string') {
+      const uuidMatch = UUID_RE.exec(value)
+      if ((key === 'reservationId' || key === 'externalId') && uuidMatch) {
+        out.reservationIds.push(uuidMatch[1])
+      } else if ((key === 'id' || key === '_id') && CHARGE_ID_RE.test(value)) {
+        out.chargeIds.push(value)
+      } else if (key === 'status') {
+        out.statuses.push(value)
+      }
+    } else {
+      collectCandidates(value, out, depth + 1)
+    }
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') {
     return new Response('Method Not Allowed', { status: 405 })
@@ -53,58 +94,82 @@ Deno.serve(async (req: Request) => {
   console.log('AbacatePay webhook received event:', event)
   console.log('Full payload:', JSON.stringify(payload))
 
-  // Extract billing/data object — AbacatePay nests differently per event
-  const data = payload?.data ?? {}
-  const billing = data?.billing ?? data ?? {}
+  const candidates: Candidates = { reservationIds: [], chargeIds: [], statuses: [] }
+  collectCandidates(payload, candidates)
 
-  // Check if this event indicates payment by event name OR by status field
-  const statusInPayload: string =
-    billing?.status ?? data?.status ?? payload?.status ?? ''
-
-  const isKnownPaidEvent = PAID_EVENTS.has(event)
-  const hasKnownPaidStatus = PAID_STATUSES.has(statusInPayload)
+  // Check if this event indicates payment by event name OR by any status field
+  const isKnownPaidEvent   = PAID_EVENTS.has(event)
+  const hasKnownPaidStatus = candidates.statuses.some((s) => PAID_STATUSES.has(s))
 
   if (!isKnownPaidEvent && !hasKnownPaidStatus) {
-    console.log(`Ignoring event "${event}" with status "${statusInPayload}"`)
+    console.log(`Ignoring event "${event}" with statuses [${candidates.statuses.join(', ')}]`)
     return new Response(JSON.stringify({ received: true, ignored: true }), {
       headers: { 'Content-Type': 'application/json' },
     })
   }
-
-  // Extract reservationId from metadata (tried in multiple places)
-  const reservationId: string | undefined =
-    billing?.metadata?.reservationId ??
-    data?.metadata?.reservationId ??
-    payload?.metadata?.reservationId ??
-    data?.externalId ??
-    billing?.externalId ??
-    payload?.externalId
-
-  if (!reservationId) {
-    console.error('No reservationId in webhook payload', JSON.stringify(payload))
-    return new Response(JSON.stringify({ error: 'missing reservationId' }), {
-      status: 422,
-      headers: { 'Content-Type': 'application/json' },
-    })
-  }
-
-  console.log('Processing payment confirmation for reservation:', reservationId)
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   )
 
-  const { error: updateError } = await supabase
+  let reservationId: string | undefined = candidates.reservationIds[0]
+
+  // Fallback: alguns eventos (PIX/transparent) chegam sem metadata nenhuma —
+  // só com o id da cobrança. Ele foi gravado em reservations.payment_id na
+  // criação da cobrança, então dá pra resolver a reserva por ele.
+  if (!reservationId && candidates.chargeIds.length) {
+    const { data: byCharge } = await supabase
+      .from('reservations')
+      .select('id')
+      .in('payment_id', candidates.chargeIds)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle<{ id: string }>()
+    reservationId = byCharge?.id
+    if (reservationId) {
+      console.log('Reservation resolved via payment_id fallback:', reservationId)
+    }
+  }
+
+  if (!reservationId) {
+    // Responde 200 de propósito: o payload é determinístico, retentar não muda
+    // nada e 4xx repetido faz a AbacatePay desativar o webhook. O payload fica
+    // logado pra diagnóstico.
+    console.error(
+      'No reservationId resolvable from webhook payload. chargeIds=',
+      JSON.stringify(candidates.chargeIds),
+      'payload=', JSON.stringify(payload),
+    )
+    return new Response(JSON.stringify({ received: true, unresolved: true }), {
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  console.log('Processing payment confirmation for reservation:', reservationId)
+
+  // .select() devolve as linhas afetadas — se vier vazio, a reserva já estava
+  // paga (webhook duplicado, ou verify-pix-payment/verify-payment chegou antes)
+  // e a notificação já foi enfileirada por quem fez a transição.
+  // Evita WhatsApp duplicado.
+  const { data: transitioned, error: updateError } = await supabase
     .from('reservations')
     .update({ status: 'paid' })
     .eq('id', reservationId)
     .eq('status', 'pending')
+    .select('id')
 
   if (updateError) {
     console.error('Failed to update reservation:', updateError)
     return new Response(JSON.stringify({ error: 'db update failed' }), {
       status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  if (!transitioned || transitioned.length === 0) {
+    console.log('Reservation already paid, skipping notification:', reservationId)
+    return new Response(JSON.stringify({ received: true, reservationId, duplicate: true }), {
       headers: { 'Content-Type': 'application/json' },
     })
   }
