@@ -139,6 +139,12 @@ export interface ReservaPayload {
   dataInicio: string
   saidaNegociado?: string
   modo?: number
+  /**
+   * Horas que a suíte fica interditada ANTES da entrada, para limpeza.
+   * Verificado: uma reserva 18:00–20:00 com 1 bloqueia 17:00–20:00; com 2,
+   * 16:00–20:00. Omitir faz o PMS aplicar o default do integrador.
+   */
+  horasInterdicao?: number
   nome?: string
   telefone?: string
   email?: string

@@ -126,6 +126,9 @@ export default function StepSuite() {
     const cout = checkOut()
     if (cin && cout) {
       const coutIso  = cout.toISOString()
+      // 1h de limpeza antes da entrada — espelha suites.cleaning_buffer_h, que
+      // é o valor enviado ao PMS como horasInterdicao. Se aquele mudar (ex.:
+      // decoração sazonal volta a exigir 2h), este precisa acompanhar.
       const cinBuf   = new Date(cin.getTime() - 60 * 60 * 1000)
       const cinBufIso = cinBuf.toISOString()
       promises.push(

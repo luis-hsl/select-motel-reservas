@@ -84,6 +84,7 @@ interface ReservationRow {
   suites: {
     name: string | null
     room_number: number | null
+    cleaning_buffer_h: number | null
     pms_suite_id: number | null
     pms_categoria_id: number | null
   } | null
@@ -155,7 +156,7 @@ Deno.serve(async (req: Request) => {
       customer_name, customer_phone, customer_email,
       total_amount, payment_method, payment_id, package_id, extras,
       pms_reserva_id, pms_synced_at,
-      suites ( name, room_number, pms_suite_id, pms_categoria_id )
+      suites ( name, room_number, cleaning_buffer_h, pms_suite_id, pms_categoria_id )
     `)
     .eq('id', reservationId)
     .maybeSingle<ReservationRow>()
@@ -228,6 +229,11 @@ Deno.serve(async (req: Request) => {
     dataInicio:      toPmsDateTime(r.check_in),
     saidaNegociado:  toPmsDateTime(r.check_out),
     modo:            modoFor(r.type),
+    // suites.cleaning_buffer_h é a fonte da verdade do tempo de limpeza.
+    // Enviar explicitamente sobrepõe o default do integrador no PMS — é o
+    // que permite ajustar o prazo por suíte (ex.: decoração sazonal) sem
+    // depender de mudança no cadastro deles.
+    horasInterdicao: suite.cleaning_buffer_h ?? undefined,
     nome:            r.customer_name,
     telefone:        r.customer_phone,
     email:           r.customer_email,

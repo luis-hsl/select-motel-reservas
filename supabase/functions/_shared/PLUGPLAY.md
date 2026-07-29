@@ -99,6 +99,27 @@ batem exatamente com `src/data/suiteCategories.ts`.
 O mapa está fixo em `plugplay-sync-reserva`. `PLUGPLAY_MODO_MAP` sobrescreve se
 o motel remanejar as modalidades — ex.: `{"period":2,"overnight":1}`.
 
+## Interdição de limpeza
+
+`suites.cleaning_buffer_h` é a fonte da verdade e vai ao PMS como
+`Reserva.horasInterdicao`. **1h** desde 29/07/2026 — as 2h anteriores eram da
+temporada de Dia dos Namorados, quando cada quarto era limpo *e* redecorado.
+
+O prazo custa receita: com 2h, uma reserva às 18:00 bloqueia a suíte desde as
+16:00 e mata a faixa 16:00–17:00. Para voltar à decoração sazonal, subir o
+valor — dá para fazer por suíte:
+
+```sql
+UPDATE suites SET cleaning_buffer_h = 2 WHERE id IN ('suite-14','suite-16');
+```
+
+Dois pontos ficam de fora e precisam acompanhar à mão:
+- **O default do integrador no PMS ainda é 2h.** Ele vale para reserva criada
+  na recepção e walk-in. Só o motel muda isso, no cadastro deles — não há
+  endpoint na API.
+- **`StepSuite` tem 1h fixa no código** para a checagem local (não lê a
+  coluna). Se o buffer mudar, ajustar lá também.
+
 ## Preço: o do site é que vale
 
 São duas tabelas com propósitos diferentes, e isso é intencional:
@@ -139,8 +160,13 @@ Descobertos testando contra produção em 29/07/2026 (reserva criada e cancelada
 `horasInterdicao: 2` bloqueia a suíte a partir das 12:00 — a mensagem de
 disponibilidade diz isso explicitamente. Por isso mandamos a janela real
 (`checkIn` → `checkOut`), sem somar buffer nosso: os dois juntos esconderiam
-suítes livres. `horasInterdicao` (2) e `horasAlerta` (6) vêm do cadastro do
-integrador, não precisamos enviar.
+suítes livres.
+
+**`horasInterdicao` pode ser enviado e o PMS respeita.** Verificado: a mesma
+reserva 18:00–20:00 bloqueia 16:00–20:00 com `2` e 17:00–20:00 com `1`.
+Mandamos `suites.cleaning_buffer_h`, que é a fonte da verdade do lado do site
+— assim o prazo é ajustável por suíte sem depender do cadastro deles.
+`horasAlerta` (6) continua vindo do integrador.
 
 **`ReservaDisponibilidade` considera reservas futuras**, não só ocupação atual —
 verificado: janela idêntica e janela sobreposta dão `false` com mensagem
