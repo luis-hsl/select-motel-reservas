@@ -32,15 +32,26 @@ CREATE INDEX IF NOT EXISTS idx_onboarding_converted  ON onboarding_sessions (con
 ALTER TABLE onboarding_sessions ENABLE ROW LEVEL SECURITY;
 
 -- Anon NÃO lê — só admin (authenticated) pode ler no painel
+DROP POLICY IF EXISTS onboarding_read_authenticated ON onboarding_sessions;
 CREATE POLICY onboarding_read_authenticated ON onboarding_sessions
   FOR SELECT TO authenticated USING (true);
 
 -- Service role faz tudo (edge function track-onboarding)
+DROP POLICY IF EXISTS onboarding_service_role_all ON onboarding_sessions;
 CREATE POLICY onboarding_service_role_all ON onboarding_sessions
   FOR ALL TO service_role USING (true) WITH CHECK (true);
 
--- Realtime: liga publicação só dessa tabela pro admin escutar
-ALTER PUBLICATION supabase_realtime ADD TABLE onboarding_sessions;
+-- Realtime: liga publicação só dessa tabela pro admin escutar.
+-- ADD TABLE não aceita IF NOT EXISTS e falha se a tabela já estiver publicada.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+     WHERE pubname = 'supabase_realtime' AND tablename = 'onboarding_sessions'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE onboarding_sessions;
+  END IF;
+END $$;
 
 -- Housekeeping: remove sessões abandonadas há mais de 90 dias
 CREATE OR REPLACE FUNCTION onboarding_cleanup() RETURNS void

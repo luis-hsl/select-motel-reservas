@@ -30,8 +30,11 @@ CREATE INDEX IF NOT EXISTS idx_experience_items_category
   WHERE active = true;
 
 ALTER TABLE experience_items ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS experience_items_read_public ON experience_items;
 CREATE POLICY experience_items_read_public ON experience_items
   FOR SELECT TO anon, authenticated USING (active = true);
+
+DROP POLICY IF EXISTS experience_items_auth_all ON experience_items;
 CREATE POLICY experience_items_auth_all ON experience_items
   FOR ALL TO authenticated USING (true) WITH CHECK (true);
 

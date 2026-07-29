@@ -1,4 +1,6 @@
-CREATE TABLE promotions (
+-- Idempotente: migrate.yml re-roda todas as migrations a cada push, e com
+-- ON_ERROR_STOP=1 qualquer erro aborta o arquivo inteiro no meio.
+CREATE TABLE IF NOT EXISTS promotions (
   id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
   title       text        NOT NULL,
   description text        NOT NULL DEFAULT '',
@@ -11,5 +13,9 @@ CREATE TABLE promotions (
 );
 
 ALTER TABLE promotions ENABLE ROW LEVEL SECURITY;
+-- Postgres não tem CREATE POLICY IF NOT EXISTS — DROP antes é o idioma padrão.
+DROP POLICY IF EXISTS "promotions_public_read"  ON promotions;
 CREATE POLICY "promotions_public_read" ON promotions FOR SELECT TO anon, authenticated USING (true);
+
+DROP POLICY IF EXISTS "promotions_service_all"  ON promotions;
 CREATE POLICY "promotions_service_all" ON promotions FOR ALL TO service_role USING (true) WITH CHECK (true);

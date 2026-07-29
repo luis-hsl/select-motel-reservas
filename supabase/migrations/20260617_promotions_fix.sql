@@ -1,4 +1,5 @@
 -- Fix 1: permite que usuários autenticados (admin) gerenciem promoções
+DROP POLICY IF EXISTS "promotions_admin_all" ON promotions;
 CREATE POLICY "promotions_admin_all" ON promotions
   FOR ALL TO authenticated USING (true) WITH CHECK (true);
 

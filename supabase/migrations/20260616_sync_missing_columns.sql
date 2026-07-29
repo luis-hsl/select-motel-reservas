@@ -94,6 +94,7 @@ CREATE INDEX IF NOT EXISTS idx_notification_queue_due
   WHERE status = 'pending';
 
 ALTER TABLE notification_queue ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS notification_queue_service_all ON notification_queue;
 CREATE POLICY notification_queue_service_all ON notification_queue
   FOR ALL TO service_role USING (true) WITH CHECK (true);
 

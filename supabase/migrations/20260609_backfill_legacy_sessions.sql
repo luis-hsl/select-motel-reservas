@@ -26,9 +26,23 @@
 --      backfill e deploy do tracking novo) também recebem 'package' como
 --      fallback — pacote é o card recomendado e a esmagadora maioria.
 
+-- Este arquivo ordena ANTES de 20260609_onboarding_mode.sql ("b" < "o"), que é
+-- quem cria onboarding_sessions.mode. Como o migrate.yml roda todos os arquivos
+-- em ordem alfabética, num banco novo o backfill rodava antes da coluna existir
+-- e morria com "column mode does not exist". Renomear resolveria a ordem, mas o
+-- rsync do workflow não usa --delete: o arquivo antigo continuaria na VPS e
+-- rodando. Então a migration se torna autossuficiente.
+ALTER TABLE public.onboarding_sessions
+  ADD COLUMN IF NOT EXISTS mode text;
+
 DO $$
 DECLARE
   cutoff timestamptz := '2026-06-08 16:00:00+00';
+  -- Fim da janela de corrida entre este backfill e o deploy do tracking novo.
+  -- Sem esse teto o UPDATE 4 abaixo re-roda a cada push e estampa 'package'
+  -- em QUALQUER sessão com mode NULL — inclusive sessões em andamento e do
+  -- modo Experiência, corrompendo o funil que o admin Ao Vivo lê.
+  race_end timestamptz := '2026-06-10 00:00:00+00';
 BEGIN
   -- 1 + 2: backfill mode e remap steps das sessões antigas
   UPDATE public.onboarding_sessions
@@ -65,5 +79,6 @@ BEGIN
   UPDATE public.onboarding_sessions
   SET    mode = 'package'
   WHERE  mode IS NULL
-    AND  started_at >= cutoff;
+    AND  started_at >= cutoff
+    AND  started_at <  race_end;
 END $$;
