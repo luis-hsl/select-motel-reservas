@@ -193,11 +193,44 @@ docker exec supabase-db pg_dump -U postgres postgres | gzip > /opt/backups/db-$(
 ```
 (Adicione ao cron: `0 3 * * * ...`)
 
+### ⚠️ O override NÃO carrega sozinho
+
+O `.env` da VPS define `COMPOSE_FILE=docker-compose.yml`, e isso **desliga a
+descoberta automática do `docker-compose.override.yml`**. Ou seja: um
+`docker compose up -d` recria os containers **sem** as envs custom — o
+container `functions` perde WUZAPI, ABACATEPAY, META e PLUGPLAY de uma vez,
+e as reservas param de notificar/sincronizar sem erro visível.
+
+Sempre que for **recriar** container (`up -d`, `pull`), passe os dois:
+```bash
+cd /opt/supabase/app
+sudo docker compose -f docker-compose.yml -f docker-compose.override.yml up -d
+```
+`restart` é seguro sem isso — não recria, só reinicia o processo.
+
+**Recriar o container `functions` invalida o DNS que o Kong tem em cache**
+(o container ganha IP novo), e o Kong passa a devolver 502 em
+`/functions/v1/*`. Depois de recriar, reinicie o Kong:
+```bash
+sudo docker compose -f docker-compose.yml -f docker-compose.override.yml restart kong
+```
+
+Teste rápido de que voltou (405 = função viva rejeitando GET):
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" \
+  https://api.selectreservas.com.br/supabase/functions/v1/abacatepay-webhook
+```
+Note o prefixo `/supabase/` — o Nginx serve o SPA na raiz e só proxia a API
+sob esse caminho. `/functions/v1/...` direto devolve o HTML do site.
+
 ### Atualizar imagem do Supabase
 ```bash
 cd /opt/supabase/supabase-src && git pull
 cp docker/docker-compose.yml /opt/supabase/app/docker-compose.yml
-cd /opt/supabase/app && docker compose pull && docker compose up -d
+cd /opt/supabase/app
+sudo docker compose -f docker-compose.yml -f docker-compose.override.yml pull
+sudo docker compose -f docker-compose.yml -f docker-compose.override.yml up -d
+sudo docker compose -f docker-compose.yml -f docker-compose.override.yml restart kong
 ```
 
 ---
