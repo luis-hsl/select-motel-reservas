@@ -216,3 +216,22 @@ export function disponibilidadePorSuite(
 export function suitesStatus(): Promise<unknown> {
   return request<unknown>('GET', '/api/SuitesStatus')
 }
+
+/**
+ * GET /api/Reserva — reservas ativas, 200 por página, DataCadastro desc.
+ * Canceladas não aparecem (verificado). Paginamos até esgotar porque a ordem
+ * é por cadastro, não por data de entrada: a reserva de daqui a 3 meses pode
+ * estar em qualquer página.
+ */
+export async function listarReservas(maxPaginas = 5): Promise<ReservaResult[]> {
+  const todas: ReservaResult[] = []
+  for (let p = 1; p <= maxPaginas; p++) {
+    const pagina = await request<ReservaResult[]>('GET', '/api/Reserva', {
+      query: { pagina: p },
+    })
+    if (!Array.isArray(pagina) || pagina.length === 0) break
+    todas.push(...pagina)
+    if (pagina.length < 200) break
+  }
+  return todas
+}

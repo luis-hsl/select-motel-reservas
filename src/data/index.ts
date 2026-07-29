@@ -88,9 +88,32 @@ export function getAvailableDates(): Date[] {
   return dates
 }
 
-export function calcCheckOut(checkIn: Date, type: 'period' | 'overnight' | 'diaria' | 'oneHour'): Date {
+export type ReservationTypeId = 'period' | 'overnight' | 'diaria' | 'oneHour'
+
+/** Duração em horas de cada modalidade. Fonte única — calcCheckOut usa isto. */
+export const TYPE_HOURS: Record<ReservationTypeId, number> = {
+  oneHour: 1, period: 2, overnight: 12, diaria: 24,
+}
+
+export function calcCheckOut(checkIn: Date, type: ReservationTypeId): Date {
   const out = new Date(checkIn)
-  const hours = type === 'oneHour' ? 1 : type === 'period' ? 2 : type === 'diaria' ? 24 : 12
-  out.setHours(out.getHours() + hours)
+  out.setHours(out.getHours() + TYPE_HOURS[type])
   return out
+}
+
+/**
+ * Sexta, sábado e domingo. Nesses dias não vendemos Período (nem 1 hora no
+ * modo suíte) — só Pernoite e Diária.
+ *
+ * Regra de negócio do motel, aplicada no StepTipo. Fica aqui para o StepData
+ * calcular a disponibilidade com a duração certa: se o cliente ainda não
+ * escolheu a modalidade, num fim de semana o padrão é Pernoite, não Período.
+ */
+export function isWeekendDate(d: Date): boolean {
+  return [0, 5, 6].includes(d.getDay())
+}
+
+/** Modalidade assumida quando o cliente ainda não escolheu (StepData vem antes). */
+export function defaultTypeFor(date: Date): ReservationTypeId {
+  return isWeekendDate(date) ? 'overnight' : 'period'
 }

@@ -11,9 +11,35 @@ O PMS que a recepção do motel usa. Spec: `https://oxpi.com.br/api/PlugPlay/ope
 Herda o retry exponencial da fila (1m → 2m → 4m … cap 1h, 10 tentativas).
 
 **Disponibilidade** — o PMS enxerga walk-in, manutenção e reserva por telefone;
-o banco do site não. Consultado em dois pontos:
+o banco do site não. Consultado em três pontos:
+- `StepData` (via `plugplay-mapa-dia`) — quantas suítes livres em cada horário
 - `StepSuite` (via `plugplay-disponibilidade`) — cinza as suítes ocupadas na vitrine
 - `abacatepay-create-charge` — última checagem antes de cobrar
+
+### Por que `plugplay-mapa-dia` calcula em vez de perguntar
+
+`ReservaDisponibilidade/PorSuiteId` é por suíte e por janela. Para os 24 slots
+× 13 suítes do StepData daria **312 chamadas** — inviável numa tela. A função
+puxa 2 endpoints (`/api/Reserva` + `/api/SuitesStatus`) e cruza localmente.
+
+A regra foi medida contra a API, não deduzida:
+
+```
+bloqueado = [dataInicio − horasInterdicao, saidaNegociado]
+sobrepõe  = entrada < fimBloqueio && saida > inícioBloqueio   (half-open)
+```
+
+Validado em 29/07/2026 com uma reserva real de 18:00–20:00 (interdição 2h →
+bloqueio 16:00–20:00): o cálculo local reproduziu a resposta de
+`ReservaDisponibilidade` em **24/24 slots**, incluindo as bordas
+(14:00 livre, 15:00 bloqueado, 19:00 bloqueado, 20:00 livre).
+
+**Limite conhecido:** o cálculo cobre reservas com exatidão, mas o status
+atual (Ocupado/Faxina/Manutenção) entra por aproximação — para `Ocupado`
+usamos o campo `perm` (tempo restante, conferido), para os demais status uma
+janela curta de 2h. Isso só afeta slots de hoje nas próximas horas. O ponto
+autoritativo continua sendo o `create-charge`, que consulta o PMS de verdade
+antes de cobrar.
 
 **Cancelamento** — admin marca `cancelled` → `plugplay-sync-reserva` com
 `cancel:true` → `DELETE /api/Reserva` (soft delete lá).
