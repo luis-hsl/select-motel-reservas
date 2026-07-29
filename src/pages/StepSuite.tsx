@@ -49,6 +49,15 @@ const THEMES: Record<SuiteCategory, { accent: string; accentBright: string; bg: 
 const DEFAULT_THEME = THEMES['Standard']
 
 // Suítes decorativas — aparecem sempre como reservadas para criar escassez percebida
+/**
+ * Interdição de limpeza antes da entrada, em horas.
+ *
+ * Tem que bater com o default do integrador no MotelMais PlugPlay — hoje 2h,
+ * medido: uma reserva às 18:00 aparece bloqueada lá desde as 16:00. Manter
+ * menor aqui faria o site oferecer suíte que a recepção considera interditada.
+ */
+const CLEANING_BUFFER_H = 2
+
 const RESERVED_SUITE_IDS = new Set(['suite-19', 'suite-20', 'suite-21'])
 
 const SMOKER_ROOM_NUMBERS = new Set([13, 23])
@@ -126,10 +135,11 @@ export default function StepSuite() {
     const cout = checkOut()
     if (cin && cout) {
       const coutIso  = cout.toISOString()
-      // 1h de limpeza antes da entrada — espelha suites.cleaning_buffer_h, que
-      // é o valor enviado ao PMS como horasInterdicao. Se aquele mudar (ex.:
-      // decoração sazonal volta a exigir 2h), este precisa acompanhar.
-      const cinBuf   = new Date(cin.getTime() - 60 * 60 * 1000)
+      // 2h de interdição para limpeza antes da entrada. Espelha o default do
+      // integrador no PMS (medido: uma reserva às 18:00 bloqueia desde as
+      // 16:00) e suites.cleaning_buffer_h. Estava 1h aqui, o que deixava o
+      // site mais permissivo que a recepção — corrigido em 29/07/2026.
+      const cinBuf   = new Date(cin.getTime() - CLEANING_BUFFER_H * 3600 * 1000)
       const cinBufIso = cinBuf.toISOString()
       promises.push(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

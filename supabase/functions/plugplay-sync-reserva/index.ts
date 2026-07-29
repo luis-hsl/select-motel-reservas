@@ -229,11 +229,12 @@ Deno.serve(async (req: Request) => {
     dataInicio:      toPmsDateTime(r.check_in),
     saidaNegociado:  toPmsDateTime(r.check_out),
     modo:            modoFor(r.type),
-    // suites.cleaning_buffer_h é a fonte da verdade do tempo de limpeza.
-    // Enviar explicitamente sobrepõe o default do integrador no PMS — é o
-    // que permite ajustar o prazo por suíte (ex.: decoração sazonal) sem
-    // depender de mudança no cadastro deles.
-    horasInterdicao: suite.cleaning_buffer_h ?? undefined,
+    // `horasInterdicao` é omitido de propósito: o PMS aplica o default do
+    // integrador (2h, medido) e assim o site nunca diverge da recepção. Enviar
+    // o campo funciona — verificado — mas congelaria o nosso valor e faria o
+    // site ignorar uma mudança futura no cadastro deles.
+    // Para prazo por suíte (ex.: decoração sazonal), mandar
+    // suites.cleaning_buffer_h aqui.
     nome:            r.customer_name,
     telefone:        r.customer_phone,
     email:           r.customer_email,
