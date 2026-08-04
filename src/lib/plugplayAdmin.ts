@@ -185,6 +185,36 @@ export async function fetchDesempenho(
   }
 }
 
+export interface AnalyticsResponse<T> {
+  configured: boolean
+  rpc: string
+  dados: T | null
+  tookMs: number
+  erro: string | null
+}
+
+/**
+ * Chama uma função de agregação do banco pela rota `analytics`.
+ *
+ * A lista de RPCs permitidas é fechada no servidor — passar um nome fora dela
+ * devolve 400. Tela nova de dado custa uma migration e um componente, sem
+ * precisar mexer na edge function.
+ */
+export async function fetchAnalytics<T>(
+  rpc: string,
+  params: Record<string, unknown> = {},
+): Promise<T | null> {
+  try {
+    const { data, error } = await supabase.functions.invoke<AnalyticsResponse<T>>('plugplay-admin', {
+      body: { action: 'analytics', rpc, params },
+    })
+    if (error || !data || data.erro) return null
+    return data.dados
+  } catch {
+    return null
+  }
+}
+
 export interface CobrancaResponse {
   configured: boolean
   suiteRef?: string

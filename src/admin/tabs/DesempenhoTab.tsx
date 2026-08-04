@@ -114,9 +114,19 @@ export default function DesempenhoTab() {
             {a.periodo.dias} {a.periodo.dias === 1 ? 'dia' : 'dias'} · {a.periodo.suites} suítes ·
             {' '}inclui balcão e telefone
           </p>
-          {/* A base da comparação fica dita uma vez, e não repetida em cada tile. */}
+          {/* A base da comparação fica dita uma vez, e não repetida em cada tile.
+              Quando não há base, explicar o motivo evita que a ausência de
+              comparativo seja lida como bug — o PMS simplesmente não guarda
+              nada antes de nov/2025. */}
           <p className="text-white/20 text-[10px] mt-0.5">
-            {cobreAnterior ? `Variações ${ANTERIOR[gran]}` : 'Sem período anterior ingerido para comparar'}
+            {cobreAnterior
+              ? `Variações ${ANTERIOR[gran]}`
+              : `Sem comparativo: o PMS não tem movimento antes de ${
+                  dados.cobertura?.primeiro_dia
+                    ? new Date(`${dados.cobertura.primeiro_dia}T12:00:00`)
+                        .toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })
+                    : 'o início do histórico'
+                }`}
           </p>
         </div>
         <PeriodoSeletor

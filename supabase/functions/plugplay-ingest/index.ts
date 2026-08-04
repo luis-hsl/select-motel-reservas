@@ -221,6 +221,41 @@ async function ingerirSnapshots(
   return resultado
 }
 
+/** Catálogo de produtos → pms_produtos. Dá nome e custo ao consumos[]. */
+async function ingerirCatalogo(supabase: SupabaseClient): Promise<{ lidos: number; gravados: number }> {
+  const dados = await plugplayGet<Record<string, unknown>[]>('/api/Entidades/Produto/GetAll')
+  if (!Array.isArray(dados) || dados.length === 0) return { lidos: 0, gravados: 0 }
+
+  const linhas = dados
+    .filter((p) => Number.isFinite(Number(p?.id)))
+    .map((p) => ({
+      produto_id:          Number(p.id),
+      nome:                String(p.nome ?? '').trim() || `produto ${p.id}`,
+      unidade:             p.unidade == null ? null : String(p.unidade),
+      referencia:          p.referencia == null ? null : String(p.referencia),
+      grupo_id:            p.grupoId == null ? null : Number(p.grupoId),
+      grupo_nome:          p.grupoNome == null ? null : String(p.grupoNome),
+      subgrupo_id:         p.subgrupoId == null ? null : Number(p.subgrupoId),
+      subgrupo_nome:       p.subgrupoNome == null ? null : String(p.subgrupoNome),
+      preco_custo:         num(p.precoCusto),
+      preco_venda:         num(p.precoVenda),
+      is_ativo:            p.isAtivo === true,
+      disponivel_cardapio: p.disponivelCardapio === true,
+      categoria_cardapio:  p.categoriaCardapioNome == null ? null : String(p.categoriaCardapioNome),
+      raw:                 p,
+      atualizado_em:       new Date().toISOString(),
+    }))
+
+  for (let i = 0; i < linhas.length; i += MAX_UPSERT_LOTE) {
+    const { error } = await supabase
+      .from('pms_produtos')
+      .upsert(linhas.slice(i, i + MAX_UPSERT_LOTE), { onConflict: 'produto_id' })
+    if (error) throw new Error(`upsert produtos falhou: ${error.message}`)
+  }
+
+  return { lidos: dados.length, gravados: linhas.length }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST' && req.method !== 'GET') {
     return new Response('Method Not Allowed', { status: 405 })
@@ -270,10 +305,30 @@ Deno.serve(async (req: Request) => {
     return responder({ configured: true, action, ano, mes, resultado, duracao })
   }
 
+  // ── catálogo ──────────────────────────────────────────────────────────────
+  if (action === 'catalogo') {
+    try {
+      const r = await ingerirCatalogo(supabase)
+      const duracao = Date.now() - t0
+      await supabase.from('pms_ingest_runs').insert({
+        tipo: 'catalogo', lidos: r.lidos, gravados: r.gravados, duracao_ms: duracao,
+      })
+      return responder({ configured: true, action, ...r, duracao })
+    } catch (e) {
+      const pp = e instanceof PlugPlayError ? e : null
+      const erro = pp ? `HTTP ${pp.status} ${pp.body.slice(0, 200)}` : String(e)
+      await supabase.from('pms_ingest_runs').insert({ tipo: 'catalogo', erro })
+      return responder({ configured: true, action, erro }, 500)
+    }
+  }
+
   // ── incremental e backfill ────────────────────────────────────────────────
   if (action !== 'incremental' && action !== 'backfill') {
     return responder(
-      { error: `ação desconhecida: ${action}`, disponiveis: ['incremental', 'backfill', 'snapshots'] },
+      {
+        error: `ação desconhecida: ${action}`,
+        disponiveis: ['incremental', 'backfill', 'snapshots', 'catalogo'],
+      },
       400,
     )
   }

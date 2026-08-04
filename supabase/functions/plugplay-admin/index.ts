@@ -307,9 +307,12 @@ Deno.serve(async (req: Request) => {
       : responder({ configured: true, suiteRef, erro: r.erro }, 200)
   }
 
-  if (action !== 'panorama' && action !== 'desempenho') {
+  if (action !== 'panorama' && action !== 'desempenho' && action !== 'analytics') {
     return responder(
-      { error: `ação desconhecida: ${action}`, disponiveis: ['panorama', 'cobranca', 'desempenho'] },
+      {
+        error: `ação desconhecida: ${action}`,
+        disponiveis: ['panorama', 'cobranca', 'desempenho', 'analytics'],
+      },
       400,
     )
   }
@@ -321,6 +324,42 @@ Deno.serve(async (req: Request) => {
 
   const t0 = Date.now()
   const hoje = toPmsDateTime(new Date()).slice(0, 10)
+
+  // ── Analytics ─────────────────────────────────────────────────────────────
+  // Proxy para as funções de agregação do banco. Existe para que uma tela nova
+  // custe uma migration e um componente, sem precisar abrir esta função de novo
+  // a cada corte de dado.
+  //
+  // A whitelist é fechada **no código**, nunca vinda do cliente: sem ela, quem
+  // tivesse um JWT de admin poderia chamar qualquer função do Postgres, e o
+  // service_role aqui ignora RLS. Os parâmetros vão nomeados via `rpc()`, que
+  // parametriza — não há concatenação de SQL em lugar nenhum.
+  if (action === 'analytics') {
+    const RPCS = new Set([
+      'pms_desempenho',
+      'pms_cobertura',
+      'pms_mix_periodo',
+      'pms_recorrencia_placa',
+      'pms_consumo_margem',
+      'pms_financeiro',
+    ])
+
+    const rpc = String(corpoJson.rpc ?? '')
+    if (!RPCS.has(rpc)) {
+      return responder({ error: `rpc não liberada: ${rpc}`, disponiveis: [...RPCS] }, 400)
+    }
+
+    const params = (corpoJson.params ?? {}) as Record<string, unknown>
+    const { data, error } = await supabase.rpc(rpc, params)
+
+    return responder({
+      configured: true,
+      rpc,
+      dados: data ?? null,
+      tookMs: Date.now() - t0,
+      erro: error?.message ?? null,
+    }, error ? 500 : 200)
+  }
 
   // ── Desempenho ────────────────────────────────────────────────────────────
   // Vem inteiro do Postgres, não do PMS: os campos de comparativo do relatório

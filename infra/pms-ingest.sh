@@ -14,6 +14,8 @@
 # Cron (root) — sem redirecionar: o script escreve e rotaciona /var/log/pms-ingest.log
 #   */15 * * * * /usr/local/bin/pms-ingest.sh incremental
 #   20 4 * * *   /usr/local/bin/pms-ingest.sh snapshots
+#   40 4 * * 1   /usr/local/bin/pms-ingest.sh manutencao   # relê 60 dias
+#   50 4 1 * *   /usr/local/bin/pms-ingest.sh catalogo     # produtos mudam devagar
 #
 # Backfill na mão (ex.: repuxar desde maio):
 #   /usr/local/bin/pms-ingest.sh backfill 2026-05-01
@@ -49,7 +51,7 @@ if [ -z "${SERVICE_ROLE_KEY:-}" ]; then
 fi
 
 case "$ACTION" in
-  incremental|snapshots) PAYLOAD="{\"action\":\"$ACTION\"}" ;;
+  incremental|snapshots|catalogo) PAYLOAD="{\"action\":\"$ACTION\"}" ;;
   backfill)
     if [ -z "$INICIO" ]; then
       echo "$(date -Is) ERRO: backfill exige data inicial (YYYY-MM-DD)"
@@ -57,8 +59,15 @@ case "$ACTION" in
     fi
     PAYLOAD="{\"action\":\"backfill\",\"inicio\":\"$INICIO\"}"
     ;;
+  manutencao)
+    # Rede de segurança semanal. O `incremental` só olha 3 dias, então correção
+    # que a recepção (ou a Oxpi) faça numa estadia antiga nunca chegaria aqui.
+    # 60 dias cobre com folga o prazo em que uma conta ainda é reaberta, e o
+    # upsert torna o retrabalho inofensivo.
+    PAYLOAD="{\"action\":\"backfill\",\"inicio\":\"$(date -d '60 days ago' +%F)\"}"
+    ;;
   *)
-    echo "$(date -Is) ERRO: ação inválida '$ACTION' (incremental|snapshots|backfill)"
+    echo "$(date -Is) ERRO: ação inválida '$ACTION' (incremental|snapshots|backfill|manutencao|catalogo)"
     exit 1
     ;;
 esac
