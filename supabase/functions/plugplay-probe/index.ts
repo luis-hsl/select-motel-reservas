@@ -1,5 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { isConfigured, plugplayGet, toPmsDateTime, PLUGPLAY_BASE, PlugPlayError } from '../_shared/plugplay.ts'
+import { exigirAdmin } from '../_shared/adminAuth.ts'
 
 // Sondagem da API PlugPlay — descobre o FORMATO das respostas.
 //
@@ -18,8 +19,9 @@ import { isConfigured, plugplayGet, toPmsDateTime, PLUGPLAY_BASE, PlugPlayError 
 // de fora de propósito — nenhuma sondagem deve poder sujar o sistema que a
 // recepção usa.
 //
-// Sem verify_jwt=false no config.toml, igual ao plugplay-diag: exige JWT, só o
-// admin logado chega aqui. Isto expõe a operação interna do motel.
+// Exige JWT de admin logado via `exigirAdmin` — no self-host o `VERIFY_JWT` do
+// edge-runtime é global e está desligado, então config.toml não protege nada.
+// Ver _shared/adminAuth.ts. Isto despeja a operação interna do motel.
 //
 // Uso:
 //   curl -H "Authorization: Bearer $JWT" '.../plugplay-probe'
@@ -299,6 +301,9 @@ Deno.serve(async (req: Request) => {
   if (req.method !== 'GET' && req.method !== 'POST') {
     return new Response('Method Not Allowed', { status: 405 })
   }
+
+  const auth = await exigirAdmin(req)
+  if (!auth.ok) return auth.response
 
   const url = new URL(req.url)
   const redigir = url.searchParams.get('raw') !== '1'

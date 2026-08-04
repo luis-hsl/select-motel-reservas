@@ -193,6 +193,38 @@ docker exec supabase-db pg_dump -U postgres postgres | gzip > /opt/backups/db-$(
 ```
 (Adicione ao cron: `0 3 * * * ...`)
 
+### ⚠️ `config.toml` não protege edge function aqui
+
+`supabase/config.toml` só vale no Supabase Cloud e no CLI local. **No self-host
+ele não é lido.** Quem serve as functions é o container `edge-runtime`, que lê
+`FUNCTIONS_VERIFY_JWT` do `.env` — **uma flag global, não por função** (o
+`docker-compose.yml` oficial tem o TODO admitindo isso). Na VPS ela está em
+`false`, porque webhook de pagamento e o site precisam chamar sem JWT.
+
+Consequência: **função que não checar o token no próprio corpo fica aberta na
+internet.** Descoberto em 04/08/2026 — `plugplay-diag` respondia 200 sem header
+nenhum desde 29/07, devolvendo o mapa das suítes do motel.
+
+Toda função nova que exponha dado interno tem que começar com:
+
+```ts
+import { exigirAdmin } from '../_shared/adminAuth.ts'
+
+const auth = await exigirAdmin(req)
+if (!auth.ok) return auth.response
+```
+
+Conferir depois de subir — o teste é de uma linha:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' \
+  https://api.selectreservas.com.br/supabase/functions/v1/<funcao>
+# 401 = protegida.  200 = aberta pra internet.
+```
+
+Hoje exigem JWT: `plugplay-admin`, `plugplay-probe`, `plugplay-diag`,
+`wuzapi-admin`. As demais são públicas de propósito (webhooks e o site).
+
 ### ⚠️ O override NÃO carrega sozinho
 
 O `.env` da VPS define `COMPOSE_FILE=docker-compose.yml`, e isso **desliga a

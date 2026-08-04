@@ -1,6 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { isConfigured, suitesStatus, PLUGPLAY_BASE } from '../_shared/plugplay.ts'
+import { exigirAdmin } from '../_shared/adminAuth.ts'
 
 // Diagnóstico da integração PlugPlay. Existe por um motivo prático: sem saber
 // os ids das suítes do lado do PMS, não dá pra preencher suites.pms_suite_id,
@@ -8,13 +9,18 @@ import { isConfigured, suitesStatus, PLUGPLAY_BASE } from '../_shared/plugplay.t
 //
 // Devolve o que o PMS conhece + o que já está mapeado aqui, lado a lado.
 //
-// Sem verify_jwt=false em config.toml de propósito: exige JWT, ou seja, só o
-// admin logado chega aqui. Isto expõe a topologia interna do motel.
+// Exige JWT de admin logado via `exigirAdmin`. A ausência em config.toml não
+// bastava: no self-host o `VERIFY_JWT` do edge-runtime é global e está
+// desligado, então esta função respondeu 200 sem header nenhum entre 29/07 e
+// 04/08/2026, expondo a topologia interna do motel. Ver _shared/adminAuth.ts.
 
 Deno.serve(async (req: Request) => {
   if (req.method !== 'GET' && req.method !== 'POST') {
     return new Response('Method Not Allowed', { status: 405 })
   }
+
+  const auth = await exigirAdmin(req)
+  if (!auth.ok) return auth.response
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
