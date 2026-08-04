@@ -15,6 +15,10 @@ import WhatsAppTab from './tabs/WhatsAppTab'
 import AoVivoTab from './tabs/AoVivoTab'
 import MotelTab from './tabs/MotelTab'
 import DesempenhoTab from './tabs/DesempenhoTab'
+import MixTab from './tabs/MixTab'
+import RecorrenciaTab from './tabs/RecorrenciaTab'
+import ConsumoTab from './tabs/ConsumoTab'
+import FinanceiroTab from './tabs/FinanceiroTab'
 import LeadsTab from './tabs/LeadsTab'
 import PromosTab from './tabs/PromosTab'
 
@@ -26,7 +30,8 @@ import PromosTab from './tabs/PromosTab'
 // abre o admin vê o motel antes de qualquer menu.
 
 type Tab =
-  | 'inicio' | 'motel' | 'desempenho' | 'reservas'
+  | 'inicio' | 'motel' | 'reservas'
+  | 'desempenho' | 'mix' | 'recorrencia' | 'consumo' | 'financeiro'
   | 'visao-geral' | 'ao-vivo' | 'leads' | 'promos'
   | 'suites' | 'pacotes' | 'cardapio' | 'presente'
   | 'whatsapp' | 'config'
@@ -40,12 +45,24 @@ interface Grupo {
 // primeiro, cadastro que muda uma vez por mês por último.
 const GRUPOS: Grupo[] = [
   {
+    // O que está acontecendo agora e o que exige ação.
     titulo: 'Operação',
     itens: [
-      { id: 'inicio',     label: 'Início' },
-      { id: 'motel',      label: 'Mapa do motel' },
-      { id: 'desempenho', label: 'Desempenho' },
-      { id: 'reservas',   label: 'Reservas' },
+      { id: 'inicio',   label: 'Início' },
+      { id: 'motel',    label: 'Mapa do motel' },
+      { id: 'reservas', label: 'Reservas' },
+    ],
+  },
+  {
+    // Entender os números, não operá-los. Separado de Operação porque juntos
+    // dariam oito itens sem hierarquia — o problema que a trilha veio resolver.
+    titulo: 'Análise',
+    itens: [
+      { id: 'desempenho',  label: 'Desempenho' },
+      { id: 'mix',         label: 'Mix e ticket' },
+      { id: 'recorrencia', label: 'Recorrência' },
+      { id: 'consumo',     label: 'Consumo' },
+      { id: 'financeiro',  label: 'Financeiro' },
     ],
   },
   {
@@ -186,6 +203,10 @@ export default function AdminDashboard({ user }: { user: User }) {
               {tab === 'inicio'      && <InicioTab ir={ir} />}
               {tab === 'motel'       && <MotelTab />}
               {tab === 'desempenho'  && <DesempenhoTab />}
+              {tab === 'mix'         && <MixTab />}
+              {tab === 'recorrencia' && <RecorrenciaTab />}
+              {tab === 'consumo'     && <ConsumoTab />}
+              {tab === 'financeiro'  && <FinanceiroTab />}
               {tab === 'reservas'    && <ReservasTab />}
               {tab === 'visao-geral' && <DashboardTab />}
               {tab === 'ao-vivo'     && <AoVivoTab />}

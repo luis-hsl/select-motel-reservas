@@ -101,6 +101,10 @@ export default function DesempenhoTab() {
   // Um único dia não rende série diária nem corte por dia da semana — seria
   // uma barra sozinha, que não informa nada.
   const temSerie = gran !== 'dia'
+  // `Ocupacao/PorPeriodo` só devolve estadia encerrada, e o caixa do dia fica
+  // aberto até de madrugada. Então o dia corrente SEMPRE aparece menor do que
+  // é. Sem dizer isso, o número parece defeito toda tarde.
+  const incluiHoje = dados.periodo.fim >= hoje()
 
   return (
     <div className="space-y-5">
@@ -136,6 +140,14 @@ export default function DesempenhoTab() {
           onChange={(g, nova) => { setGran(g); setAncora(nova) }}
         />
       </div>
+
+      {incluiHoje && (
+        <p className="text-white/30 text-[11px] border border-white/8 rounded-lg px-3 py-2 bg-white/[0.02]">
+          O dia de hoje ainda está em curso. O PMS só entrega a estadia depois de
+          encerrada, e o caixa fecha de madrugada — então hoje sempre aparece menor
+          do que foi.
+        </p>
+      )}
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
