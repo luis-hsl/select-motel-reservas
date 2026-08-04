@@ -224,6 +224,81 @@ export function suitesStatus(): Promise<unknown> {
 }
 
 /**
+ * Uma suíte em `GET /api/SuitesStatus`. Campos medidos em 04/08/2026 — a spec
+ * declara `responses.200` vazio aqui. Forma completa em PLUGPLAY-SAMPLES.md.
+ *
+ * Só os campos que o painel usa estão tipados; o resto entra pelo index
+ * signature porque o objeto tem ~50 chaves e tipá-las todas envelhece mal.
+ */
+export interface SuiteStatus {
+  id: number
+  ref: string
+  statusId: number
+  /** Rótulo do próprio PMS ("Livre", "Limpeza", …). Preferir a classificar por id. */
+  status: string
+  classeId: number
+  classe: string
+  /** Cores que a recepção enxerga no mapa dela — reaproveitadas na tela. */
+  corBackground: string
+  corTexto: string
+  isOcupado: boolean
+  /** Tempo restante formatado ("14:49"); `permMinutos` é o mesmo em número. */
+  perm: string
+  permMinutos: number
+  modo: string | null
+  modoSigla: string | null
+  entrada: string
+  totalConsumo: number
+  valorPrevisto: number
+  totalPrevisto: number
+  temObs: boolean
+  obs: string | null
+  emCheckout: boolean
+  emPernoite: boolean
+  comAlertaTempo: boolean
+  ocupacaoId: number | null
+  manutencaoId: number | null
+  tempoDesdeEncerramento: string
+  tempoDesdeInicioLimpeza: string
+  [k: string]: unknown
+}
+
+export interface CategoriaDisponibilidade {
+  categoriaId: number
+  categoria: string
+  disponiveis: number
+  total: number
+}
+
+/**
+ * GET /api/CategoriaDisponibilidade — quantas livres por categoria.
+ *
+ * **Erra quando a recepção está mais de 15 min defasada**, e isso é estado
+ * normal do motel, não falha da integração. Quem chama deve tratar como
+ * "degradado" e continuar — `SuitesStatus` cobre a mesma pergunta suíte a
+ * suíte e não tem essa condição.
+ */
+export function categoriaDisponibilidade(): Promise<CategoriaDisponibilidade[]> {
+  return request<CategoriaDisponibilidade[]>('GET', '/api/CategoriaDisponibilidade')
+}
+
+/**
+ * GET /api/CobrancaAtual/{suiteReferencia} — conta aberta da suíte.
+ *
+ * A chave é a `ref` (número que a recepção usa), não o `id` da API. Só faz
+ * sentido em suíte ocupada.
+ */
+export function cobrancaAtual(suiteRef: string): Promise<unknown> {
+  return request<unknown>('GET', `/api/CobrancaAtual/${encodeURIComponent(suiteRef)}`)
+}
+
+// `OcupacoesAgora` não tem wrapper de propósito: devolve 401 "EmpresaId ou
+// token inválido" porque pede credencial em query string, não nos headers
+// PLUG-PLAY-ID/PLUG-PLAY-TOKEN que o resto da API usa (medido em 04/08/2026).
+// É endpoint legado, e a contagem que ele daria sai de SuitesStatus com mais
+// detalhe. Ver PLUGPLAY-SAMPLES.md.
+
+/**
  * GET cru em qualquer caminho da API — escape hatch para sondagem e para as
  * telas do admin, que consomem endpoints demais para valer um wrapper cada.
  *

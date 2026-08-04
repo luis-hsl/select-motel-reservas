@@ -10,14 +10,16 @@ import PresenteTab from './tabs/PresenteTab'
 import CardapioTab from './tabs/CardapioTab'
 import WhatsAppTab from './tabs/WhatsAppTab'
 import AoVivoTab from './tabs/AoVivoTab'
+import MotelTab from './tabs/MotelTab'
 import LeadsTab from './tabs/LeadsTab'
 import PromosTab from './tabs/PromosTab'
 
-type Tab = 'visao-geral' | 'ao-vivo' | 'reservas' | 'leads' | 'suites' | 'pacotes' | 'cardapio' | 'presente' | 'whatsapp' | 'promos' | 'config'
+type Tab = 'visao-geral' | 'ao-vivo' | 'motel' | 'reservas' | 'leads' | 'suites' | 'pacotes' | 'cardapio' | 'presente' | 'whatsapp' | 'promos' | 'config'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'visao-geral', label: 'Visão Geral' },
   { id: 'ao-vivo',     label: 'Ao Vivo' },
+  { id: 'motel',       label: 'Motel' },
   { id: 'reservas',    label: 'Reservas' },
   { id: 'leads',       label: 'Leads' },
   { id: 'suites',      label: 'Suítes' },
@@ -79,6 +81,7 @@ export default function AdminDashboard({ user }: { user: User }) {
       <main className="p-4 sm:p-6 max-w-5xl mx-auto">
         {tab === 'visao-geral' && <DashboardTab />}
         {tab === 'ao-vivo'     && <AoVivoTab />}
+        {tab === 'motel'       && <MotelTab />}
         {tab === 'reservas'    && <ReservasTab />}
         {tab === 'leads'       && <LeadsTab />}
         {tab === 'suites'      && <SuitesTab />}
