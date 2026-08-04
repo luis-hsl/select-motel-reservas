@@ -56,3 +56,27 @@ export async function exigirAdmin(req: Request): Promise<AuthOk | AuthFail> {
 
   return { ok: true, userId: data.user.id, email: data.user.email ?? null }
 }
+
+/**
+ * Aceita a chave de service_role **ou** um admin logado.
+ *
+ * É a rota máquina-a-máquina que o `exigirAdmin` menciona: o cron da VPS não
+ * tem usuário para logar, mas roda no mesmo host e já conhece a chave. O
+ * mesmo endpoint continua acessível ao admin humano, para disparar backfill na
+ * mão sem precisar da chave.
+ *
+ * A comparação é com a env do próprio container — a chave de service_role é
+ * uma string estática no self-host, então não há o que verificar além de ser
+ * exatamente ela.
+ */
+export async function exigirServicoOuAdmin(req: Request): Promise<AuthOk | AuthFail> {
+  const header = req.headers.get('Authorization') ?? ''
+  const token = header.startsWith('Bearer ') ? header.slice(7).trim() : ''
+
+  const servico = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  if (token && servico && token === servico) {
+    return { ok: true, userId: 'service_role', email: null }
+  }
+
+  return exigirAdmin(req)
+}

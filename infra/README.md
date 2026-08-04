@@ -193,6 +193,28 @@ docker exec supabase-db pg_dump -U postgres postgres | gzip > /opt/backups/db-$(
 ```
 (Adicione ao cron: `0 3 * * * ...`)
 
+### Ingest do PMS (cron)
+
+`pms-ingest.sh` copia o movimento do motel para `pms_ocupacoes`. Instalação:
+
+```bash
+sudo cp /opt/scripts/pms-ingest.sh /usr/local/bin/ && sudo chmod +x /usr/local/bin/pms-ingest.sh
+sudo crontab -e
+#   */15 * * * * /usr/local/bin/pms-ingest.sh incremental
+#   20 4 * * *   /usr/local/bin/pms-ingest.sh snapshots
+```
+
+O cron **não redireciona** — o script escreve e rotaciona
+`/var/log/pms-ingest.log` sozinho. Conferir pelo banco, não pelo log:
+
+```sql
+SELECT * FROM pms_ingest_runs ORDER BY criado_em DESC LIMIT 10;
+```
+
+O script lê `SERVICE_ROLE_KEY` do `.env` com `sed`, não com `source`: o `.env`
+é formato Docker e tem valor com espaço sem aspas (linha 138), que faz o bash
+com `set -e` abortar.
+
 ### ⚠️ `config.toml` não protege edge function aqui
 
 `supabase/config.toml` só vale no Supabase Cloud e no CLI local. **No self-host

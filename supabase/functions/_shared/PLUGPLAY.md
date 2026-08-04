@@ -48,6 +48,24 @@ antes de cobrar.
 **Cancelamento** — admin marca `cancelled` → `plugplay-sync-reserva` com
 `cancel:true` → `DELETE /api/Reserva` (soft delete lá).
 
+**Painel** — a aba "Motel" do admin lê o estado atual via `plugplay-admin`
+(`panorama` e `cobranca`), sem gravar nada. Exige JWT de admin.
+
+**Ingest** — `plugplay-ingest` copia o movimento para `pms_ocupacoes`, por cron
+na VPS (`infra/pms-ingest.sh`): `incremental` a cada 15 min (últimos 3 dias) e
+`snapshots` dos relatórios mensais às 04:20. Backfill na mão com
+`pms-ingest.sh backfill 2026-05-01`.
+
+Usa **só** `Ocupacao/PorPeriodo`. O feed de pendentes (`GET /api/Ocupacao` +
+`PUT` para consumir) ficou de fora de propósito: o `PUT` escreve no sistema da
+recepção, e o feed não é re-lido depois de consumido — uma falha de gravação
+nossa depois do PUT perderia a estadia para sempre. `PorPeriodo` é re-lível e o
+upsert por `ocupacaoId` torna reprocessar inofensivo.
+
+**Nem toda linha é estadia.** ~9% vêm com `suiteId = 0`: `modo 5` é venda
+direta (só consumo) e `modo 7` é valor de reserva sem quarto. A coluna
+`eh_estadia` marca isso — filtrar por ela ao contar ocupação ou RevPAR.
+
 ## Configuração
 
 Variáveis no container `functions` (`infra/supabase-override.yml`):
@@ -211,6 +229,13 @@ gravação local falhou.
 ## Diagnóstico
 
 ```sql
+-- o ingest rodou? ("success" do cron não prova que gravou)
+SELECT * FROM pms_ingest_runs ORDER BY criado_em DESC LIMIT 10;
+
+-- quanto do movimento veio do site
+SELECT origem, sum(estadias), round(sum(receita)) FROM pms_movimento_por_origem
+ GROUP BY 1 ORDER BY 2 DESC;
+
 -- reservas pagas que não chegaram no PMS
 SELECT * FROM pms_sync_pendentes;
 
