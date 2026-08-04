@@ -3,6 +3,10 @@
 O PMS que a recepção do motel usa. Spec: `https://oxpi.com.br/api/PlugPlay/openapi/v1.json`
 (a página `/scalar/v1m` é só a UI — o JSON acima é a fonte).
 
+A spec deixa `responses.200` vazio na maioria dos endpoints de leitura. As formas
+reais, medidas contra produção, estão em
+[`PLUGPLAY-SAMPLES.md`](./PLUGPLAY-SAMPLES.md).
+
 ## O que está ligado
 
 **Push** — reserva paga no site vira reserva no PMS.

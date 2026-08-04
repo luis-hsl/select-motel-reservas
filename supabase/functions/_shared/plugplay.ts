@@ -224,6 +224,18 @@ export function suitesStatus(): Promise<unknown> {
 }
 
 /**
+ * GET cru em qualquer caminho da API — escape hatch para sondagem e para as
+ * telas do admin, que consomem endpoints demais para valer um wrapper cada.
+ *
+ * Só GET de propósito: quem chama não consegue escrever no PMS por aqui, então
+ * uma lista de caminhos vinda de fora (como a whitelist do `plugplay-probe`)
+ * não vira vetor de escrita no sistema que a recepção usa.
+ */
+export function plugplayGet<T = unknown>(path: string, query?: Query): Promise<T> {
+  return request<T>('GET', path, { query })
+}
+
+/**
  * GET /api/Reserva — reservas ativas, 200 por página, DataCadastro desc.
  * Canceladas não aparecem (verificado). Paginamos até esgotar porque a ordem
  * é por cadastro, não por data de entrada: a reserva de daqui a 3 meses pode
