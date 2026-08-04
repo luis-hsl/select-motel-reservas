@@ -29,8 +29,9 @@ import { exigirAdmin } from '../_shared/adminAuth.ts'
 // opera. Escrita (cupom, check-in) seria outra função, com whitelist própria.
 //
 // Uso:
-//   POST { action: 'panorama' }                → estado do motel agora
-//   POST { action: 'cobranca', suiteRef: '11' } → conta aberta de uma suíte
+//   POST { action: 'panorama' }                 → estado do motel agora
+//   POST { action: 'cobranca', suiteRef: '11' }  → conta aberta de uma suíte
+//   POST { action: 'desempenho', inicio, fim }   → agregação do período (do banco)
 
 /**
  * Quanto tempo a suíte ocupada pode passar do previsto antes de virar alerta.
@@ -224,6 +225,24 @@ async function seguro<T>(p: Promise<T>): Promise<{ ok: true; data: T } | { ok: f
   }
 }
 
+/**
+ * Mesma faixa de dias, um mês (ou um ano) atrás.
+ *
+ * Comparar 1–4/ago com o mês de julho inteiro diria que o movimento despencou.
+ * Deslocar a faixa preserva o "mesmo pedaço do mês", que é a comparação que a
+ * gerência realmente faz. O dia é limitado ao último do mês alvo, então
+ * 31/mar → 28/fev em vez de estourar para março.
+ */
+function deslocar(data: string, meses: number): string {
+  const [a, m, d] = data.split('-').map(Number)
+  const alvoMes = m - 1 - meses
+  const ano = a + Math.floor(alvoMes / 12)
+  const mes = ((alvoMes % 12) + 12) % 12
+  const ultimoDia = new Date(Date.UTC(ano, mes + 1, 0)).getUTCDate()
+  const dia = Math.min(d, ultimoDia)
+  return `${ano}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST' && req.method !== 'GET') {
     return new Response('Method Not Allowed', { status: 405 })
@@ -238,21 +257,16 @@ Deno.serve(async (req: Request) => {
       headers: { 'Content-Type': 'application/json' },
     })
 
-  let action = 'panorama'
-  let suiteRef = ''
+  let corpoJson: Record<string, unknown> = {}
   if (req.method === 'POST') {
-    try {
-      const body = await req.json()
-      action = String(body?.action ?? 'panorama')
-      suiteRef = String(body?.suiteRef ?? '')
-    } catch {
-      // corpo vazio ou inválido → panorama
-    }
+    // Corpo vazio ou inválido cai no panorama, que é o default útil.
+    try { corpoJson = await req.json() } catch { /* noop */ }
   } else {
-    const url = new URL(req.url)
-    action = url.searchParams.get('action') ?? 'panorama'
-    suiteRef = url.searchParams.get('suiteRef') ?? ''
+    corpoJson = Object.fromEntries(new URL(req.url).searchParams)
   }
+
+  const action = String(corpoJson.action ?? 'panorama')
+  const suiteRef = String(corpoJson.suiteRef ?? '')
 
   if (!isConfigured()) {
     return responder({
@@ -270,11 +284,13 @@ Deno.serve(async (req: Request) => {
       : responder({ configured: true, suiteRef, erro: r.erro }, 200)
   }
 
-  if (action !== 'panorama') {
-    return responder({ error: `ação desconhecida: ${action}`, disponiveis: ['panorama', 'cobranca'] }, 400)
+  if (action !== 'panorama' && action !== 'desempenho') {
+    return responder(
+      { error: `ação desconhecida: ${action}`, disponiveis: ['panorama', 'cobranca', 'desempenho'] },
+      400,
+    )
   }
 
-  // ── Panorama ──────────────────────────────────────────────────────────────
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
@@ -282,6 +298,44 @@ Deno.serve(async (req: Request) => {
 
   const t0 = Date.now()
   const hoje = toPmsDateTime(new Date()).slice(0, 10)
+
+  // ── Desempenho ────────────────────────────────────────────────────────────
+  // Vem inteiro do Postgres, não do PMS: os campos de comparativo do relatório
+  // deles voltam null, o relatório mistura venda direta com estadia, e a tela
+  // precisa abrir com o PMS fora do ar. Ver a migration 20260804_pms_desempenho.
+  if (action === 'desempenho') {
+    let inicio = String(corpoJson.inicio ?? '').slice(0, 10)
+    let fim    = String(corpoJson.fim ?? '').slice(0, 10)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(inicio)) inicio = `${hoje.slice(0, 7)}-01`
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fim))    fim = hoje
+    if (inicio > fim) return responder({ error: 'inicio depois de fim' }, 400)
+
+    const [atual, mesAnterior, anoAnterior, cobertura] = await Promise.all([
+      supabase.rpc('pms_desempenho', { p_inicio: inicio, p_fim: fim }),
+      supabase.rpc('pms_desempenho', {
+        p_inicio: deslocar(inicio, 1), p_fim: deslocar(fim, 1),
+      }),
+      supabase.rpc('pms_desempenho', {
+        p_inicio: deslocar(inicio, 12), p_fim: deslocar(fim, 12),
+      }),
+      supabase.rpc('pms_cobertura'),
+    ])
+
+    const erro = atual.error?.message ?? null
+    return responder({
+      configured: true,
+      periodo: { inicio, fim },
+      atual: atual.data ?? null,
+      mesAnterior: mesAnterior.data ?? null,
+      anoAnterior: anoAnterior.data ?? null,
+      // A tela usa para separar "caiu a zero" de "período anterior ao backfill".
+      cobertura: cobertura.data ?? null,
+      tookMs: Date.now() - t0,
+      erro,
+    }, erro ? 500 : 200)
+  }
+
+  // ── Panorama ──────────────────────────────────────────────────────────────
 
   const [status, categorias, reservas, suitesLocais, pendentes] = await Promise.all([
     seguro(suitesStatus() as Promise<SuiteStatus[]>),

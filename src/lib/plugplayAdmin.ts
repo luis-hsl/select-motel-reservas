@@ -113,6 +113,76 @@ export async function fetchPanorama(): Promise<Panorama | null> {
   }
 }
 
+// ─── Desempenho ──────────────────────────────────────────────────────────────
+// Vem do Postgres, não do PMS: o comparativo do relatório deles volta null, o
+// relatório mistura venda direta com estadia, e a tela precisa abrir com o PMS
+// fora do ar.
+
+export interface DesempenhoKpis {
+  estadias: number
+  receita: number
+  consumo: number
+  desconto: number
+  cortesia: number
+  com_placa: number
+  ticket: number
+  revpar: number
+  /** Ocupações por suíte-dia. Passa de 1,0 legitimamente — motel gira o quarto. */
+  taxa_giro: number
+  extras_linhas: number
+  extras_receita: number
+}
+
+export interface Periodo {
+  inicio: string
+  fim: string
+  dias: number
+  suites: number
+}
+
+export interface Desempenho {
+  periodo: Periodo
+  kpis: DesempenhoKpis
+  diario: Array<{ dia: string; estadias: number; receita: number; consumo: number }>
+  por_dia_semana: Array<{ dow: number; estadias: number; receita: number }>
+  por_origem: Array<{ origem: string; estadias: number; receita: number }>
+  por_categoria: Array<{ categoria: string; estadias: number; receita: number }>
+  por_modalidade: Array<{ modo: number; rotulo: string; estadias: number; receita: number }>
+}
+
+export interface Cobertura {
+  primeiro_dia: string | null
+  ultimo_dia: string | null
+  estadias: number
+  linhas: number
+}
+
+export interface DesempenhoResponse {
+  configured: boolean
+  periodo: { inicio: string; fim: string }
+  atual: Desempenho | null
+  mesAnterior: Desempenho | null
+  anoAnterior: Desempenho | null
+  cobertura: Cobertura | null
+  tookMs: number
+  erro: string | null
+}
+
+export async function fetchDesempenho(
+  inicio: string,
+  fim: string,
+): Promise<DesempenhoResponse | null> {
+  try {
+    const { data, error } = await supabase.functions.invoke<DesempenhoResponse>('plugplay-admin', {
+      body: { action: 'desempenho', inicio, fim },
+    })
+    if (error || !data) return null
+    return data
+  } catch {
+    return null
+  }
+}
+
 export interface CobrancaResponse {
   configured: boolean
   suiteRef?: string
