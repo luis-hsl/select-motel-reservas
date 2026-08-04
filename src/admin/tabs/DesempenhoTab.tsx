@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   fetchDesempenho,
   type DesempenhoResponse, type Desempenho, type DesempenhoKpis,
 } from '../../lib/plugplayAdmin'
+import PeriodoSeletor from '../PeriodoSeletor'
+import { faixa, hoje, recortar, type Granularidade } from '../periodo'
 
 // Aba "Desempenho" — o movimento do motel agregado por período.
 //
@@ -38,53 +40,33 @@ function pct(v: number): string {
   return `${(v * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`
 }
 
-/** Meses cobertos pelo ingest, do mais recente para o mais antigo. */
-function mesesDisponiveis(primeiro: string | null, ultimo: string | null): string[] {
-  if (!primeiro || !ultimo) return []
-  const out: string[] = []
-  let [a, m] = [Number(primeiro.slice(0, 4)), Number(primeiro.slice(5, 7))]
-  const limite = ultimo.slice(0, 7)
-  while (`${a}-${String(m).padStart(2, '0')}` <= limite) {
-    out.push(`${a}-${String(m).padStart(2, '0')}`)
-    m++
-    if (m > 12) { m = 1; a++ }
-  }
-  return out.reverse()
-}
-
-function nomeMes(ym: string): string {
-  const [a, m] = ym.split('-').map(Number)
-  const nome = new Date(Date.UTC(a, m - 1, 1))
-    .toLocaleDateString('pt-BR', { month: 'long', timeZone: 'UTC' })
-  return `${nome[0].toUpperCase()}${nome.slice(1)} ${a}`
-}
-
-/** Primeiro e último dia do mês; o mês corrente para no dia de hoje. */
-function faixaDoMes(ym: string, ultimoDiaCoberto: string | null): [string, string] {
-  const [a, m] = ym.split('-').map(Number)
-  const inicio = `${ym}-01`
-  const ultimo = new Date(Date.UTC(a, m, 0)).getUTCDate()
-  let fim = `${ym}-${String(ultimo).padStart(2, '0')}`
-  if (ultimoDiaCoberto && ultimoDiaCoberto < fim) fim = ultimoDiaCoberto
-  return [inicio, fim]
+/** Como o comparativo se chama em cada granularidade. */
+const ANTERIOR: Record<Granularidade, string> = {
+  dia:    'vs. dia anterior',
+  semana: 'vs. semana anterior',
+  mes:    'vs. mesmo período do mês passado',
+  ano:    'vs. mesmo período do ano passado',
 }
 
 export default function DesempenhoTab() {
   const [dados,   setDados]   = useState<DesempenhoResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [falhou,  setFalhou]  = useState(false)
-  const [mes,     setMes]     = useState<string | null>(null)
+  const [gran,    setGran]    = useState<Granularidade>('mes')
+  const [ancora,  setAncora]  = useState<string>(() => hoje())
+
+  // Primeiro dia ingerido: limita as setas e distingue "sem movimento" de
+  // "antes do backfill". Vem da própria resposta, então na primeira carga é
+  // null e o seletor fica permissivo — corrige sozinho no primeiro retorno.
+  const primeiroDia = dados?.cobertura?.primeiro_dia ?? null
 
   useEffect(() => {
     let cancelado = false
 
     async function carregar() {
-      // Sem mês escolhido, o backend assume o corrente e devolve a cobertura —
-      // é ela que preenche o seletor.
-      const alvo = mes
-        ? faixaDoMes(mes, dados?.cobertura?.ultimo_dia ?? null)
-        : ['', '']
-      const r = await fetchDesempenho(alvo[0], alvo[1])
+      const [bruto, brutoFim] = faixa(gran, ancora)
+      const [inicio, fim] = recortar(bruto, brutoFim, primeiroDia)
+      const r = await fetchDesempenho(inicio, fim, gran)
       if (cancelado) return
       if (r) { setDados(r); setFalhou(false) } else { setFalhou(true) }
       setLoading(false)
@@ -92,12 +74,7 @@ export default function DesempenhoTab() {
 
     void carregar()
     return () => { cancelado = true }
-  }, [mes]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const meses = useMemo(
-    () => mesesDisponiveis(dados?.cobertura?.primeiro_dia ?? null, dados?.cobertura?.ultimo_dia ?? null),
-    [dados?.cobertura?.primeiro_dia, dados?.cobertura?.ultimo_dia],
-  )
+  }, [gran, ancora, primeiroDia])
 
   if (loading) {
     return <div className="text-white/30 py-16 text-center text-sm">Somando o movimento...</div>
@@ -118,10 +95,12 @@ export default function DesempenhoTab() {
 
   const a = dados.atual
   const k = a.kpis
-  const mesAtivo = dados.periodo.inicio.slice(0, 7)
   const cobreAnterior =
     !!dados.cobertura?.primeiro_dia && !!dados.mesAnterior &&
     dados.mesAnterior.periodo.inicio >= dados.cobertura.primeiro_dia
+  // Um único dia não rende série diária nem corte por dia da semana — seria
+  // uma barra sozinha, que não informa nada.
+  const temSerie = gran !== 'dia'
 
   return (
     <div className="space-y-5">
@@ -135,19 +114,17 @@ export default function DesempenhoTab() {
             {a.periodo.dias} {a.periodo.dias === 1 ? 'dia' : 'dias'} · {a.periodo.suites} suítes ·
             {' '}inclui balcão e telefone
           </p>
+          {/* A base da comparação fica dita uma vez, e não repetida em cada tile. */}
+          <p className="text-white/20 text-[10px] mt-0.5">
+            {cobreAnterior ? `Variações ${ANTERIOR[gran]}` : 'Sem período anterior ingerido para comparar'}
+          </p>
         </div>
-        <div className="flex flex-wrap gap-1">
-          {meses.map((m) => (
-            <button key={m} onClick={() => setMes(m)}
-              className={`text-[11px] px-3 py-1.5 rounded-lg border transition-colors ${
-                m === mesAtivo
-                  ? 'text-gold-400 border-gold-700/40 bg-gold-500/5'
-                  : 'text-white/40 border-white/8 hover:text-white/70 hover:border-white/20'
-              }`}>
-              {nomeMes(m)}
-            </button>
-          ))}
-        </div>
+        <PeriodoSeletor
+          granularidade={gran}
+          ancora={ancora}
+          primeiroDia={primeiroDia}
+          onChange={(g, nova) => { setGran(g); setAncora(nova) }}
+        />
       </div>
 
       {/* KPIs */}
@@ -176,16 +153,19 @@ export default function DesempenhoTab() {
       </div>
 
       {/* Movimento diário */}
-      <Painel titulo="Movimento por dia" nota="Estadias fechadas em cada dia-base de caixa">
-        <BarrasDiarias serie={a.diario} />
-      </Painel>
-
-      {/* Dia da semana */}
-      <div className="grid lg:grid-cols-2 gap-4">
-        <Painel titulo="Por dia da semana"
-                nota="Onde o movimento se concentra na semana">
-          <BarrasDow serie={a.por_dia_semana} />
+      {temSerie && (
+        <Painel titulo="Movimento por dia" nota="Estadias fechadas em cada dia-base de caixa">
+          <BarrasDiarias serie={a.diario} />
         </Painel>
+      )}
+
+      <div className="grid lg:grid-cols-2 gap-4">
+        {temSerie && (
+          <Painel titulo="Por dia da semana"
+                  nota="Onde o movimento se concentra na semana">
+            <BarrasDow serie={a.por_dia_semana} />
+          </Painel>
+        )}
 
         <Painel titulo="De onde vem"
                 nota="Site, reserva por telefone e quem chega sem avisar">

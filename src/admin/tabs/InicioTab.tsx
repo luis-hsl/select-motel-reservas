@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { usePanorama } from '../panoramaContext'
 import { fetchDesempenho, type DesempenhoResponse } from '../../lib/plugplayAdmin'
+import PeriodoSeletor from '../PeriodoSeletor'
+import { faixa, hoje, recortar, type Granularidade } from '../periodo'
 
 // Início — o resumo do motel, não do site.
 //
@@ -19,23 +21,32 @@ function pct(v: number): string {
   return `${(v * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`
 }
 
-function mesCorrente(): [string, string] {
-  const agora = new Date()
-  const ym = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}`
-  const dia = String(agora.getDate()).padStart(2, '0')
-  return [`${ym}-01`, `${ym}-${dia}`]
+const TITULO: Record<Granularidade, string> = {
+  dia: 'Neste dia', semana: 'Nesta semana', mes: 'Neste mês', ano: 'Neste ano',
+}
+
+const ANTERIOR: Record<Granularidade, string> = {
+  dia:    'vs. dia anterior',
+  semana: 'vs. semana anterior',
+  mes:    'vs. mesmo período do mês passado',
+  ano:    'vs. mesmo período do ano passado',
 }
 
 export default function InicioTab({ ir }: { ir: Ir }) {
   const { dados: pano, carregando, semContato, atualizadoEm } = usePanorama()
   const [des, setDes] = useState<DesempenhoResponse | null>(null)
+  const [gran, setGran] = useState<Granularidade>('mes')
+  const [ancora, setAncora] = useState<string>(() => hoje())
+
+  const primeiroDia = des?.cobertura?.primeiro_dia ?? null
 
   useEffect(() => {
     let cancelado = false
-    const [inicio, fim] = mesCorrente()
-    void fetchDesempenho(inicio, fim).then((r) => { if (!cancelado) setDes(r) })
+    const [bruto, brutoFim] = faixa(gran, ancora)
+    const [inicio, fim] = recortar(bruto, brutoFim, primeiroDia)
+    void fetchDesempenho(inicio, fim, gran).then((r) => { if (!cancelado) setDes(r) })
     return () => { cancelado = true }
-  }, [])
+  }, [gran, ancora, primeiroDia])
 
   const k = pano?.kpis
   const d = des?.atual?.kpis
@@ -102,10 +113,28 @@ export default function InicioTab({ ir }: { ir: Ir }) {
         </section>
       )}
 
-      {/* Mês — o desempenho acumulado */}
+      {/* Período — o desempenho acumulado */}
       <section>
-        <Cabecalho titulo="Este mês" acao={{ rotulo: 'Ver desempenho', ir: () => ir('desempenho') }}
-          nota={des?.atual ? `${des.atual.periodo.dias} dias corridos` : undefined} />
+        <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
+          <div className="flex items-baseline gap-3">
+            <h2 className="text-white/80 text-sm font-medium">{TITULO[gran]}</h2>
+            {des?.atual && (
+              <span className="text-white/25 text-[11px]">
+                {des.atual.periodo.dias} {des.atual.periodo.dias === 1 ? 'dia' : 'dias'}
+              </span>
+            )}
+            <button onClick={() => ir('desempenho')}
+              className="text-[11px] text-gold-500 hover:text-gold-400 transition-colors">
+              Ver desempenho →
+            </button>
+          </div>
+          <PeriodoSeletor
+            granularidade={gran}
+            ancora={ancora}
+            primeiroDia={primeiroDia}
+            onChange={(g, nova) => { setGran(g); setAncora(nova) }}
+          />
+        </div>
 
         {!des?.atual ? (
           <p className="text-white/25 text-xs">
@@ -115,7 +144,7 @@ export default function InicioTab({ ir }: { ir: Ir }) {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <Numero rotulo="Receita" valor={brl(d?.receita ?? 0)}
                     delta={cobre ? deltaReceita : null}
-                    nota={cobre ? 'vs. mesmo período do mês passado' : 'sem base anterior'} forte />
+                    nota={cobre ? ANTERIOR[gran] : 'sem base anterior'} forte />
             <Numero rotulo="Estadias" valor={(d?.estadias ?? 0).toLocaleString('pt-BR')}
                     nota={`${(d?.taxa_giro ?? 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 })} por suíte-dia`} />
             <Numero rotulo="Ticket médio" valor={brl(d?.ticket ?? 0)} />

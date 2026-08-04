@@ -159,8 +159,9 @@ export interface Cobertura {
 
 export interface DesempenhoResponse {
   configured: boolean
-  periodo: { inicio: string; fim: string }
+  periodo: { inicio: string; fim: string; granularidade?: string }
   atual: Desempenho | null
+  /** O período anterior equivalente — a granularidade define o salto. */
   mesAnterior: Desempenho | null
   anoAnterior: Desempenho | null
   cobertura: Cobertura | null
@@ -171,10 +172,11 @@ export interface DesempenhoResponse {
 export async function fetchDesempenho(
   inicio: string,
   fim: string,
+  granularidade: 'dia' | 'semana' | 'mes' | 'ano' = 'mes',
 ): Promise<DesempenhoResponse | null> {
   try {
     const { data, error } = await supabase.functions.invoke<DesempenhoResponse>('plugplay-admin', {
-      body: { action: 'desempenho', inicio, fim },
+      body: { action: 'desempenho', inicio, fim, granularidade },
     })
     if (error || !data) return null
     return data

@@ -243,6 +243,29 @@ function deslocar(data: string, meses: number): string {
   return `${ano}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`
 }
 
+function deslocarDias(data: string, dias: number): string {
+  const [a, m, d] = data.split('-').map(Number)
+  const dt = new Date(Date.UTC(a, m - 1, d))
+  dt.setUTCDate(dt.getUTCDate() + dias)
+  return dt.toISOString().slice(0, 10)
+}
+
+type Granularidade = 'dia' | 'semana' | 'mes' | 'ano'
+
+/**
+ * O período anterior equivalente, que depende da granularidade escolhida.
+ *
+ * Comparar sempre com "os N dias anteriores" mediria a semana contra um
+ * intervalo que atravessa o fim de semana — e num motel, onde sexta e sábado
+ * concentram o movimento, isso inverte o sinal da comparação.
+ */
+function periodoAnterior(g: Granularidade, inicio: string, fim: string): [string, string] {
+  if (g === 'dia')    return [deslocarDias(inicio, -1), deslocarDias(fim, -1)]
+  if (g === 'semana') return [deslocarDias(inicio, -7), deslocarDias(fim, -7)]
+  if (g === 'ano')    return [deslocar(inicio, 12), deslocar(fim, 12)]
+  return [deslocar(inicio, 1), deslocar(fim, 1)]
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST' && req.method !== 'GET') {
     return new Response('Method Not Allowed', { status: 405 })
@@ -310,11 +333,12 @@ Deno.serve(async (req: Request) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fim))    fim = hoje
     if (inicio > fim) return responder({ error: 'inicio depois de fim' }, 400)
 
+    const g = String(corpoJson.granularidade ?? 'mes') as Granularidade
+    const [antInicio, antFim] = periodoAnterior(g, inicio, fim)
+
     const [atual, mesAnterior, anoAnterior, cobertura] = await Promise.all([
       supabase.rpc('pms_desempenho', { p_inicio: inicio, p_fim: fim }),
-      supabase.rpc('pms_desempenho', {
-        p_inicio: deslocar(inicio, 1), p_fim: deslocar(fim, 1),
-      }),
+      supabase.rpc('pms_desempenho', { p_inicio: antInicio, p_fim: antFim }),
       supabase.rpc('pms_desempenho', {
         p_inicio: deslocar(inicio, 12), p_fim: deslocar(fim, 12),
       }),
@@ -324,8 +348,10 @@ Deno.serve(async (req: Request) => {
     const erro = atual.error?.message ?? null
     return responder({
       configured: true,
-      periodo: { inicio, fim },
+      periodo: { inicio, fim, granularidade: g },
       atual: atual.data ?? null,
+      // Nome herdado de quando só havia comparação mensal; hoje é "o período
+      // anterior equivalente", que a granularidade define.
       mesAnterior: mesAnterior.data ?? null,
       anoAnterior: anoAnterior.data ?? null,
       // A tela usa para separar "caiu a zero" de "período anterior ao backfill".
