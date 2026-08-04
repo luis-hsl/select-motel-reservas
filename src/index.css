@@ -24,6 +24,16 @@
     border-color: #C9A84C;
   }
 
+  /* Cifras, tempos e contagens do painel admin. Mono com numeral tabular para
+     que coluna de dinheiro alinhe e número que muda sozinho não dance na tela.
+     A família é carregada só pelo admin (ver AdminApp); fora dele cai no
+     monospace do sistema, que também é tabular. */
+  .figura {
+    font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
   .card-hover {
     transition: all 0.3s ease;
   }
